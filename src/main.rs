@@ -38,57 +38,57 @@ macro_rules! generate_token_contract {
     ) => {
         format!(
             r#"
-                module tokengen::{module_name} {{
-                    use sui::coin;
-                    public struct {token_type} has drop {{}}
+module tokengen::{module_name} {{
+    use sui::coin;
+    public struct {token_type} has drop {{}}
 
-                    /// Initialize the token with treasury and metadata
-                    fun init(witness: {token_type}, ctx: &mut TxContext) {{
-                        let (treasury, metadata) = coin::create_currency(
-                            witness, {decimals}, b"{symbol}", b"{name}", b"{description}", option::none(), ctx
-                        );
-                        transfer::public_freeze_object(metadata);
-                        transfer::public_transfer(treasury, ctx.sender());
-                    }}
+    /// Initialize the token with treasury and metadata
+    fun init(witness: {token_type}, ctx: &mut TxContext) {{
+        let (treasury, metadata) = coin::create_currency(
+            witness, {decimals}, b"{symbol}", b"{name}", b"{description}", option::none(), ctx
+        );
+        transfer::public_freeze_object(metadata);
+        transfer::public_transfer(treasury, ctx.sender());
+    }}
 
-                    /// Mint tokens and transfer them to the recipient
-                    public entry fun mint(
-                        treasury: &mut coin::TreasuryCap<{token_type}>,
-                        amount: u64,
-                        recipient: address,
-                        ctx: &mut TxContext
-                    ) {{
-                        coin::mint_and_transfer(treasury, amount, recipient, ctx);
-                    }}
+    /// Mint tokens and transfer them to the recipient
+    public entry fun mint(
+        treasury: &mut coin::TreasuryCap<{token_type}>,
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext
+    ) {{
+        coin::mint_and_transfer(treasury, amount, recipient, ctx);
+    }}
 
-                    /// Transfer TreasuryCap ownership to a new recipient
-                    public entry fun transferTreasuryCap(
-                        treasury: coin::TreasuryCap<{token_type}>,
-                        recipient: address,
-                        _ctx: &mut TxContext
-                    ) {{
-                        transfer::public_transfer(treasury, recipient);
-                    }}
+    /// Transfer TreasuryCap ownership to a new recipient
+    public entry fun transferTreasuryCap(
+        treasury: coin::TreasuryCap<{token_type}>,
+        recipient: address,
+        _ctx: &mut TxContext
+    ) {{
+        transfer::public_transfer(treasury, recipient);
+    }}
 
-                    /// Burn tokens to reduce total supply
-                    public entry fun burn(
-                        treasury: &mut coin::TreasuryCap<{token_type}>,
-                        coin_obj: coin::Coin<{token_type}>,
-                        _ctx: &mut TxContext
-                    ) {{
-                        coin::burn(treasury, coin_obj);
-                    }}
+    /// Burn tokens to reduce total supply
+    public entry fun burn(
+        treasury: &mut coin::TreasuryCap<{token_type}>,
+        coin_obj: coin::Coin<{token_type}>,
+        _ctx: &mut TxContext
+    ) {{
+        coin::burn(treasury, coin_obj);
+    }}
 
-                    /// Transfer tokens between two accounts
-                    public entry fun transfer(
-                        coin_obj: coin::Coin<{token_type}>,
-                        recipient: address,
-                        _ctx: &mut TxContext
-                    ) {{
-                        transfer::public_transfer(coin_obj, recipient);
-                    }}
-                }}
-            "#,
+    /// Transfer tokens between two accounts
+    public entry fun transfer(
+        coin_obj: coin::Coin<{token_type}>,
+        recipient: address,
+        _ctx: &mut TxContext
+    ) {{
+        transfer::public_transfer(coin_obj, recipient);
+    }}
+}}
+"#,
             module_name = $module_name,
             token_type = $token_type,
             name = $name,
