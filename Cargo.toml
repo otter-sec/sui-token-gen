@@ -1,0 +1,19 @@
+[package]
+name = "sui-token-gen-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] } 
+inquire = "=0.0.7"
+url = "2.5.4"
+sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
+sui-keys = { git = "https://github.com/mystenlabs/sui", package = "sui-keys"}
+shared-crypto = { git = "https://github.com/mystenlabs/sui", package = "shared-crypto"}
+sui-types = { git = "https://github.com/mystenlabs/sui", package = "sui-types"}
+clap = { version = "4.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"                               
+anyhow = "1.0"
+dirs = "5.0"
+fastcrypto = "0.1.8"
