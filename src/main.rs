@@ -103,9 +103,9 @@ async fn create_token() {
     let token_data = get_user_prompt().unwrap();
     println!("Creating token...");
 
-    generate_token(token_data.0, token_data.1, token_data.2, token_data.3, token_data.4);
+    generate_token(token_data.0, token_data.1, token_data.2, token_data.3);
 }
-fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
+fn get_user_prompt() -> Result<(u8, String, String, String), String> {
     const FROZEN_OPTIONS: [&str; 2] = ["Yes", "No"];
 
     // Prompt for decimals
@@ -135,18 +135,18 @@ fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
         .prompt()
         .unwrap_or_default();
 
-    // Prompt for token type
-    let frozen_metadata = Select::new("Frozen metadata?", &FROZEN_OPTIONS)
-        .prompt()
-        .map_err(|e| e.to_string())?;
-    let is_frozen = frozen_metadata.value == "Yes";
+    // // Prompt for token type
+    // let frozen_metadata = Select::new("Frozen metadata?", &FROZEN_OPTIONS)
+    //     .prompt()
+    //     .map_err(|e| e.to_string())?;
+    // let is_frozen = frozen_metadata.value == "Yes";
 
     Ok((
         decimals,
         symbol,
         name,
         description,
-        is_frozen,
+        // is_frozen,
     ))
 }
 fn sanitize_name(name: String) -> String {
@@ -154,7 +154,7 @@ fn sanitize_name(name: String) -> String {
         .filter(|c| c.is_alphanumeric())
         .collect::<String>()
 }
-fn generate_token(decimals: u8, symbol: String, name: String, description: String, _is_frozen: bool) {
+fn generate_token(decimals: u8, symbol: String, name: String, description: String) {
     let slug = sanitize_name(name.clone());
     let module_name = slug.clone();
     let token_type = slug.to_uppercase();
