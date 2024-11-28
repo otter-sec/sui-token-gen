@@ -78,17 +78,24 @@ fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
         is_frozen,
     ))
 }
+fn sanitize_name(name: String) -> String {
+    name.chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect::<String>()
+}
 fn generate_token(decimals: u8, symbol: String, name: String, description: String, _is_frozen: bool) {
+
+    let slug = sanitize_name(name.clone());
 
     // Not a complete code - This is a check that Im doing right thing
     let token_template = format!(
         r#"
-        module {name}::{name} {{
+        module tokengen::{module_name} {{
             use sui::coin;
-            public struct {name} has drop {{}}
+            public struct {token_type} has drop {{}}
 
             /// Initialize the token with treasury and metadata
-            fun init(witness: {name}, ctx: &mut TxContext) {{
+            fun init(witness: {token_type}, ctx: &mut TxContext) {{
                 let (treasury, metadata) = coin::create_currency(
                     witness, {decimals}, b"{symbol}", b"{name}", b"{description}", option::none(), ctx
                 );
@@ -98,7 +105,7 @@ fn generate_token(decimals: u8, symbol: String, name: String, description: Strin
 
             /// Mint tokens and transfer them to the recipient
             public entry fun mint(
-                treasury: &mut coin::TreasuryCap<{name}>,
+                treasury: &mut coin::TreasuryCap<{token_type}>,
                 amount: u64,
                 recipient: address,
                 ctx: &mut TxContext
@@ -108,7 +115,7 @@ fn generate_token(decimals: u8, symbol: String, name: String, description: Strin
 
             /// Transfer TreasuryCap ownership to a new recipient
             public entry fun transferTreasuryCap(
-                treasury: coin::TreasuryCap<{name}>,
+                treasury: coin::TreasuryCap<{token_type}>,
                 recipient: address,
                 _ctx: &mut TxContext
             ) {{
@@ -117,8 +124,8 @@ fn generate_token(decimals: u8, symbol: String, name: String, description: Strin
 
             /// Burn tokens to reduce total supply
             public entry fun burn(
-                treasury: &mut coin::TreasuryCap<{name}>,
-                coin_obj: coin::Coin<{name}>,
+                treasury: &mut coin::TreasuryCap<{token_type}>,
+                coin_obj: coin::Coin<{token_type}>,
                 _ctx: &mut TxContext
             ) {{
                 coin::burn(treasury, coin_obj);
@@ -126,7 +133,7 @@ fn generate_token(decimals: u8, symbol: String, name: String, description: Strin
 
             /// Transfer tokens between two accounts
             public entry fun transfer(
-                coin_obj: coin::Coin<{name}>,
+                coin_obj: coin::Coin<{token_type}>,
                 recipient: address,
                 _ctx: &mut TxContext
             ) {{
@@ -135,12 +142,14 @@ fn generate_token(decimals: u8, symbol: String, name: String, description: Strin
         }}
         "#,
         name = name,
+        module_name = slug,
+        token_type = slug.to_uppercase(),
         symbol = symbol,
         decimals = decimals,
         description = description
     );
 
-    fs::write(format!("{}.move", name), token_template).expect("Failed to write Move contract file");
+    fs::write(format!("{}.move", slug), token_template).expect("Failed to write Move contract file");
 
     println!("Token contract generated as {}.move", name);
 }
