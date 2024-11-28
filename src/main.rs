@@ -27,6 +27,77 @@ async fn main() {
         _ => eprintln!("Unknown command: {}", args[1]),
     }
 }
+macro_rules! generate_token_contract {
+    (
+        name = $name:expr,
+        module_name = $module_name:expr,
+        token_type = $token_type:expr,
+        symbol = $symbol:expr,
+        decimals = $decimals:expr,
+        description = $description:expr
+    ) => {
+        format!(
+            r#"
+                module tokengen::{module_name} {{
+                    use sui::coin;
+                    public struct {token_type} has drop {{}}
+
+                    /// Initialize the token with treasury and metadata
+                    fun init(witness: {token_type}, ctx: &mut TxContext) {{
+                        let (treasury, metadata) = coin::create_currency(
+                            witness, {decimals}, b"{symbol}", b"{name}", b"{description}", option::none(), ctx
+                        );
+                        transfer::public_freeze_object(metadata);
+                        transfer::public_transfer(treasury, ctx.sender());
+                    }}
+
+                    /// Mint tokens and transfer them to the recipient
+                    public entry fun mint(
+                        treasury: &mut coin::TreasuryCap<{token_type}>,
+                        amount: u64,
+                        recipient: address,
+                        ctx: &mut TxContext
+                    ) {{
+                        coin::mint_and_transfer(treasury, amount, recipient, ctx);
+                    }}
+
+                    /// Transfer TreasuryCap ownership to a new recipient
+                    public entry fun transferTreasuryCap(
+                        treasury: coin::TreasuryCap<{token_type}>,
+                        recipient: address,
+                        _ctx: &mut TxContext
+                    ) {{
+                        transfer::public_transfer(treasury, recipient);
+                    }}
+
+                    /// Burn tokens to reduce total supply
+                    public entry fun burn(
+                        treasury: &mut coin::TreasuryCap<{token_type}>,
+                        coin_obj: coin::Coin<{token_type}>,
+                        _ctx: &mut TxContext
+                    ) {{
+                        coin::burn(treasury, coin_obj);
+                    }}
+
+                    /// Transfer tokens between two accounts
+                    public entry fun transfer(
+                        coin_obj: coin::Coin<{token_type}>,
+                        recipient: address,
+                        _ctx: &mut TxContext
+                    ) {{
+                        transfer::public_transfer(coin_obj, recipient);
+                    }}
+                }}
+            "#,
+            module_name = $module_name,
+            token_type = $token_type,
+            name = $name,
+            symbol = $symbol,
+            decimals = $decimals,
+            description = $description
+        )
+    };
+}
 // Create command Utils
 async fn create_token() {
     let token_data = get_user_prompt().unwrap();
@@ -84,74 +155,23 @@ fn sanitize_name(name: String) -> String {
         .collect::<String>()
 }
 fn generate_token(decimals: u8, symbol: String, name: String, description: String, _is_frozen: bool) {
-
     let slug = sanitize_name(name.clone());
+    let module_name = slug.clone();
+    let token_type = slug.to_uppercase();
 
-    // Not a complete code - This is a check that Im doing right thing
-    let token_template = format!(
-        r#"
-        module tokengen::{module_name} {{
-            use sui::coin;
-            public struct {token_type} has drop {{}}
-
-            /// Initialize the token with treasury and metadata
-            fun init(witness: {token_type}, ctx: &mut TxContext) {{
-                let (treasury, metadata) = coin::create_currency(
-                    witness, {decimals}, b"{symbol}", b"{name}", b"{description}", option::none(), ctx
-                );
-                transfer::public_freeze_object(metadata);
-                transfer::public_transfer(treasury, ctx.sender());
-            }}
-
-            /// Mint tokens and transfer them to the recipient
-            public entry fun mint(
-                treasury: &mut coin::TreasuryCap<{token_type}>,
-                amount: u64,
-                recipient: address,
-                ctx: &mut TxContext
-            ) {{
-                coin::mint_and_transfer(treasury, amount, recipient, ctx);
-            }}
-
-            /// Transfer TreasuryCap ownership to a new recipient
-            public entry fun transferTreasuryCap(
-                treasury: coin::TreasuryCap<{token_type}>,
-                recipient: address,
-                _ctx: &mut TxContext
-            ) {{
-                transfer::public_transfer(treasury, recipient);
-            }}
-
-            /// Burn tokens to reduce total supply
-            public entry fun burn(
-                treasury: &mut coin::TreasuryCap<{token_type}>,
-                coin_obj: coin::Coin<{token_type}>,
-                _ctx: &mut TxContext
-            ) {{
-                coin::burn(treasury, coin_obj);
-            }}
-
-            /// Transfer tokens between two accounts
-            public entry fun transfer(
-                coin_obj: coin::Coin<{token_type}>,
-                recipient: address,
-                _ctx: &mut TxContext
-            ) {{
-                transfer::public_transfer(coin_obj, recipient);
-            }}
-        }}
-        "#,
+    let token_template = generate_token_contract!(
         name = name,
-        module_name = slug,
-        token_type = slug.to_uppercase(),
+        module_name = module_name,
+        token_type = token_type,
         symbol = symbol,
         decimals = decimals,
         description = description
     );
 
-    fs::write(format!("{}.move", slug), token_template).expect("Failed to write Move contract file");
+    let file_name = format!("{}.move", slug);
+    fs::write(&file_name, token_template).expect("Failed to write Move contract file");
 
-    println!("Token contract generated as {}.move", name);
+    println!("Token contract generated as {}", file_name);
 }
 
 
