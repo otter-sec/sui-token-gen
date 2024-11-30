@@ -1,5 +1,4 @@
-use std::path::Path;
-use url::Url;
+use crate::utils::helpers::{is_local_file, is_url};
 
 // Verify command Utils
 pub async fn verify_token(path_or_url: &str) {
@@ -9,13 +8,4 @@ pub async fn verify_token(path_or_url: &str) {
         eprintln!("The input is neither a valid URL nor a local file path.");
         return;
     }
-}
-
-fn is_url(input: &str) -> bool {
-    Url::parse(input).is_ok()
-}
-
-fn is_local_file(input: &str) -> bool {
-    let path = Path::new(input);
-    path.exists()
 }
