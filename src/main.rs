@@ -1,6 +1,7 @@
 use std::env;
 use tokio;
 
+mod commands;
 mod utils;
 
 #[tokio::main]
@@ -14,12 +15,12 @@ async fn main() {
     println!("args {:?}", args);
 
     match args[2].as_str() {
-        "create" => utils::create_token().await,
+        "create" => commands::create::create_token().await,
         "verify" => {
             if args.len() < 4 {
                 eprintln!("Usage: sui-token-gen verify <repo URL / local path>");
             } else {
-                utils::verify_token(&args[3]).await;
+                commands::verify::verify_token(&args[3]).await;
             }
         }
         _ => eprintln!("Unknown command: {}", args[1]),
