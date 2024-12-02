@@ -47,7 +47,7 @@ pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
     let frozen_metadata = Select::new("Frozen metadata?", &FROZEN_OPTIONS)
         .prompt()
         .map_err(|e| e.to_string())?;
-    let is_frozen = frozen_metadata.value == "Yes";
+    let is_frozen: bool = frozen_metadata.value == "Yes";
 
     Ok((decimals, symbol, name, description, is_frozen))
 }

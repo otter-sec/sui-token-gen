@@ -1,6 +1,6 @@
 use crate::utils::helpers::{is_local_file, is_url};
 
-// Verify command Utils
+// Verify command
 pub async fn verify_token(path_or_url: &str) {
     println!("Verifying token at: {}", path_or_url);
 

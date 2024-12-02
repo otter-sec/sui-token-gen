@@ -5,7 +5,7 @@ use crate::utils::helpers::create_base_folder;
 
 pub async fn create_token() {
     let token_data: Result<(u8, String, String, String, bool), String> = get_user_prompt();
-    println!("Creating token...");
+    println!("Creating contract...");
     const BASE_FOLDER: &str = "tokengen";
 
     if let Ok((decimals, symbol, name, description, is_frozen)) = token_data {
@@ -14,6 +14,6 @@ pub async fn create_token() {
         generate_token(decimals, symbol, name, description, is_frozen, BASE_FOLDER);
         println!("Contract has been generated!");
     } else {
-        eprintln!("Failed to create token: {:?}", token_data.err());
+        eprintln!("Failed to create contract: {:?}", token_data.err());
     }
 }

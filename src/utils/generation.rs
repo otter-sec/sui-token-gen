@@ -10,6 +10,7 @@ use serde::Serialize;
 struct Package {
     name: String,
     edition: String,
+    version: String
 }
 
 #[derive(Serialize)]
@@ -57,19 +58,20 @@ pub fn generate_token(
     context.insert("description", &description);
     context.insert("is_frozen", &is_frozen);
 
-    let token_template = tera.render("token_template.move", &context).unwrap();
-    let sources_folder = format!("{}/sources", base_folder);
-    let file_name = format!("{}/{}.move", sources_folder, slug);
+    let token_template: String = tera.render("token_template.move", &context).unwrap();
+    let sources_folder: String = format!("{}/sources", base_folder);
+    let file_name: String = format!("{}/{}.move", sources_folder, slug);
     fs::write(&file_name, token_template).expect("Failed to write Move contract file");
 }
 
 pub fn generate_move_toml(package_name: &str) {
-    let current_year = Utc::now().year_ce().1;
+    let current_year: u32 = Utc::now().year_ce().1;
 
     let move_toml = MoveToml {
         package: Package {
             name: package_name.to_string(),
             edition: format!("{}.beta", current_year),
+            version: "0.0.1".to_string()
         },
         dependencies: Dependency {
             sui: SuiDependency {
@@ -85,8 +87,8 @@ pub fn generate_move_toml(package_name: &str) {
         },
     };
 
-    let toml_content = toml::to_string(&move_toml).expect("Failed to serialize Move.toml");
+    let toml_content: String = toml::to_string(&move_toml).expect("Failed to serialize Move.toml");
 
-    let file_path = format!("{}/Move.toml", package_name);
+    let file_path: String = format!("{}/Move.toml", package_name);
     fs::write(&file_path, toml_content).expect("Failed to write Move.toml");
 }
