@@ -27,9 +27,10 @@ pub async fn verify_contract(dir: &Path) -> io::Result<()> {
     if !dir.is_dir() {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "Path is not a directory"));
     }
-
     let entries = fs::read_dir(dir)
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+
+
     for entry in entries {
         match entry {
             Ok(entry) => {
