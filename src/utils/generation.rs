@@ -1,9 +1,9 @@
+use chrono::{Datelike, Utc};
+use serde::Serialize;
+use std::collections::HashMap;
 use std::env;
 use std::fs;
-use std::collections::HashMap;
 use tera::{Context, Tera};
-use chrono::{Utc, Datelike};
-use serde::Serialize;
 
 use crate::utils::helpers::sanitize_name;
 use crate::variables::{SUB_FOLDER, SUI_PROJECT, SUI_PROJECT_SUB_DIR};
@@ -12,7 +12,7 @@ use crate::variables::{SUB_FOLDER, SUI_PROJECT, SUI_PROJECT_SUB_DIR};
 struct Package {
     name: String,
     edition: String,
-    version: String
+    version: String,
 }
 
 #[derive(Serialize)]
@@ -39,20 +39,20 @@ struct MoveToml {
 pub fn create_generate_token(
     decimals: u8,
     symbol: String,
-    name: String,
+    name: &str,
     description: String,
     is_frozen: bool,
     base_folder: &str,
-){
+) {
     //Filtering alphanumeric characters only
-    let slug = sanitize_name(name.clone());
+    let slug = sanitize_name(name.to_owned());
 
     //Generating token content
     let token_template: String = generate_token(decimals, symbol, name, description, is_frozen);
 
     //Create move contract file in base_folder/sources folder
     let sources_folder: String = format!("{}/{}", base_folder, SUB_FOLDER);
-    let file_name: String = format!("{}/{}.move", sources_folder, slug);
+    let file_name: String = format!("{}/{}.move", sources_folder, slug.to_lowercase());
     fs::write(&file_name, token_template).expect("Failed to write Move contract file");
 }
 
@@ -60,13 +60,12 @@ pub fn create_generate_token(
 pub fn generate_token(
     decimals: u8,
     symbol: String,
-    name: String,
+    name: &str,
     description: String,
-    is_frozen: bool
+    is_frozen: bool,
 ) -> String {
-
     //Filtering alphanumeric characters only
-    let slug = sanitize_name(name.clone());
+    let slug = sanitize_name(name.to_owned());
 
     let module_name = slug.clone();
     let token_type = slug.to_uppercase();
@@ -98,7 +97,7 @@ pub fn generate_move_toml(package_name: &str) {
         package: Package {
             name: package_name.to_string(),
             edition: format!("{}.beta", current_year),
-            version: "0.0.1".to_string()
+            version: "0.0.1".to_string(),
         },
         dependencies: Dependency {
             sui: SuiDependency {
