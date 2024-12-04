@@ -1,4 +1,3 @@
-pub const BASE_FOLDER: &str = "tokengen";
 pub const SUB_FOLDER: &str = "sources";
 
 pub const FROZEN_OPTIONS: [&str; 2] = ["Yes", "No"];

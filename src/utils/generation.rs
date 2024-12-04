@@ -39,20 +39,20 @@ struct MoveToml {
 pub fn create_generate_token(
     decimals: u8,
     symbol: String,
-    name: String,
+    name: &str,
     description: String,
     is_frozen: bool,
     base_folder: &str,
 ){
     //Filtering alphanumeric characters only
-    let slug = sanitize_name(name.clone());
+    let slug = sanitize_name(name.to_owned());
 
     //Generating token content
     let token_template: String = generate_token(decimals, symbol, name, description, is_frozen);
 
     //Create move contract file in base_folder/sources folder
     let sources_folder: String = format!("{}/{}", base_folder, SUB_FOLDER);
-    let file_name: String = format!("{}/{}.move", sources_folder, slug);
+    let file_name: String = format!("{}/{}.move", sources_folder, slug.to_lowercase());
     fs::write(&file_name, token_template).expect("Failed to write Move contract file");
 }
 
@@ -60,13 +60,13 @@ pub fn create_generate_token(
 pub fn generate_token(
     decimals: u8,
     symbol: String,
-    name: String,
+    name: &str,
     description: String,
     is_frozen: bool
 ) -> String {
 
     //Filtering alphanumeric characters only
-    let slug = sanitize_name(name.clone());
+    let slug = sanitize_name(name.to_owned());
 
     let module_name = slug.clone();
     let token_type = slug.to_uppercase();

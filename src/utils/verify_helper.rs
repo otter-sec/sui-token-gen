@@ -46,7 +46,7 @@ pub async fn verify_contract(dir: &Path) -> io::Result<()> {
                             let details: (u8, String, String, String, bool) = get_token_info(&current_content);
 
                             //Generating new token with these extracted details
-                            let expected_content = generate_token(details.0, details.1, details.2, details.3, details.4);
+                            let expected_content = generate_token(details.0, details.1, &details.2, details.3, details.4);
 
                             //Filtering newly created token content
                             let cleaned_expected_content = filter_token_content(&expected_content);
