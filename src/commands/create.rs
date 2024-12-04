@@ -1,9 +1,10 @@
+use std::io;
+
 use crate::utils::generation::{create_generate_token, generate_move_toml};
-use crate::utils::prompts::get_user_prompt;
 use crate::utils::helpers::create_base_folder;
+use crate::utils::prompts::get_user_prompt;
 
-
-pub async fn create_token() {
+pub async fn create_token() -> io::Result<()> {
     //Prompt helper
     let token_data: Result<(u8, String, String, String, bool), String> = get_user_prompt();
     println!("Creating contract...");
@@ -21,4 +22,5 @@ pub async fn create_token() {
     } else {
         eprintln!("Failed to create contract: {:?}", token_data.err());
     }
+    Ok(())
 }

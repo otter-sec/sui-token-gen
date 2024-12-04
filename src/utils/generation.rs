@@ -1,9 +1,9 @@
+use chrono::{Datelike, Utc};
+use serde::Serialize;
+use std::collections::HashMap;
 use std::env;
 use std::fs;
-use std::collections::HashMap;
 use tera::{Context, Tera};
-use chrono::{Utc, Datelike};
-use serde::Serialize;
 
 use crate::utils::helpers::sanitize_name;
 use crate::variables::{SUB_FOLDER, SUI_PROJECT, SUI_PROJECT_SUB_DIR};
@@ -12,7 +12,7 @@ use crate::variables::{SUB_FOLDER, SUI_PROJECT, SUI_PROJECT_SUB_DIR};
 struct Package {
     name: String,
     edition: String,
-    version: String
+    version: String,
 }
 
 #[derive(Serialize)]
@@ -43,7 +43,7 @@ pub fn create_generate_token(
     description: String,
     is_frozen: bool,
     base_folder: &str,
-){
+) {
     //Filtering alphanumeric characters only
     let slug = sanitize_name(name.to_owned());
 
@@ -62,9 +62,8 @@ pub fn generate_token(
     symbol: String,
     name: &str,
     description: String,
-    is_frozen: bool
+    is_frozen: bool,
 ) -> String {
-
     //Filtering alphanumeric characters only
     let slug = sanitize_name(name.to_owned());
 
@@ -98,7 +97,7 @@ pub fn generate_move_toml(package_name: &str) {
         package: Package {
             name: package_name.to_string(),
             edition: format!("{}.beta", current_year),
-            version: "0.0.1".to_string()
+            version: "0.0.1".to_string(),
         },
         dependencies: Dependency {
             sui: SuiDependency {

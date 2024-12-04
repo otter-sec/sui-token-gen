@@ -1,7 +1,7 @@
 use inquire::{required, Select, Text};
 use regex::Regex;
 
-use crate::variables::{FROZEN_OPTIONS, CANCEL_ERROR_MESSAGE};
+use crate::variables::{CANCEL_ERROR_MESSAGE, FROZEN_OPTIONS};
 
 pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
     // Regex for allowing only alphabets, numbers, and whitespace
