@@ -14,3 +14,5 @@ toml = "0.8.19"
 chrono = "0.4.38"
 regex = "1.11.1"
 clap = { version = "4.5.21", features = ["derive"] }
+reqwest = "0.12.9"
+git2 = "0.17"

@@ -3,6 +3,7 @@ use tokio;
 
 mod commands;
 mod utils;
+mod variables;
 
 #[derive(Parser, Debug)]
 #[command(

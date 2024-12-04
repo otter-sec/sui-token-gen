@@ -1,12 +1,23 @@
-use inquire::{required, CustomType, Select, Text};
+use inquire::{required, Select, Text};
+use regex::Regex;
+
+use crate::variables::{FROZEN_OPTIONS, CANCEL_ERROR_MESSAGE};
 
 pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
-    const FROZEN_OPTIONS: [&str; 2] = ["Yes", "No"];
-    const CANCEL_ERROR_MESSAGE: &str = "Operation was canceled by the user";
+    // Regex for allowing only alphabets, numbers, and whitespace
+    let valid_regex: Regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap();
 
-    // Prompt for decimals
+    //Regex for allowing only alphabets, numbers
+    let symbol_regex: Regex = Regex::new(r"^[a-zA-Z0-9]+$").unwrap();
+
+    /*
+        Prompt for decimals:
+        number type
+        greater than 0
+        only contains numbers
+    */
     let decimals: u8 = loop {
-        match CustomType::new("Decimals: ")
+        match inquire::CustomType::<u8>::new("Decimals: ")
             .with_help_message("e.g. 6")
             .with_formatter(&|i: u8| format!("{i}"))
             .with_error_message("Please type a valid number")
@@ -24,26 +35,67 @@ pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
         }
     };
 
-    // Prompt for symbol
+    /*
+        Prompt for symbol:
+        string type
+        less than or equal to 6 letters
+        only contains alphabets, numbers
+    */
     let symbol: String = Text::new("Symbol: ")
         .with_validator(required!("Symbol is required"))
+        .with_validator(&|input| {
+            if symbol_regex.is_match(input) {
+                if input.len() <= 5 {
+                    Ok(())
+                } else {
+                    Err("Symbol has to be less than 5 letters".into())
+                }
+            } else {
+                Err("Symbol can only contain alphabets, numbers, and whitespace".into())
+            }
+        })
         .prompt()
         .map_err(|e| e.to_string())?;
 
-    // Prompt for name
+    /*
+        Prompt for name:
+        string type
+        only contains alphabets, numbers and whitespace
+    */
     let name: String = Text::new("Name: ")
         .with_validator(required!("Name is required"))
         .with_help_message("e.g. MyToken")
+        .with_validator(&|input| {
+            if valid_regex.is_match(input) {
+                Ok(())
+            } else {
+                Err("Name can only contain alphabets, numbers, and whitespace".into())
+            }
+        })
         .prompt()
         .map_err(|e| e.to_string())?;
 
-    // Prompt for description - optional
+    /*
+        Prompt for description - optional:
+        string type
+        only contains alphabets, numbers and whitespace
+    */
     let description: String = Text::new("Description: ")
         .with_help_message("Optional")
+        .with_validator(&|input| {
+            if input.is_empty() || valid_regex.is_match(input) {
+                Ok(())
+            } else {
+                Err("Description can only contain alphabets, numbers, and whitespace".into())
+            }
+        })
         .prompt()
         .unwrap_or_default();
 
-    // Prompt for token type
+    /*
+        Prompt for token type:
+        Options Yes or No
+    */
     let frozen_metadata = Select::new("Frozen metadata?", &FROZEN_OPTIONS)
         .prompt()
         .map_err(|e| e.to_string())?;

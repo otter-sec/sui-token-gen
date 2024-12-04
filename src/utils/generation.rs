@@ -3,8 +3,10 @@ use std::fs;
 use std::collections::HashMap;
 use tera::{Context, Tera};
 use chrono::{Utc, Datelike};
-use crate::utils::helpers::sanitize_name;
 use serde::Serialize;
+
+use crate::utils::helpers::sanitize_name;
+use crate::variables::{SUB_FOLDER, SUI_PROJECT, SUI_PROJECT_SUB_DIR};
 
 #[derive(Serialize)]
 struct Package {
@@ -33,20 +35,46 @@ struct MoveToml {
     addresses: HashMap<String, String>,
 }
 
-pub fn generate_token(
+//Generating token content and creating .move contract file
+pub fn create_generate_token(
     decimals: u8,
     symbol: String,
     name: String,
     description: String,
     is_frozen: bool,
     base_folder: &str,
-) {
+){
+    //Filtering alphanumeric characters only
     let slug = sanitize_name(name.clone());
+
+    //Generating token content
+    let token_template: String = generate_token(decimals, symbol, name, description, is_frozen);
+
+    //Create move contract file in base_folder/sources folder
+    let sources_folder: String = format!("{}/{}", base_folder, SUB_FOLDER);
+    let file_name: String = format!("{}/{}.move", sources_folder, slug);
+    fs::write(&file_name, token_template).expect("Failed to write Move contract file");
+}
+
+//Creating token content with user inputs
+pub fn generate_token(
+    decimals: u8,
+    symbol: String,
+    name: String,
+    description: String,
+    is_frozen: bool
+) -> String {
+
+    //Filtering alphanumeric characters only
+    let slug = sanitize_name(name.clone());
+
     let module_name = slug.clone();
     let token_type = slug.to_uppercase();
 
+    //Getting current directory
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let templates_path = format!("{}/src/templates/**/*", current_dir.display());
+
     let tera = Tera::new(&templates_path).expect("Failed to initialize Tera");
 
     let mut context = Context::new();
@@ -59,11 +87,10 @@ pub fn generate_token(
     context.insert("is_frozen", &is_frozen);
 
     let token_template: String = tera.render("token_template.move", &context).unwrap();
-    let sources_folder: String = format!("{}/sources", base_folder);
-    let file_name: String = format!("{}/{}.move", sources_folder, slug);
-    fs::write(&file_name, token_template).expect("Failed to write Move contract file");
+    token_template
 }
 
+//Generating move.toml file with basic requirements
 pub fn generate_move_toml(package_name: &str) {
     let current_year: u32 = Utc::now().year_ce().1;
 
@@ -75,8 +102,8 @@ pub fn generate_move_toml(package_name: &str) {
         },
         dependencies: Dependency {
             sui: SuiDependency {
-                git: "https://github.com/MystenLabs/sui.git".to_string(),
-                subdir: "crates/sui-framework/packages/sui-framework".to_string(),
+                git: SUI_PROJECT.to_string(),
+                subdir: SUI_PROJECT_SUB_DIR.to_string(),
                 rev: "framework/testnet".to_string(),
             },
         },
