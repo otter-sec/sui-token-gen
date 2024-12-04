@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use tokio;
 
 mod commands;
 mod utils;
@@ -9,7 +8,7 @@ mod variables;
 #[command(
     author = "Osec", 
     version = "1.0.0", 
-    about = "Create and verify Sui tokens contracts",
+    about = "Create and verify Sui Coin contracts",
     long_about = "Sui Token Generator is a CLI tool that helps you create and verify tokens contracts."
 )]
 struct Cli {

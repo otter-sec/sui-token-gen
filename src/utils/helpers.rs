@@ -77,7 +77,7 @@ pub fn get_token_info(content: &str) -> (u8, String, String, String, bool) {
         if token.contains("witness") {
             let mut args = Vec::new();
             let mut char = String::new();
-            while let Some(arg) = tokens.next() {
+            for arg in tokens.by_ref() {
                 if arg.ends_with(");") || arg.ends_with(")") || arg.ends_with("option::none(),") {
                     let trimmed = char.trim_end_matches(&[')', ';'][..]).to_string();
                     args.push(trimmed);
