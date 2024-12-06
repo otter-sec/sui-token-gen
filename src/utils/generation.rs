@@ -1,12 +1,16 @@
 use chrono::{Datelike, Utc};
 use serde::Serialize;
-use std::collections::HashMap;
-use std::env;
-use std::fs;
+use std::{
+    collections::HashMap,
+    env,
+    fs
+};
 use tera::{Context, Tera};
-
-use crate::utils::helpers::sanitize_name;
-use crate::variables::{SUB_FOLDER, SUI_PROJECT, SUI_PROJECT_SUB_DIR};
+use crate::{
+    utils::helpers::sanitize_name,
+    variables::{SUB_FOLDER, SUI_PROJECT, SUI_PROJECT_SUB_DIR},
+    errors::TokenGenErrors
+};
 
 #[derive(Serialize)]
 struct Package {
@@ -53,7 +57,10 @@ pub fn create_generate_token(
     //Create move contract file in base_folder/sources folder
     let sources_folder: String = format!("{}/{}", base_folder, SUB_FOLDER);
     let file_name: String = format!("{}/{}.move", sources_folder, slug.to_lowercase());
-    fs::write(&file_name, token_template).expect("Failed to write Move contract file");
+
+    if let Err(e) = fs::write(&file_name, token_template) {
+        TokenGenErrors::FileIoError(e);
+    }
 }
 
 //Creating token content with user inputs
@@ -71,10 +78,10 @@ pub fn generate_token(
     let token_type = slug.to_uppercase();
 
     //Getting current directory
-    let current_dir = env::current_dir().expect("Failed to get current directory");
+    let current_dir = env::current_dir().unwrap();
     let templates_path = format!("{}/src/templates/**/*", current_dir.display());
 
-    let tera = Tera::new(&templates_path).expect("Failed to initialize Tera");
+    let tera = Tera::new(&templates_path).unwrap();
 
     let mut context = Context::new();
     context.insert("module_name", &module_name);
@@ -113,8 +120,10 @@ pub fn generate_move_toml(package_name: &str) {
         },
     };
 
-    let toml_content: String = toml::to_string(&move_toml).expect("Failed to serialize Move.toml");
+    let toml_content: String = toml::to_string(&move_toml).unwrap();
 
     let file_path: String = format!("{}/Move.toml", package_name);
-    fs::write(&file_path, toml_content).expect("Failed to write Move.toml");
+    if let Err(e) = fs::write(&file_path, toml_content) {
+        TokenGenErrors::FileIoError(e);
+    }
 }

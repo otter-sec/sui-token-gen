@@ -1,7 +1,10 @@
 use regex::Regex;
 use std::fs;
 
-use crate::variables::SUB_FOLDER;
+use crate::{
+    variables::SUB_FOLDER,
+    errors::TokenGenErrors
+};
 
 //URL is github url or not
 pub fn is_valid_github_url(url: &str) -> bool {
@@ -20,7 +23,9 @@ pub fn sanitize_name(name: String) -> String {
 // Creating contract base folder and sources folder
 pub fn create_base_folder(base_folder: &str) {
     let sources_folder: String = format!("{}/{}", base_folder, SUB_FOLDER);
-    fs::create_dir_all(&sources_folder).expect("Failed to create folder structure");
+    if let Err(e) = fs::create_dir_all(&sources_folder) {
+        TokenGenErrors::FileIoError(e);
+    }
 }
 
 //Removing: comments, empty lines, whitespaces
@@ -93,4 +98,8 @@ pub fn get_token_info(content: &str) -> (u8, String, String, String, bool) {
     }
 
     (decimals, symbol, name, description, is_frozen)
+}
+
+pub fn is_running_test() -> bool {
+    std::env::var("RUNNING_TEST").map_or(false, |val| val == "true")
 }

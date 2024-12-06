@@ -1,5 +1,6 @@
 use inquire::{required, Select, Text};
 use regex::Regex;
+use anyhow::Result;
 
 use crate::variables::{CANCEL_ERROR_MESSAGE, FROZEN_OPTIONS};
 
@@ -27,7 +28,7 @@ pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
             Ok(_) => eprintln!("Decimals must be greater than 0. Please try again."),
             Err(e) => {
                 if e.to_string() == CANCEL_ERROR_MESSAGE {
-                    panic!("{CANCEL_ERROR_MESSAGE}");
+                    return Err(CANCEL_ERROR_MESSAGE.to_string());
                 } else {
                     eprintln!("Error: {e}. Please try again.");
                 }

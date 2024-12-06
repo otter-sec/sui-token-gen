@@ -16,3 +16,5 @@ regex = "1.11.1"
 clap = { version = "4.5.21", features = ["derive"] }
 reqwest = "0.12.9"
 git2 = "0.17"
+anyhow = "1.0.94"
+thiserror = "2.0.4"
