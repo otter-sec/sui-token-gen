@@ -1,10 +1,9 @@
 use regex::Regex;
 use std::fs;
 
-use crate::{
-    variables::SUB_FOLDER,
-    errors::TokenGenErrors
-};
+use crate::{errors::TokenGenErrors, variables::SUB_FOLDER, Result};
+
+use super::prompts::TokenInfo;
 
 //URL is github url or not
 pub fn is_valid_github_url(url: &str) -> bool {
@@ -21,15 +20,16 @@ pub fn sanitize_name(name: String) -> String {
 }
 
 // Creating contract base folder and sources folder
-pub fn create_base_folder(base_folder: &str) {
+pub fn create_base_folder(base_folder: &str) -> Result<()> {
     let sources_folder: String = format!("{}/{}", base_folder, SUB_FOLDER);
     if let Err(e) = fs::create_dir_all(&sources_folder) {
-        TokenGenErrors::FileIoError(e);
+        return Err(TokenGenErrors::FileIoError(e));
     }
+    Ok(())
 }
 
 //Removing: comments, empty lines, whitespaces
-pub fn filter_token_content(content: &str) -> String {
+pub fn filter_token_content(content: &str) -> Result<String> {
     let re = Regex::new(r"///.*|//.*").unwrap();
     let cleaned_content: std::borrow::Cow<'_, str> = re.replace_all(content, "");
     let non_empty_lines: Vec<&str> = cleaned_content
@@ -37,17 +37,13 @@ pub fn filter_token_content(content: &str) -> String {
         .filter(|line| !line.trim().is_empty())
         .map(|line| line.trim())
         .collect();
-    non_empty_lines.join("")
+    Ok(non_empty_lines.join(""))
 }
 
 //Extracting decimals, symbol, name, description, is_frozen from contract (String)
-pub fn get_token_info(content: &str) -> (u8, String, String, String, bool) {
+pub fn get_token_info(content: &str) -> Result<TokenInfo> {
     //Default values
-    let mut decimals = 0;
-    let mut symbol = String::new();
-    let mut name = String::new();
-    let mut description = String::new();
-    let mut is_frozen = false;
+    let mut token_info = TokenInfo::default();
     let mut tokens = content.split_whitespace().peekable();
 
     while let Some(token) = tokens.next() {
@@ -78,26 +74,26 @@ pub fn get_token_info(content: &str) -> (u8, String, String, String, bool) {
                 }
             }
             if args.len() >= 4 {
-                decimals = args[0].trim().parse().unwrap_or(0);
-                symbol = args[1]
+                token_info.decimals = args[0].trim().parse().unwrap_or(0);
+                token_info.symbol = args[1]
                     .trim_start_matches("b\"")
                     .trim_end_matches("\"")
                     .to_string();
-                name = args[2]
+                token_info.name = args[2]
                     .trim_start_matches("b\"")
                     .trim_end_matches("\"")
                     .to_string();
-                description = args[3]
+                token_info.description = args[3]
                     .trim_start_matches("b\"")
                     .trim_end_matches("\"")
                     .to_string();
             }
         } else if token.contains("transfer::public_freeze_object") {
-            is_frozen = true;
+            token_info.is_frozen = true;
         }
     }
 
-    (decimals, symbol, name, description, is_frozen)
+    Ok(token_info)
 }
 
 pub fn is_running_test() -> bool {

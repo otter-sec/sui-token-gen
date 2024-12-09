@@ -1,22 +1,18 @@
-use std::{
-    env,
-    fs,
-    path::Path
-};
 use git2::Repository;
+use std::{env, fs, path::Path};
 use url::Url;
-use anyhow::Result;
 
 use crate::{
+    errors::TokenGenErrors,
     utils::{
-        helpers::{is_valid_github_url, is_running_test},
-        verify_helper::verify_contract
+        helpers::{is_running_test, is_valid_github_url},
+        verify_helper::verify_contract,
     },
     variables::{SUB_FOLDER, SUI_GITREPO_DIR},
-    errors::TokenGenErrors
+    Result,
 };
 
-pub async fn verify_token_from_path(path: &str) -> Result<(), TokenGenErrors> {
+pub async fn verify_token_from_path(path: &str) -> Result<()> {
     let path = Path::new(path);
 
     if !path.exists() {
@@ -43,7 +39,7 @@ pub async fn verify_token_from_path(path: &str) -> Result<(), TokenGenErrors> {
     Ok(())
 }
 
-pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
+pub async fn verify_token_using_url(url: &str) -> Result<()> {
     // Parse the URL to check if it is valid
     Url::parse(url).map_err(|_| {
         TokenGenErrors::InvalidUrl("The provided URL is not a valid URL.".to_string())
@@ -74,9 +70,11 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
                 // Call verify function
                 verify_contract(templates_path_ref).await?;
             } else {
-                return Err(TokenGenErrors::InvalidPath("Cloned repo not found".to_string()));
+                return Err(TokenGenErrors::InvalidPath(
+                    "Cloned repo not found".to_string(),
+                ));
             }
-            check_cloned_contract(Path::new(SUI_GITREPO_DIR.trim_start_matches("./")));
+            check_cloned_contract(Path::new(SUI_GITREPO_DIR.trim_start_matches("./")))?;
         }
         Err(e) => {
             return Err(TokenGenErrors::GitError(e));
@@ -85,10 +83,11 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
     Ok(())
 }
 
-fn check_cloned_contract(path: &Path) {
-    if path.exists() && path.is_dir() && !is_running_test(){
+fn check_cloned_contract(path: &Path) -> Result<()> {
+    if path.exists() && path.is_dir() && !is_running_test() {
         if let Err(e) = fs::remove_dir_all(path) {
-            TokenGenErrors::FileIoError(e);
+            return Err(TokenGenErrors::FileIoError(e));
         }
     }
+    Ok(())
 }

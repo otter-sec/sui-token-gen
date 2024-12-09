@@ -1,16 +1,13 @@
-use chrono::{Datelike, Utc};
-use serde::Serialize;
-use std::{
-    collections::HashMap,
-    env,
-    fs
-};
-use tera::{Context, Tera};
 use crate::{
+    errors::TokenGenErrors,
     utils::helpers::sanitize_name,
     variables::{SUB_FOLDER, SUI_PROJECT, SUI_PROJECT_SUB_DIR},
-    errors::TokenGenErrors
+    Result,
 };
+use chrono::{Datelike, Utc};
+use serde::Serialize;
+use std::{collections::HashMap, env, fs};
+use tera::{Context, Tera};
 
 #[derive(Serialize)]
 struct Package {
@@ -47,20 +44,21 @@ pub fn create_generate_token(
     description: String,
     is_frozen: bool,
     base_folder: &str,
-) {
+) -> Result<()> {
     //Filtering alphanumeric characters only
     let slug = sanitize_name(name.to_owned());
 
     //Generating token content
-    let token_template: String = generate_token(decimals, symbol, name, description, is_frozen);
+    let token_template: String = generate_token(decimals, symbol, name, description, is_frozen)?;
 
     //Create move contract file in base_folder/sources folder
     let sources_folder: String = format!("{}/{}", base_folder, SUB_FOLDER);
     let file_name: String = format!("{}/{}.move", sources_folder, slug.to_lowercase());
 
     if let Err(e) = fs::write(&file_name, token_template) {
-        TokenGenErrors::FileIoError(e);
+        return Err(TokenGenErrors::FileIoError(e));
     }
+    Ok(())
 }
 
 //Creating token content with user inputs
@@ -70,7 +68,7 @@ pub fn generate_token(
     name: &str,
     description: String,
     is_frozen: bool,
-) -> String {
+) -> Result<String> {
     //Filtering alphanumeric characters only
     let slug = sanitize_name(name.to_owned());
 
@@ -92,12 +90,15 @@ pub fn generate_token(
     context.insert("description", &description);
     context.insert("is_frozen", &is_frozen);
 
-    let token_template: String = tera.render("token_template.move", &context).unwrap();
-    token_template
+    let token_template = tera.render("token_template.move", &context);
+    match token_template {
+        Ok(template) => Ok(template),
+        Err(e) => Err(TokenGenErrors::TeraError(e)),
+    }
 }
 
 //Generating move.toml file with basic requirements
-pub fn generate_move_toml(package_name: &str) {
+pub fn generate_move_toml(package_name: &str) -> Result<()> {
     let current_year: u32 = Utc::now().year_ce().1;
 
     let move_toml = MoveToml {
@@ -124,6 +125,7 @@ pub fn generate_move_toml(package_name: &str) {
 
     let file_path: String = format!("{}/Move.toml", package_name);
     if let Err(e) = fs::write(&file_path, toml_content) {
-        TokenGenErrors::FileIoError(e);
+        return Err(TokenGenErrors::FileIoError(e));
     }
+    Ok(())
 }
