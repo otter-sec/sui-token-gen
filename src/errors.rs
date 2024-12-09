@@ -1,5 +1,5 @@
-use thiserror::Error;
 use std::io;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum TokenGenErrors {
@@ -17,5 +17,10 @@ pub enum TokenGenErrors {
 
     #[error("File I/O error: {0}")]
     FileIoError(#[from] io::Error),
-  
+
+    #[error("Tera error: {0}")]
+    TeraError(#[from] tera::Error),
+
+    #[error(transparent)]
+    PromptError(#[from] inquire::error::InquireError),
 }

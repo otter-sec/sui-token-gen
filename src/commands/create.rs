@@ -1,13 +1,13 @@
 use std::io;
-use anyhow::Result;
 
 use crate::{
+    errors::TokenGenErrors,
     utils::{
         generation::{create_generate_token, generate_move_toml},
         helpers::{create_base_folder, sanitize_name},
-        prompts::get_user_prompt
+        prompts::get_user_prompt,
     },
-    errors::TokenGenErrors
+    Result,
 };
 
 impl From<TokenGenErrors> for io::Error {
@@ -16,26 +16,35 @@ impl From<TokenGenErrors> for io::Error {
     }
 }
 
-pub async fn create_token() -> io::Result<()> {
+pub async fn create_token() -> Result<()> {
     // Prompt helper
-    let token_data: Result<(u8, String, String, String, bool), String> = get_user_prompt();
+    let token_data = get_user_prompt();
     println!("Creating contract...");
 
-    if let Ok((decimals, symbol, name, description, is_frozen)) = token_data {
-        let base_folder = sanitize_name(name.to_owned());
+    match token_data {
+        Ok(token_data) => {
+            let base_folder = sanitize_name(token_data.name.to_owned());
 
-        // Creating base folder
-        create_base_folder(&base_folder);
+            // Creating base folder
+            create_base_folder(&base_folder)?;
 
-        // Generating toml file
-        generate_move_toml(&base_folder);
+            // Generating toml file
+            generate_move_toml(&base_folder)?;
 
-        // Generating token with user prompt
-        create_generate_token(decimals, symbol, &name, description, is_frozen, &base_folder);
-        println!("Contract has been generated!");
-    } else {
-        let error_message = token_data.err().unwrap_or_default();
-        return Err(TokenGenErrors::FailedToCreateTokenContract(error_message).into());
+            // Generating token with user prompt
+            create_generate_token(
+                token_data.decimals,
+                token_data.symbol,
+                &token_data.name,
+                token_data.description,
+                token_data.is_frozen,
+                &base_folder,
+            )?;
+            println!("Contract has been generated!");
+        }
+        Err(e) => {
+            return Err(e);
+        }
     }
     Ok(())
 }

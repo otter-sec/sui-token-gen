@@ -1,10 +1,35 @@
 use inquire::{required, Select, Text};
 use regex::Regex;
-use anyhow::Result;
 
-use crate::variables::{CANCEL_ERROR_MESSAGE, FROZEN_OPTIONS};
+use crate::{
+    errors::TokenGenErrors,
+    variables::{CANCEL_ERROR_MESSAGE, FROZEN_OPTIONS},
+    Result,
+};
 
-pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
+// Define struct for user prompt
+pub struct TokenInfo {
+    pub decimals: u8,
+    pub symbol: String,
+    pub name: String,
+    pub description: String,
+    pub is_frozen: bool,
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for TokenInfo {
+    fn default() -> Self {
+        Self {
+            decimals: 0,
+            symbol: String::new(),
+            name: String::new(),
+            description: String::new(),
+            is_frozen: false,
+        }
+    }
+}
+
+pub fn get_user_prompt() -> Result<TokenInfo> {
     // Regex for allowing only alphabets, numbers, and whitespace
     let valid_regex: Regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap();
 
@@ -28,7 +53,7 @@ pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
             Ok(_) => eprintln!("Decimals must be greater than 0. Please try again."),
             Err(e) => {
                 if e.to_string() == CANCEL_ERROR_MESSAGE {
-                    return Err(CANCEL_ERROR_MESSAGE.to_string());
+                    return Err(TokenGenErrors::PromptError(e));
                 } else {
                     eprintln!("Error: {e}. Please try again.");
                 }
@@ -56,7 +81,7 @@ pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
             }
         })
         .prompt()
-        .map_err(|e| e.to_string())?;
+        .map_err(TokenGenErrors::PromptError)?;
 
     /*
         Prompt for name:
@@ -74,7 +99,7 @@ pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
             }
         })
         .prompt()
-        .map_err(|e| e.to_string())?;
+        .map_err(TokenGenErrors::PromptError)?;
 
     /*
         Prompt for description - optional:
@@ -99,8 +124,14 @@ pub fn get_user_prompt() -> Result<(u8, String, String, String, bool), String> {
     */
     let frozen_metadata = Select::new("Frozen metadata?", &FROZEN_OPTIONS)
         .prompt()
-        .map_err(|e| e.to_string())?;
+        .map_err(TokenGenErrors::PromptError)?;
     let is_frozen: bool = frozen_metadata.value == "Yes";
 
-    Ok((decimals, symbol, name, description, is_frozen))
+    Ok(TokenInfo {
+        decimals,
+        symbol,
+        name,
+        description,
+        is_frozen,
+    })
 }
