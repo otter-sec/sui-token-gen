@@ -3,14 +3,11 @@ use std::{
     io,
     path::Path,
 };
+use tarpc::context;
 
 use crate::{
-    errors::TokenGenErrors,
-    utils::{
-        generation::generate_token,
-        helpers::{filter_token_content, get_token_info},
-    },
-    Result,
+    errors::TokenGenErrors, rpc_client::TokenGenClient,
+    Result
 };
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
@@ -21,7 +18,7 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
         ));
     }
 
-    let content = fs::read_to_string(file_path)?;
+    let content: String = fs::read_to_string(file_path)?;
     Ok(content)
 }
 
@@ -33,11 +30,9 @@ pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
 /*
    Check dir is directory or not
    Take all .move files in that folder
-   Read the file content and extract token details
-   Genarate new token with that data
-   Compare that newly created contract with user given contract
+   Call verify_content function from RPC
 */
-pub async fn verify_contract(dir: &Path) -> Result<()> {
+pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
     if !dir.is_dir() {
         return Err(TokenGenErrors::InvalidPath(
             "Path is not a directory".to_string(),
@@ -53,32 +48,15 @@ pub async fn verify_contract(dir: &Path) -> Result<()> {
                     //Reading file
                     match read_file(&path) {
                         Ok(current_content) => {
-                            //Filtering file content
-                            let cleaned_current_content = filter_token_content(&current_content)?;
+                            let response = client.verify_content(context::current(), current_content).await;
 
-                            //Extracting token details from that file
-                            let details = get_token_info(&current_content)?;
-
-                            //Generating new token with these extracted details
-                            let expected_content = generate_token(
-                                details.decimals,
-                                details.symbol,
-                                &details.name,
-                                details.description,
-                                details.is_frozen,
-                            )?;
-
-                            //Filtering newly created token content
-                            let cleaned_expected_content = filter_token_content(&expected_content)?;
-
-                            // println!("{:?}", cleaned_expected_content);
-                            // println!("{:?}", cleaned_current_content);
-
-                            //Comparing both expected contract and user contract
-                            if cleaned_current_content == cleaned_expected_content {
-                                println!("The contents are the same.");
-                            } else {
-                                println!("The contents are different.");
+                            match response {
+                                Ok(result) => {
+                                    println!("Verification success: {}", result);
+                                }
+                                Err(err) => {
+                                    eprintln!("Verification failed: {:?}", err);
+                                }
                             }
                         }
                         Err(e) => {

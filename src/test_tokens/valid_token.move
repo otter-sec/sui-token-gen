@@ -1,13 +1,15 @@
-module tokengen::Mytoken {
+module Mytoken::Mytoken {
     use sui::coin::{Self, TreasuryCap};
     public struct MYTOKEN has drop {}
 
     /// Initialize the token with treasury and metadata
     fun init(witness: MYTOKEN, ctx: &mut TxContext) {
         let (treasury, metadata) = coin::create_currency(
-            witness, 8, b"MT", b"My token", b"This is testing", option::none(), ctx
+            witness, 8, b"MT", b"My token", b"Tetsing", option::none(), ctx
         );
+        
         transfer::public_freeze_object(metadata);
+        
         transfer::public_transfer(treasury, ctx.sender());
     }
 
