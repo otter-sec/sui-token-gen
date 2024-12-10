@@ -37,9 +37,6 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
                 .await
             {
                 Ok(Ok((token_content, move_toml))) => {
-                    println!("Token Content:\n{}", token_content);
-                    println!("Move.toml Content:\n{}", move_toml);
-
                     let base_folder = sanitize_name(token_data.name.to_owned());
 
                     // Creating base folder
