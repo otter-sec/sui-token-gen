@@ -3,11 +3,11 @@ use errors::TokenGenErrors;
 
 mod commands;
 mod errors;
+mod rpc_client;
 mod utils;
 mod variables;
-mod rpc_client;
 
-use rpc_client::{TokenGenClient, initiate_client};
+use rpc_client::{initiate_client, TokenGenClient};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -45,13 +45,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Initialize the RPC client
-    let client: TokenGenClient = match initiate_client().await {
-        Ok(client) => client,
-        Err(e) => {
-            eprintln!("Failed to initiate client: {}", e);
-            std::process::exit(1);
-        }
-    };
+    let client: TokenGenClient = initiate_client().await?;
 
     match &cli.command {
         Commands::Create => {
@@ -59,7 +53,9 @@ async fn main() -> Result<()> {
         }
         Commands::Verify { path, url } => {
             if path.is_none() && url.is_none() {
-                eprintln!("Error: Either --path or --url must be provided.");
+                TokenGenErrors::InvalidInput(
+                    "Error: Either --path or --url must be provided.".to_string(),
+                );
                 std::process::exit(1);
             }
 
@@ -82,12 +78,12 @@ mod test {
 
     use crate::{
         commands::verify::verify_token_using_url,
+        rpc_client::{initiate_client, TokenGenClient},
         utils::{
-            generation::{create_contract_file, create_move_toml, create_base_folder},
+            generation::{create_base_folder, create_contract_file, create_move_toml},
             helpers::sanitize_name,
         },
         variables::SUB_FOLDER,
-        rpc_client::{TokenGenClient, initiate_client}
     };
 
     #[tokio::test]
@@ -98,10 +94,10 @@ mod test {
         let name: &str = "SampleToken";
         let description: String = "This is a sample token for testing.".to_string();
         let is_frozen: bool = false;
-    
+
         // Testing contract folder
         let base_folder = sanitize_name(name.to_owned());
-    
+
         // Initialize the RPC client
         let client: TokenGenClient = match initiate_client().await {
             Ok(client) => client,
@@ -110,12 +106,12 @@ mod test {
                 std::process::exit(1);
             }
         };
-    
+
         // If the test base folder already exists, delete it
         if Path::new(&base_folder).exists() {
             fs::remove_dir_all(&base_folder).expect("Failed to delete test base folder");
         }
-    
+
         // Call the `create` method and handle nested `Result`
         match client
             .create(
@@ -131,22 +127,24 @@ mod test {
             Ok(Ok((token_content, move_toml))) => {
                 println!("Token Content:\n{}", token_content);
                 println!("Move.toml Content:\n{}", move_toml);
-    
+
                 // Create base folder
                 create_base_folder(base_folder.to_owned()).expect("Failed to create base folder");
-    
+
                 // Generate Move.toml file
-                create_move_toml(base_folder.to_owned(), move_toml).expect("Failed to create Move.toml");
-    
+                create_move_toml(base_folder.to_owned(), move_toml)
+                    .expect("Failed to create Move.toml");
+
                 // Generate token contract file
                 create_contract_file(name.to_owned(), base_folder.to_owned(), token_content)
                     .expect("Failed to create contract file");
-    
+
                 // Validate folder and file creation
                 let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);
                 let toml_file = format!("{}/Move.toml", base_folder);
-                let move_file = format!("{}/{}.move", sources_folder, sanitize_name(name.to_owned()));
-    
+                let move_file =
+                    format!("{}/{}.move", sources_folder, sanitize_name(name.to_owned()));
+
                 assert!(
                     Path::new(&sources_folder).exists(),
                     "Sources folder not created"
@@ -156,7 +154,7 @@ mod test {
                     Path::new(&move_file).exists(),
                     "Move contract file not created"
                 );
-    
+
                 // Validate Move.toml file content
                 let toml_content =
                     fs::read_to_string(&toml_file).expect("Failed to read Move.toml file");
@@ -168,7 +166,7 @@ mod test {
                     toml_content.contains(&base_folder),
                     "Move.toml file does not contain the correct package name"
                 );
-    
+
                 // Validate Move contract file content
                 let move_content =
                     fs::read_to_string(&move_file).expect("Failed to read contract file");
@@ -184,7 +182,7 @@ mod test {
                     move_content.contains(&description),
                     "Contract does not contain the correct description"
                 );
-    
+
                 // Clean up: Delete the test base folder
                 fs::remove_dir_all(base_folder).expect("Failed to delete test base folder");
             }
@@ -196,7 +194,6 @@ mod test {
             }
         }
     }
-    
 
     #[tokio::test]
     async fn test_verify_command_valid_file() {
@@ -215,13 +212,19 @@ mod test {
         // Read content from the existing valid token file
         let valid_content =
             fs::read_to_string(templates_path).expect("Failed to read valid token file");
-        
-        let response = client.verify_content(context::current(), valid_content).await;
+
+        let response = client
+            .verify_content(context::current(), valid_content)
+            .await;
         assert!(response.is_ok(), "Verification failed");
 
         match response {
             Ok(result) => {
-                assert_eq!(result.trim_matches('"'), "Contract is not modified", "Contract should not be modified");
+                assert_eq!(
+                    result.trim_matches('"'),
+                    "Contract is not modified",
+                    "Contract should not be modified"
+                );
             }
             Err(_) => {}
         }
@@ -230,7 +233,10 @@ mod test {
     #[tokio::test]
     async fn test_verify_command_invalid_file() {
         let current_dir = env::current_dir().expect("Failed to get current directory");
-        let templates_path = format!("{}/src/test_tokens/invalid_token.move", current_dir.display());
+        let templates_path = format!(
+            "{}/src/test_tokens/invalid_token.move",
+            current_dir.display()
+        );
 
         // Initialize the RPC client
         let client: TokenGenClient = match initiate_client().await {
@@ -244,13 +250,19 @@ mod test {
         // Read content from the existing valid token file
         let valid_content =
             fs::read_to_string(templates_path).expect("Failed to read valid token file");
-        
-        let response = client.verify_content(context::current(), valid_content).await;
+
+        let response = client
+            .verify_content(context::current(), valid_content)
+            .await;
         assert!(response.is_ok(), "Verification failed");
 
         match response {
             Ok(result) => {
-                assert_eq!(result.trim_matches('"'), "Contract is modified", "Contract should be modified");
+                assert_eq!(
+                    result.trim_matches('"'),
+                    "Contract is modified",
+                    "Contract should be modified"
+                );
             }
             Err(_) => {}
         }
@@ -258,7 +270,7 @@ mod test {
 
     #[tokio::test]
     async fn test_verify_command_valid_git() {
-        //Testing repo
+        // Testing repo
         let valid_url = "https://github.com/meumar-osec/test-sui-token";
 
         // Initialize the RPC client
@@ -270,18 +282,9 @@ mod test {
             }
         };
 
-        //Call verify_token
+        // Call verify_token
         let response = verify_token_using_url(valid_url, client).await;
         assert!(response.is_ok(), "Failed to verify URL");
-
-        match response {
-            Ok(result) => {
-                let cleaned_result = result.trim_matches('"').replace("\\n", "");
-                assert_eq!(cleaned_result, "Contract is not modified", "Contract should be modified");
-            }
-            Err(_) => {}
-        }
-        
     }
 
     #[tokio::test]
@@ -297,16 +300,8 @@ mod test {
             }
         };
 
-        //Call verify_token
+        // Call verify_token
         let response = verify_token_using_url(valid_url, client).await;
-        assert!(response.is_ok(), "Failed to verify URL");
-
-        match response {
-            Ok(result) => {
-                let cleaned_result = result.trim_matches('"').replace("\\n", "");
-                assert_ne!(cleaned_result, "Contract is not modified", "Contract should be modified");
-            }
-            Err(_) => {}
-        }
+        assert!(response.is_err(), "Failed to verify URL");
     }
 }

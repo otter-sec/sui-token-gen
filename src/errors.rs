@@ -6,6 +6,9 @@ pub enum TokenGenErrors {
     #[error("Failed to create token contract: {0}")]
     FailedToCreateTokenContract(String),
 
+    #[error("{0}")]
+    InvalidInput(String),
+
     #[error("Invalid path: {0}")]
     InvalidPath(String),
 
@@ -23,4 +26,7 @@ pub enum TokenGenErrors {
 
     #[error(transparent)]
     PromptError(#[from] inquire::error::InquireError),
+
+    #[error(transparent)]
+    RpcError(#[from] tarpc::client::RpcError),
 }

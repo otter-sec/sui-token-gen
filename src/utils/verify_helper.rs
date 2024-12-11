@@ -5,10 +5,7 @@ use std::{
 };
 use tarpc::context;
 
-use crate::{
-    errors::TokenGenErrors, rpc_client::TokenGenClient,
-    Result
-};
+use crate::{errors::TokenGenErrors, rpc_client::TokenGenClient, Result};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
     if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {
@@ -38,31 +35,27 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
             "Path is not a directory".to_string(),
         ));
     }
+    let mut current_content = String::new();
+
     let entries = read_dir(dir).unwrap();
 
+    // Finding .move file in the dir
     for entry in entries {
         match entry {
             Ok(entry) => {
                 let path = entry.path();
+                // Check for .move file
                 if path.is_file() && path.extension().map(|e| e == "move").unwrap_or(false) {
-                    //Reading file
+                    // Reading the .move file content
                     match read_file(&path) {
-                        Ok(current_content) => {
-                            let response = client.verify_content(context::current(), current_content).await;
-
-                            match response {
-                                Ok(result) => {
-                                    println!("Verification success: {}", result);
-                                }
-                                Err(err) => {
-                                    eprintln!("Verification failed: {:?}", err);
-                                }
-                            }
+                        Ok(content) => {
+                            current_content.push_str(&content);
                         }
                         Err(e) => {
                             return Err(TokenGenErrors::FileIoError(e));
                         }
                     }
+                    break; // Exit loop once a .move file is found
                 }
             }
             Err(e) => {
@@ -71,5 +64,23 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
             }
         }
     }
+
+    // If .move file not found
+    if current_content.is_empty() {
+        return Err(TokenGenErrors::InvalidPath(
+            "No .move file found in the directory.".to_string(),
+        ));
+    }
+
+    // Call verify_content for the .move file
+    let response = client
+        .verify_content(context::current(), current_content)
+        .await;
+
+    if let Err(rpc_err) = response {
+        // Handle the RpcError
+        return Err(TokenGenErrors::RpcError(rpc_err));
+    }
+
     Ok(())
 }

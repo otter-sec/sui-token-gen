@@ -1,11 +1,9 @@
-use tarpc::context;
 use std::path::Path;
+use tarpc::context;
 
 use crate::{
-    errors::TokenGenErrors, 
-    rpc_client::TokenGenClient,
-    utils::verify_helper::verify_contract,
-    variables::SUB_FOLDER, Result
+    errors::TokenGenErrors, rpc_client::TokenGenClient, utils::verify_helper::verify_contract,
+    variables::SUB_FOLDER, Result,
 };
 
 pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Result<()> {
@@ -29,24 +27,20 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
         }
     } else {
         return Err(TokenGenErrors::InvalidPath(
-            "The path is contract directory".to_string(),
+            "The path is not a directory.".to_string(),
         ));
     }
     Ok(())
 }
 
-pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<String> {
+pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<()> {
     let response = client.verify_url(context::current(), url.to_string()).await;
-    let mut verify_result = String::new();
 
-    match response {
-        Ok(result) => {
-            verify_result.push_str(&result);
-            println!("Verification success: {}", result);
-        }
-        Err(err) => {
-            eprintln!("Verification failed: {:?}", err);
-        }
+    // Handle RPC error
+    if let Err(rpc_err) = response {
+        // Handle the RpcError
+        return Err(TokenGenErrors::RpcError(rpc_err));
     }
-    Ok(verify_result)
+
+    Ok(())
 }

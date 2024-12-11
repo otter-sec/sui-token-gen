@@ -1,9 +1,6 @@
-use std::{
-    net::SocketAddr,
-    io::Error
-};
-use tarpc::{client, tokio_serde::formats::Json};
 use anyhow::Result;
+use std::{io::Error, net::SocketAddr};
+use tarpc::{client, tokio_serde::formats::Json};
 
 #[tarpc::service]
 pub trait TokenGen {
@@ -19,22 +16,21 @@ pub trait TokenGen {
     async fn verify_content(content: String) -> String;
 }
 
-
-//Initializing RPC client
+// Initializing RPC client
 pub async fn initiate_client() -> Result<TokenGenClient, Error> {
-    //RPC server address
+    // RPC server address
     const ADDRESS: &str = "[::1]:5000";
 
     // Parse address
-    let server_addr: SocketAddr = ADDRESS
-        .parse()
-        .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid address format"))?;
-
+    let server_addr: SocketAddr = ADDRESS.parse().map_err(|_| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid address format")
+    })?;
 
     let mut transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default);
     transport.config_mut().max_frame_length(usize::MAX);
 
-    let client: TokenGenClient = TokenGenClient::new(client::Config::default(), transport.await?).spawn();
+    let client: TokenGenClient =
+        TokenGenClient::new(client::Config::default(), transport.await?).spawn();
 
     Ok(client)
 }
