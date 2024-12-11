@@ -70,7 +70,6 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
     let response = client
         .verify_content(context::current(), current_content)
         .await;
-
     if let Err(rpc_err) = response {
         // Handle the RpcError
         return Err(TokenGenErrors::RpcError(rpc_err));

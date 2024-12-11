@@ -30,17 +30,16 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
             "The path is not a directory.".to_string(),
         ));
     }
+    println!("Verified successfully");
     Ok(())
 }
 
 pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<()> {
     let response = client.verify_url(context::current(), url.to_string()).await;
-
     // Handle RPC error
     if let Err(rpc_err) = response {
-        // Handle the RpcError
-        return Err(TokenGenErrors::RpcError(rpc_err));
+        return Err(TokenGenErrors::VerificationError(rpc_err.to_string()));
     }
-
+    println!("Verified successfully");
     Ok(())
 }

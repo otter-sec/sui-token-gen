@@ -12,8 +12,8 @@ pub trait TokenGen {
         is_frozen: bool,
     ) -> Result<(String, String), String>;
 
-    async fn verify_url(url: String) -> String;
-    async fn verify_content(content: String) -> String;
+    async fn verify_url(url: String) -> Result<(), String>;
+    async fn verify_content(content: String) -> Result<(), String>;
 }
 
 // Initializing RPC client

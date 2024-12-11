@@ -29,4 +29,7 @@ pub enum TokenGenErrors {
 
     #[error(transparent)]
     RpcError(#[from] tarpc::client::RpcError),
+
+    #[error("Verification failed: {0}")]
+    VerificationError(String),
 }

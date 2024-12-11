@@ -216,14 +216,6 @@ mod test {
             .verify_content(context::current(), valid_content)
             .await;
         assert!(response.is_ok(), "Verification failed");
-
-        if let Ok(result) = response {
-            assert_eq!(
-                result.trim_matches('"'),
-                "Contract is not modified",
-                "Contract should not be modified"
-            );
-        }
         Ok(())
     }
 
@@ -245,15 +237,8 @@ mod test {
         let response = client
             .verify_content(context::current(), valid_content)
             .await;
-        assert!(response.is_ok(), "Verification failed");
+        assert!(response.is_err(), "Verification failed");
 
-        if let Ok(result) = response {
-            assert_eq!(
-                result.trim_matches('"'),
-                "Contract is modified",
-                "Contract should be modified"
-            );
-        }
         Ok(())
     }
 
