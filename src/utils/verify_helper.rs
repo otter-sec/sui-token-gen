@@ -47,14 +47,8 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
                 // Check for .move file
                 if path.is_file() && path.extension().map(|e| e == "move").unwrap_or(false) {
                     // Reading the .move file content
-                    match read_file(&path) {
-                        Ok(content) => {
-                            current_content.push_str(&content);
-                        }
-                        Err(e) => {
-                            return Err(TokenGenErrors::FileIoError(e));
-                        }
-                    }
+                    let content = read_file(&path).map_err(TokenGenErrors::FileIoError)?;
+                    current_content.push_str(&content);
                     break; // Exit loop once a .move file is found
                 }
             }
