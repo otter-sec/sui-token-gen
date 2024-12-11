@@ -45,7 +45,9 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Initialize the RPC client
-    let client: TokenGenClient = initiate_client().await?;
+    let client: TokenGenClient = initiate_client().await.map_err(|e| {
+        TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e))
+    })?;
 
     match &cli.command {
         Commands::Create => {
@@ -53,10 +55,9 @@ async fn main() -> Result<()> {
         }
         Commands::Verify { path, url } => {
             if path.is_none() && url.is_none() {
-                TokenGenErrors::InvalidInput(
+                return Err(TokenGenErrors::InvalidInput(
                     "Error: Either --path or --url must be provided.".to_string(),
-                );
-                std::process::exit(1);
+                ));
             }
 
             if let Some(path) = path {
@@ -84,10 +85,19 @@ mod test {
             helpers::sanitize_name,
         },
         variables::SUB_FOLDER,
+        Result,
+        errors::TokenGenErrors,
     };
 
+    async fn test_initiate_client() -> Result<TokenGenClient> {
+        let client = initiate_client().await.map_err(|e| {
+            TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e))
+        })?;
+        Ok(client)
+    }
+
     #[tokio::test]
-    async fn test_create_command() {
+    async fn test_create_command() -> Result<()> {
         // Test user inputs
         let decimals: u8 = 6;
         let symbol: String = "SAMPLE".to_string();
@@ -99,13 +109,7 @@ mod test {
         let base_folder = sanitize_name(name.to_owned());
 
         // Initialize the RPC client
-        let client: TokenGenClient = match initiate_client().await {
-            Ok(client) => client,
-            Err(e) => {
-                eprintln!("Failed to initiate client: {}", e);
-                std::process::exit(1);
-            }
-        };
+        let client: TokenGenClient = test_initiate_client().await?;
 
         // If the test base folder already exists, delete it
         if Path::new(&base_folder).exists() {
@@ -193,21 +197,16 @@ mod test {
                 eprintln!("RPC error: {:?}", rpc_error);
             }
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_verify_command_valid_file() {
+    async fn test_verify_command_valid_file() -> Result<()> {
         let current_dir = env::current_dir().expect("Failed to get current directory");
         let templates_path = format!("{}/src/test_tokens/valid_token.move", current_dir.display());
 
         // Initialize the RPC client
-        let client: TokenGenClient = match initiate_client().await {
-            Ok(client) => client,
-            Err(e) => {
-                eprintln!("Failed to initiate client: {}", e);
-                std::process::exit(1);
-            }
-        };
+        let client: TokenGenClient = test_initiate_client().await?;
 
         // Read content from the existing valid token file
         let valid_content =
@@ -218,20 +217,19 @@ mod test {
             .await;
         assert!(response.is_ok(), "Verification failed");
 
-        match response {
-            Ok(result) => {
-                assert_eq!(
-                    result.trim_matches('"'),
-                    "Contract is not modified",
-                    "Contract should not be modified"
-                );
-            }
-            Err(_) => {}
+
+        if let Ok(result) = response {
+            assert_eq!(
+                result.trim_matches('"'),
+                "Contract is not modified",
+                "Contract should not be modified"
+            );
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_verify_command_invalid_file() {
+    async fn test_verify_command_invalid_file() -> Result<()> {
         let current_dir = env::current_dir().expect("Failed to get current directory");
         let templates_path = format!(
             "{}/src/test_tokens/invalid_token.move",
@@ -239,13 +237,7 @@ mod test {
         );
 
         // Initialize the RPC client
-        let client: TokenGenClient = match initiate_client().await {
-            Ok(client) => client,
-            Err(e) => {
-                eprintln!("Failed to initiate client: {}", e);
-                std::process::exit(1);
-            }
-        };
+        let client: TokenGenClient = test_initiate_client().await?;
 
         // Read content from the existing valid token file
         let valid_content =
@@ -256,52 +248,40 @@ mod test {
             .await;
         assert!(response.is_ok(), "Verification failed");
 
-        match response {
-            Ok(result) => {
-                assert_eq!(
-                    result.trim_matches('"'),
-                    "Contract is modified",
-                    "Contract should be modified"
-                );
-            }
-            Err(_) => {}
+        if let Ok(result) = response {
+            assert_eq!(
+                result.trim_matches('"'),
+                "Contract is modified",
+                "Contract should be modified"
+            );
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_verify_command_valid_git() {
+    async fn test_verify_command_valid_git() -> Result<()> {
         // Testing repo
         let valid_url = "https://github.com/meumar-osec/test-sui-token";
 
         // Initialize the RPC client
-        let client: TokenGenClient = match initiate_client().await {
-            Ok(client) => client,
-            Err(e) => {
-                eprintln!("Failed to initiate client: {}", e);
-                std::process::exit(1);
-            }
-        };
+        let client: TokenGenClient = test_initiate_client().await?;
 
         // Call verify_token
         let response = verify_token_using_url(valid_url, client).await;
         assert!(response.is_ok(), "Failed to verify URL");
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_verify_command_invalid_git() {
+    async fn test_verify_command_invalid_git() -> Result<()> {
         let valid_url = "https://github.com/meumar-osec/sui-token1";
 
         // Initialize the RPC client
-        let client: TokenGenClient = match initiate_client().await {
-            Ok(client) => client,
-            Err(e) => {
-                eprintln!("Failed to initiate client: {}", e);
-                std::process::exit(1);
-            }
-        };
+        let client: TokenGenClient = test_initiate_client().await?;
 
         // Call verify_token
         let response = verify_token_using_url(valid_url, client).await;
         assert!(response.is_err(), "Failed to verify URL");
+        Ok(())
     }
 }
