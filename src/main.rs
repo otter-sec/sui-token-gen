@@ -45,9 +45,9 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Initialize the RPC client
-    let client: TokenGenClient = initiate_client().await.map_err(|e| {
-        TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e))
-    })?;
+    let client: TokenGenClient = initiate_client()
+        .await
+        .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
 
     match &cli.command {
         Commands::Create => {
@@ -79,6 +79,7 @@ mod test {
 
     use crate::{
         commands::verify::verify_token_using_url,
+        errors::TokenGenErrors,
         rpc_client::{initiate_client, TokenGenClient},
         utils::{
             generation::{create_base_folder, create_contract_file, create_move_toml},
@@ -86,7 +87,6 @@ mod test {
         },
         variables::SUB_FOLDER,
         Result,
-        errors::TokenGenErrors,
     };
 
     async fn test_initiate_client() -> Result<TokenGenClient> {
@@ -216,7 +216,6 @@ mod test {
             .verify_content(context::current(), valid_content)
             .await;
         assert!(response.is_ok(), "Verification failed");
-
 
         if let Ok(result) = response {
             assert_eq!(
