@@ -35,11 +35,11 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
 }
 
 pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<()> {
-    let response = client.verify_url(context::current(), url.to_string()).await;
-    // Handle RPC error
-    if let Err(rpc_err) = response {
-        return Err(TokenGenErrors::VerificationError(rpc_err.to_string()));
-    }
+    client
+        .verify_url(context::current(), url.to_string())
+        .await
+        .map_err(|e| TokenGenErrors::RpcError(e))?;
+
     println!("Verified successfully");
     Ok(())
 }

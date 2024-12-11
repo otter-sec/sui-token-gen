@@ -19,12 +19,10 @@ impl From<TokenGenErrors> for io::Error {
 }
 
 pub async fn create_token(client: TokenGenClient) -> Result<()> {
-    // Prompt helper
     let token_data = get_user_prompt()?;
     println!("Creating contract...");
 
-    // Call the `create` method
-    let response = client
+    let (token_content, move_toml) = client
         .create(
             context::current(),
             token_data.decimals,
@@ -33,30 +31,14 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
             token_data.description,
             token_data.is_frozen,
         )
-        .await;
+        .await
+        .map_err(TokenGenErrors::RpcError)?
+        .map_err(TokenGenErrors::FailedToCreateTokenContract)?;
 
-    // Handle RPC error
-    if let Ok(inner_result) = response {
-        // Handle the create function error
-        if let Ok((token_content, move_toml)) = inner_result {
-            let base_folder = sanitize_name(token_data.name.to_owned());
-
-            // Creating base folder
-            create_base_folder(base_folder.to_owned())?;
-
-            // Generating toml file
-            create_move_toml(base_folder.to_owned(), move_toml)?;
-
-            // Generating token with user prompt
-            create_contract_file(token_data.name, base_folder, token_content)?;
-        } else if let Err(err) = inner_result {
-            // Handle the error from the create function
-            return Err(TokenGenErrors::FailedToCreateTokenContract(err));
-        }
-    } else if let Err(rpc_err) = response {
-        // Handle the RpcError
-        return Err(TokenGenErrors::RpcError(rpc_err));
-    }
+    let base_folder = sanitize_name(token_data.name.to_owned());
+    create_base_folder(base_folder.to_owned())?;
+    create_move_toml(base_folder.to_owned(), move_toml)?;
+    create_contract_file(token_data.name, base_folder, token_content)?;
 
     println!("Contract has been generated!");
     Ok(())
