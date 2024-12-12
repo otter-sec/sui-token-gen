@@ -2,14 +2,14 @@ use std::path::Path;
 use tarpc::{client, context};
 
 use crate::{
-    rpc::TokenGen,
+    rpc::server::TokenServer,
     TokenGenErrors,
     Result,
     utils::verify_helper::verify_contract,
     variables::SUB_FOLDER,
 };
 
-pub async fn verify_token_from_path(path: &str, client: &client::NewClient<dyn TokenGen>) -> Result<()> {
+pub async fn verify_token_from_path(path: &str, client: &client::NewClient<TokenServer>) -> Result<()> {
     let path = Path::new(path);
 
     if !path.exists() {
@@ -37,7 +37,7 @@ pub async fn verify_token_from_path(path: &str, client: &client::NewClient<dyn T
     Ok(())
 }
 
-pub async fn verify_token_using_url(url: &str, client: &client::NewClient<dyn TokenGen>) -> Result<()> {
+pub async fn verify_token_using_url(url: &str, client: &client::NewClient<TokenServer>) -> Result<()> {
     let ctx = context::current();
     client.verify_url(ctx, url.to_string()).await?;
     Ok(())

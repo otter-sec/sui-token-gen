@@ -1,7 +1,7 @@
 use std::io;
 use tarpc::{client, context};
 
-use crate::{rpc::TokenGen, TokenGenErrors, Result};
+use crate::{rpc::server::TokenServer, TokenGenErrors, Result};
 use crate::utils::prompts::get_user_prompt;
 
 impl From<TokenGenErrors> for io::Error {
@@ -10,7 +10,7 @@ impl From<TokenGenErrors> for io::Error {
     }
 }
 
-pub async fn create_token(client: &client::NewClient<dyn TokenGen>) -> Result<()> {
+pub async fn create_token(client: &client::NewClient<TokenServer>) -> Result<()> {
     let token_data = get_user_prompt()?;
     println!("Creating contract...");
 
