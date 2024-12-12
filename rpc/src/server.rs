@@ -43,7 +43,7 @@ impl TokenGen for TokenServer {
         symbol: String,
         description: String,
         is_frozen: bool,
-        environment: String
+        environment: String,
     ) -> anyhow::Result<(String, String, String), TokenGenErrors> {
         // Log the address when a request is handled
         self.log_address().await;
@@ -80,7 +80,7 @@ impl TokenGen for TokenServer {
         } else {
             "devnet".to_string() // Default to "devnet" if invalid
         };
-        
+
         // Proceed with the token generation logic
         let base_folder: String = sanitize_name(name.to_owned());
         let token_content: String = generation::generate_token(
@@ -89,7 +89,7 @@ impl TokenGen for TokenServer {
             &name,
             description.clone(),
             is_frozen,
-            false
+            false,
         );
         let test_token_content: String = generation::generate_token(
             decimals,
@@ -97,7 +97,7 @@ impl TokenGen for TokenServer {
             &name,
             description.clone(),
             is_frozen,
-            true
+            true,
         );
 
         let move_toml_content = generation::generate_move_toml(&base_folder, environment);
@@ -150,4 +150,160 @@ async fn main() -> anyhow::Result<()> {
         .await;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::SocketAddr;
+    use tarpc::context;
+
+    fn test_server() -> TokenServer {
+        let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 50051);
+        TokenServer::new(addr)
+    }
+
+    #[tokio::test]
+    async fn test_create_token_validation() {
+        let server = test_server();
+        let ctx = context::current();
+
+        // Test invalid decimals
+        let result = server
+            .clone()
+            .create(
+                ctx.clone(),
+                0,
+                "Test".into(),
+                "TST".into(),
+                "Description".into(),
+                false,
+                "devnet".into(),
+            )
+            .await;
+        assert!(matches!(result, Err(TokenGenErrors::InvalidDecimals)));
+
+        // Test invalid symbol (too long)
+        let result = server
+            .clone()
+            .create(
+                ctx.clone(),
+                8,
+                "Test".into(),
+                "TSTSTS".into(),
+                "Description".into(),
+                false,
+                "devnet".into(),
+            )
+            .await;
+        assert!(matches!(result, Err(TokenGenErrors::InvalidSymbol)));
+
+        // Test invalid symbol (special characters)
+        let result = server
+            .clone()
+            .create(
+                ctx.clone(),
+                8,
+                "Test".into(),
+                "T$T".into(),
+                "Description".into(),
+                false,
+                "devnet".into(),
+            )
+            .await;
+        assert!(matches!(result, Err(TokenGenErrors::InvalidSymbol)));
+
+        // Test invalid name (special characters)
+        let result = server
+            .clone()
+            .create(
+                ctx.clone(),
+                8,
+                "Test@".into(),
+                "TST".into(),
+                "Description".into(),
+                false,
+                "devnet".into(),
+            )
+            .await;
+        assert!(matches!(result, Err(TokenGenErrors::InvalidName)));
+
+        // Test invalid description (special characters)
+        let result = server
+            .clone()
+            .create(
+                ctx.clone(),
+                8,
+                "Test".into(),
+                "TST".into(),
+                "Test@Description".into(),
+                false,
+                "devnet".into(),
+            )
+            .await;
+        assert!(matches!(result, Err(TokenGenErrors::InvalidDescription)));
+
+        // Test valid input
+        let result = server
+            .create(
+                ctx,
+                8,
+                "Test Token".into(),
+                "TST".into(),
+                "Test Description".into(),
+                false,
+                "devnet".into(),
+            )
+            .await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_verify_url_validation() {
+        let server = test_server();
+        let ctx = context::current();
+
+        // Test invalid URL
+        let result = server
+            .clone()
+            .verify_url(ctx.clone(), "not_a_url".into())
+            .await;
+        assert!(result.is_err());
+
+        // Test invalid git URL
+        let result = server
+            .clone()
+            .verify_url(ctx.clone(), "https://example.com/not-a-git-repo.git".into())
+            .await;
+        assert!(result.is_err());
+
+        // Test valid URL format (actual verification will be tested in integration tests)
+        let result = server
+            .verify_url(ctx, "https://github.com/valid/repo.git".into())
+            .await;
+        assert!(result.is_err()); // Will fail because repo doesn't exist, but URL format is valid
+    }
+
+    #[tokio::test]
+    async fn test_verify_content_validation() {
+        let server = test_server();
+        let ctx = context::current();
+
+        // Test empty content
+        let result = server.clone().verify_content(ctx.clone(), "".into()).await;
+        assert!(result.is_err());
+
+        // Test invalid content
+        let result = server
+            .clone()
+            .verify_content(ctx.clone(), "invalid content".into())
+            .await;
+        assert!(result.is_err());
+
+        // Test malformed Move code
+        let result = server
+            .verify_content(ctx, "module test { public fun main() { } }".into())
+            .await;
+        assert!(result.is_err());
+    }
 }

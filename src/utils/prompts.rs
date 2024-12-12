@@ -135,7 +135,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         Default: devnet
     */
     let env_options = vec!["mainnet", "devnet", "testnet"];
-    let default_index = env_options.iter().position(|&r| r == "devnet").unwrap(); 
+    let default_index = env_options.iter().position(|&r| r == "devnet").unwrap();
     let env_option = Select::new("Select environment:", &env_options)
         .with_starting_cursor(default_index)
         .prompt()
@@ -149,6 +149,6 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         name,
         description,
         is_frozen,
-        environment
+        environment,
     })
 }

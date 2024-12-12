@@ -71,8 +71,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
 
 fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
     if path.exists() && path.is_dir() && !is_running_test() {
-        fs::remove_dir_all(path)
-            .map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
+        fs::remove_dir_all(path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
     }
     Ok(())
 }
@@ -154,7 +153,7 @@ pub fn compare_contract_content(
         &details.2,
         details.3.to_owned(),
         details.4,
-        false
+        false,
     );
 
     // Filtering newly created token content

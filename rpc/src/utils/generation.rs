@@ -5,9 +5,7 @@ use tera::{Context, Tera};
 
 use crate::utils::{
     helpers::sanitize_name,
-    variables::{
-        SUI_PROJECT, SUI_PROJECT_SUB_DIR
-    }
+    variables::{SUI_PROJECT, SUI_PROJECT_SUB_DIR},
 };
 
 #[derive(Serialize)]
@@ -44,7 +42,7 @@ pub fn generate_token(
     name: &str,
     description: String,
     is_frozen: bool,
-    is_test: bool
+    is_test: bool,
 ) -> String {
     // Filtering alphanumeric characters only
     let slug = sanitize_name(name.to_owned());

@@ -124,7 +124,7 @@ mod test {
                 symbol.to_owned(),
                 description.to_owned(),
                 is_frozen,
-                environment
+                environment,
             )
             .await
         {
@@ -140,8 +140,13 @@ mod test {
                     .expect("Failed to create Move.toml");
 
                 // Generate token contract file
-                create_contract_file(name.to_owned(), base_folder.to_owned(), token_content, SUB_FOLDER)
-                    .expect("Failed to create contract file");
+                create_contract_file(
+                    name.to_owned(),
+                    base_folder.to_owned(),
+                    token_content,
+                    SUB_FOLDER,
+                )
+                .expect("Failed to create contract file");
 
                 // Validate folder and file creation
                 let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);

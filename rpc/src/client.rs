@@ -16,7 +16,7 @@ pub trait TokenGen {
         symbol: String,
         description: String,
         is_frozen: bool,
-        environment: String
+        environment: String,
     ) -> Result<(String, String, String), TokenGenErrors>;
 
     async fn verify_url(url: String) -> Result<(), TokenGenErrors>;
@@ -27,7 +27,6 @@ pub trait TokenGen {
 enum ClientError {
     #[error("Missing required parameter: {0}")]
     MissingParameter(String),
-
 
     #[error("Failed to communicate with server: {0}")]
     ServerError(#[from] tarpc::client::RpcError),
@@ -119,7 +118,7 @@ async fn handle_command(flags: Flags, client: TokenGenClient) -> Result<(), Clie
                     symbol,
                     description,
                     is_frozen,
-                    environment
+                    environment,
                 )
                 .await
                 .map_err(|e| ClientError::ServerError(e))?;
