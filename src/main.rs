@@ -267,4 +267,81 @@ mod test {
         assert!(response.is_err(), "Failed to verify URL");
         Ok(())
     }
-}
+
+    #[tokio::test]
+    async fn test_rpc_client_connection_failure() -> Result<()> {
+        // Test RPC client initialization failure
+        let client = setup_test_client().await;
+        assert!(client.is_err());
+        assert!(matches!(client.unwrap_err(), TokenGenErrors::InvalidInput(_)));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_create_token_rpc_error() -> Result<()> {
+        let client = test_initiate_client().await?;
+
+        // Test RPC error handling in create_token
+        let response = client
+            .create(
+                context::current(),
+                6,
+                "TestToken".to_string(),
+                "TEST".to_string(),
+                "Test Description".to_string(),
+                false,
+            )
+            .await;
+
+        assert!(response.is_err());
+        assert!(matches!(
+            TokenGenErrors::RpcError(response.unwrap_err()),
+            TokenGenErrors::RpcError(_)
+        ));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_verify_token_rpc_error_mapping() -> Result<()> {
+        let client = test_initiate_client().await?;
+
+        // Test error mapping in verify_token_using_url
+        let invalid_url = "https://invalid-url-that-doesnt-exist";
+        let result = verify_token_using_url(invalid_url, client).await;
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), TokenGenErrors::RpcError(_)));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_setup_test_client_error_handling() -> Result<()> {
+        // Test error handling in setup_test_client
+        let client = setup_test_client().await?;
+        assert!(client.verify_url(context::current(), "invalid_url".to_string()).await.is_err());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_error_propagation_flow() -> Result<()> {
+        let client = test_initiate_client().await?;
+
+        // Test create_token error propagation
+        let result = client
+            .create(
+                context::current(),
+                255, // Invalid decimals
+                "".to_string(), // Empty name
+                "TEST".to_string(),
+                "Description".to_string(),
+                false,
+            )
+            .await;
+
+        assert!(result.is_err());
+        assert!(matches!(
+            TokenGenErrors::FailedToCreateTokenContract(result.unwrap_err()),
+            TokenGenErrors::FailedToCreateTokenContract(_)
+        ));
+        Ok(())
+    }
