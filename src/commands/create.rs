@@ -10,7 +10,7 @@ impl From<TokenGenErrors> for io::Error {
     }
 }
 
-pub async fn create_token(client: &client::NewClient<TokenServer>) -> Result<()> {
+pub async fn create_token(client: &client::NewClient<TokenServer, tarpc::Response<Result<()>>>) -> Result<()> {
     let token_data = get_user_prompt()?;
     println!("Creating contract...");
 

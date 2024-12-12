@@ -3,25 +3,22 @@ use std::{
     time::Duration,
     sync::Mutex,
 };
-use futures::StreamExt;
 use tokio::net::TcpStream as TokioTcpStream;
 use once_cell::sync::Lazy;
-use tarpc::{client, context, Response};
+use tarpc::client;
 
 use crate::{
     errors::TokenGenErrors,
     rpc_client::connect_client,
-    rpc::TokenGen,
+    rpc::server::TokenServer,
     Result,
 };
-
-use crate::rpc::server::TokenServer;
 
 // Global shutdown sender
 static SHUTDOWN_SENDER: Lazy<Mutex<Option<tokio::sync::oneshot::Sender<()>>>> = Lazy::new(|| Mutex::new(None));
 
 /// Helper function to set up a test client with consistent error handling
-pub async fn setup_test_client() -> Result<client::NewClient<dyn TokenGen, Response<Result<()>>>> {
+pub async fn setup_test_client() -> Result<client::NewClient<TokenServer, tarpc::Response<Result<()>>>> {
     let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 50051);
     connect_client(addr).await
 }
@@ -65,7 +62,7 @@ pub async fn setup_test_server() -> Result<()> {
 }
 
 /// Sets up the complete test environment including server and client
-pub async fn setup_test_environment() -> Result<client::NewClient<dyn TokenGen, Response<Result<()>>>> {
+pub async fn setup_test_environment() -> Result<client::NewClient<TokenServer, tarpc::Response<Result<()>>>> {
     setup_test_server().await?;
 
     // Retry connection a few times before giving up
@@ -83,11 +80,10 @@ pub async fn setup_test_environment() -> Result<client::NewClient<dyn TokenGen, 
         }
     }
 
-    Err(last_error.unwrap_or_else(|| TokenGenErrors::RpcError("Failed to connect to test server".to_string())))
+    Err(last_error.unwrap_or_else(|| TokenGenErrors::RpcError("Failed to connect to test server".into())))
 }
 
 /// Helper function to clean up the test environment
-/// This includes removing any temporary files or directories created during tests
 pub fn cleanup_test_environment() {
     // Shutdown the server if it's running
     if let Some(tx) = SHUTDOWN_SENDER.lock().unwrap().take() {

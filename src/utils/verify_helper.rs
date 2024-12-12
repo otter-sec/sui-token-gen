@@ -29,7 +29,7 @@ pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
    Take all .move files in that folder
    Call verify_content function from RPC
 */
-pub async fn verify_contract(dir: &Path, client: &client::NewClient<TokenServer>) -> Result<()> {
+pub async fn verify_contract(dir: &Path, client: &client::NewClient<TokenServer, tarpc::Response<Result<()>>>) -> Result<()> {
     if !dir.is_dir() {
         return Err(TokenGenErrors::InvalidPath(
             "Path is not a directory".to_string(),

@@ -9,7 +9,7 @@ use crate::{
     variables::SUB_FOLDER,
 };
 
-pub async fn verify_token_from_path(path: &str, client: &client::NewClient<TokenServer>) -> Result<()> {
+pub async fn verify_token_from_path(path: &str, client: &client::NewClient<TokenServer, tarpc::Response<Result<()>>>) -> Result<()> {
     let path = Path::new(path);
 
     if !path.exists() {
@@ -37,7 +37,7 @@ pub async fn verify_token_from_path(path: &str, client: &client::NewClient<Token
     Ok(())
 }
 
-pub async fn verify_token_using_url(url: &str, client: &client::NewClient<TokenServer>) -> Result<()> {
+pub async fn verify_token_using_url(url: &str, client: &client::NewClient<TokenServer, tarpc::Response<Result<()>>>) -> Result<()> {
     let ctx = context::current();
     client.verify_url(ctx, url.to_string()).await?;
     Ok(())
