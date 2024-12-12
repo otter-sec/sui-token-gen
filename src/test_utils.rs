@@ -10,7 +10,7 @@ use tarpc::client;
 use crate::{
     errors::TokenGenErrors,
     rpc_client::connect_client,
-    rpc::server::TokenServer,
+    rpc::{server::TokenServer, TokenGen},
     Result,
 };
 
@@ -18,7 +18,7 @@ use crate::{
 static SHUTDOWN_SENDER: Lazy<Mutex<Option<tokio::sync::oneshot::Sender<()>>>> = Lazy::new(|| Mutex::new(None));
 
 /// Helper function to set up a test client with consistent error handling
-pub async fn setup_test_client() -> Result<client::NewClient<TokenServer, tarpc::Response<Result<()>>>> {
+pub async fn setup_test_client() -> Result<impl TokenGen> {
     let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 50051);
     connect_client(addr).await
 }
@@ -62,7 +62,7 @@ pub async fn setup_test_server() -> Result<()> {
 }
 
 /// Sets up the complete test environment including server and client
-pub async fn setup_test_environment() -> Result<client::NewClient<TokenServer, tarpc::Response<Result<()>>>> {
+pub async fn setup_test_environment() -> Result<impl TokenGen> {
     setup_test_server().await?;
 
     // Retry connection a few times before giving up
