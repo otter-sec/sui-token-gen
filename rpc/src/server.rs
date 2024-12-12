@@ -58,17 +58,17 @@ impl TokenGen for TokenServer {
         if !symbol_regex.is_match(&symbol) {
             return Err(TokenGenErrors::InvalidSymbol);
         }
-        if symbol.len() > 5 {
+        if symbol.len() >= 5 {
             return Err(TokenGenErrors::InvalidSymbol);
         }
 
-        // Validate name: must only contain alphanumeric characters and spaces
-        let name_regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap();
+        // Validate name: must only contain alphanumeric characters, spaces, commas, and dots
+        let name_regex = Regex::new(r"^[a-zA-Z0-9\s,\.]+$").unwrap();
         if !name_regex.is_match(&name) {
             return Err(TokenGenErrors::InvalidName);
         }
 
-        // Validate description: optional but must only contain alphanumeric characters and spaces
+        // Validate description: optional but must only contain alphanumeric characters, spaces, commas, and dots
         if !description.is_empty() && !name_regex.is_match(&description) {
             return Err(TokenGenErrors::InvalidDescription);
         }

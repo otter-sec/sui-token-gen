@@ -80,6 +80,7 @@ mod test {
 
     use crate::{
         commands::verify::verify_token_using_url,
+        errors::TokenGenErrors,
         rpc_client::TokenGenClient,
         test_utils::setup_test_client,
         utils::{
@@ -115,8 +116,8 @@ mod test {
             fs::remove_dir_all(&base_folder).expect("Failed to delete test base folder");
         }
 
-        // Call the `create` method and handle nested `Result`
-        match client
+        // Call the `create` method
+        let (token_content, move_toml, _test_token_content) = client
             .create(
                 context::current(),
                 decimals,
@@ -127,81 +128,71 @@ mod test {
                 environment,
             )
             .await
-        {
-            Ok(Ok((token_content, move_toml, _test_token_content))) => {
-                println!("Token Content:\n{}", token_content);
-                println!("Move.toml Content:\n{}", move_toml);
+            .map_err(TokenGenErrors::RpcError)?
+            .map_err(TokenGenErrors::FailedToCreateTokenContract)?;
 
-                // Create base folder
-                create_base_folder(base_folder.to_owned()).expect("Failed to create base folder");
+        println!("Token Content:\n{}", token_content);
+        println!("Move.toml Content:\n{}", move_toml);
 
-                // Generate Move.toml file
-                create_move_toml(base_folder.to_owned(), move_toml)
-                    .expect("Failed to create Move.toml");
+        // Create base folder
+        create_base_folder(base_folder.to_owned()).expect("Failed to create base folder");
 
-                // Generate token contract file
-                create_contract_file(
-                    name.to_owned(),
-                    base_folder.to_owned(),
-                    token_content,
-                    SUB_FOLDER,
-                )
-                .expect("Failed to create contract file");
+        // Generate Move.toml file
+        create_move_toml(base_folder.to_owned(), move_toml).expect("Failed to create Move.toml");
 
-                // Validate folder and file creation
-                let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);
-                let toml_file = format!("{}/Move.toml", base_folder);
-                let move_file =
-                    format!("{}/{}.move", sources_folder, sanitize_name(name.to_owned()));
+        // Generate token contract file
+        create_contract_file(
+            name.to_owned(),
+            base_folder.to_owned(),
+            token_content,
+            SUB_FOLDER,
+        )
+        .expect("Failed to create contract file");
 
-                assert!(
-                    Path::new(&sources_folder).exists(),
-                    "Sources folder not created"
-                );
-                assert!(Path::new(&toml_file).exists(), "Move.toml file not created");
-                assert!(
-                    Path::new(&move_file).exists(),
-                    "Move contract file not created"
-                );
+        // Validate folder and file creation
+        let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);
+        let toml_file = format!("{}/Move.toml", base_folder);
+        let move_file = format!("{}/{}.move", sources_folder, sanitize_name(name.to_owned()));
 
-                // Validate Move.toml file content
-                let toml_content =
-                    fs::read_to_string(&toml_file).expect("Failed to read Move.toml file");
-                assert!(
-                    toml_content.contains("0.0.1"),
-                    "Move.toml file does not contain the correct version"
-                );
-                assert!(
-                    toml_content.contains(&base_folder),
-                    "Move.toml file does not contain the correct package name"
-                );
+        assert!(
+            Path::new(&sources_folder).exists(),
+            "Sources folder not created"
+        );
+        assert!(Path::new(&toml_file).exists(), "Move.toml file not created");
+        assert!(
+            Path::new(&move_file).exists(),
+            "Move contract file not created"
+        );
 
-                // Validate Move contract file content
-                let move_content =
-                    fs::read_to_string(&move_file).expect("Failed to read contract file");
-                assert!(
-                    move_content.contains(&symbol),
-                    "Contract does not contain the correct symbol"
-                );
-                assert!(
-                    move_content.contains(name),
-                    "Contract does not contain the correct name"
-                );
-                assert!(
-                    move_content.contains(&description),
-                    "Contract does not contain the correct description"
-                );
+        // Validate Move.toml file content
+        let toml_content = fs::read_to_string(&toml_file).expect("Failed to read Move.toml file");
+        assert!(
+            toml_content.contains("0.0.1"),
+            "Move.toml file does not contain the correct version"
+        );
+        assert!(
+            toml_content.contains(&base_folder),
+            "Move.toml file does not contain the correct package name"
+        );
 
-                // Clean up: Delete the test base folder
-                fs::remove_dir_all(base_folder).expect("Failed to delete test base folder");
-            }
-            Ok(Err(service_error)) => {
-                eprintln!("Service error: {:?}", service_error);
-            }
-            Err(rpc_error) => {
-                eprintln!("RPC error: {:?}", rpc_error);
-            }
-        }
+        // Validate Move contract file content
+        let move_content = fs::read_to_string(&move_file).expect("Failed to read contract file");
+        assert!(
+            move_content.contains(&symbol),
+            "Contract does not contain the correct symbol"
+        );
+        assert!(
+            move_content.contains(name),
+            "Contract does not contain the correct name"
+        );
+        assert!(
+            move_content.contains(&description),
+            "Contract does not contain the correct description"
+        );
+
+        // Clean up: Delete the test base folder
+        fs::remove_dir_all(base_folder).expect("Failed to delete test base folder");
+
         Ok(())
     }
 
