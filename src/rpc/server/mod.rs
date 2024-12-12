@@ -1,15 +1,13 @@
-use std::{
-    future,
-    net::SocketAddr,
-};
+use std::net::SocketAddr;
 use futures::StreamExt;
 use tarpc::{
-    server::{self, BaseChannel, Channel},
+    server::{self, Channel, BaseChannel},
     context,
     tokio_serde::formats::Json,
 };
 
-use crate::{TokenGenErrors, Result, rpc::TokenGen};
+use crate::{TokenGenErrors, Result};
+use super::TokenGen;
 
 #[derive(Clone)]
 pub struct TokenServer {
@@ -18,7 +16,7 @@ pub struct TokenServer {
 
 #[tarpc::server]
 impl TokenGen for TokenServer {
-    async fn verify_url(&self, ctx: context::Context, url: String) -> Result<()> {
+    async fn verify_url(ctx: context::Context, url: String) -> Result<()> {
         if url.starts_with("http") || url.starts_with("https") {
             Ok(())
         } else {
@@ -26,7 +24,7 @@ impl TokenGen for TokenServer {
         }
     }
 
-    async fn verify_content(&self, ctx: context::Context, content: String) -> Result<()> {
+    async fn verify_content(ctx: context::Context, content: String) -> Result<()> {
         if content.trim().is_empty() {
             Err(TokenGenErrors::InvalidContent("Empty content".to_string()))
         } else {
@@ -35,7 +33,6 @@ impl TokenGen for TokenServer {
     }
 
     async fn create(
-        &self,
         ctx: context::Context,
         decimals: u8,
         name: String,
@@ -68,14 +65,14 @@ impl TokenServer {
             .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?;
 
         listener
-            .filter_map(|r| future::ready(r.ok()))
+            .filter_map(|r| futures::future::ready(r.ok()))
             .map(BaseChannel::with_defaults)
             .for_each(|channel| {
                 let server = self.clone();
                 tokio::spawn(async move {
                     channel.execute(server).await;
                 });
-                future::ready(())
+                futures::future::ready(())
             })
             .await;
 

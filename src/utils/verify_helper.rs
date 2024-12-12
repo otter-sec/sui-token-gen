@@ -24,11 +24,6 @@ pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
     Ok(content)
 }
 
-/*
-   Check dir is directory or not
-   Take all .move files in that folder
-   Call verify_content function from RPC
-*/
 pub async fn verify_contract(dir: &Path, client: &impl TokenGen) -> Result<()> {
     if !dir.is_dir() {
         return Err(TokenGenErrors::InvalidPath(
@@ -39,17 +34,14 @@ pub async fn verify_contract(dir: &Path, client: &impl TokenGen) -> Result<()> {
 
     let entries = read_dir(dir).unwrap();
 
-    // Finding .move file in the dir
     for entry in entries {
         match entry {
             Ok(entry) => {
                 let path = entry.path();
-                // Check for .move file
                 if path.is_file() && path.extension().map(|e| e == "move").unwrap_or(false) {
-                    // Reading the .move file content
                     let content = read_file(&path)?;
                     current_content.push_str(&content);
-                    break; // Exit loop once a .move file is found
+                    break;
                 }
             }
             Err(e) => {
@@ -59,14 +51,13 @@ pub async fn verify_contract(dir: &Path, client: &impl TokenGen) -> Result<()> {
         }
     }
 
-    // If .move file not found
     if current_content.is_empty() {
         return Err(TokenGenErrors::InvalidPath(
             "No .move file found in the directory.".to_string(),
         ));
     }
 
-    // Call verify_content for the .move file
-    client.verify_content(context::current(), current_content).await?;
+    let ctx = context::current();
+    client.verify_content(ctx, current_content).await?;
     Ok(())
 }

@@ -11,3 +11,6 @@ pub use errors::TokenGenErrors;
 pub use rpc::server::TokenServer;
 pub use rpc::TokenGen;
 pub type Result<T> = std::result::Result<T, TokenGenErrors>;
+
+// Re-export RPC client for convenience
+pub use rpc_client::TokenGenClient;

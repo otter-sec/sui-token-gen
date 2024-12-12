@@ -5,11 +5,10 @@ use std::{
 };
 use tokio::net::TcpStream as TokioTcpStream;
 use once_cell::sync::Lazy;
-use tarpc::client;
 
 use crate::{
     errors::TokenGenErrors,
-    rpc_client::connect_client,
+    rpc_client::TokenGenClient,
     rpc::{server::TokenServer, TokenGen},
     Result,
 };
@@ -20,7 +19,7 @@ static SHUTDOWN_SENDER: Lazy<Mutex<Option<tokio::sync::oneshot::Sender<()>>>> = 
 /// Helper function to set up a test client with consistent error handling
 pub async fn setup_test_client() -> Result<impl TokenGen> {
     let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 50051);
-    connect_client(addr).await
+    TokenGenClient::connect(addr).await
 }
 
 /// Helper function to set up a test server
