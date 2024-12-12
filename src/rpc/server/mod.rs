@@ -67,17 +67,14 @@ impl TokenServer {
             .await
             .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?;
 
+        let server = self.clone();
         listener
             .filter_map(|r| future::ready(r.ok()))
             .map(server::BaseChannel::with_defaults)
             .for_each(|channel| {
-                let server = self.clone();
+                let server = server.clone();
                 tokio::spawn(async move {
-                    channel.execute(server).for_each(|resp| async {
-                        if let Err(e) = resp {
-                            eprintln!("Error processing request: {}", e);
-                        }
-                    }).await;
+                    channel.respond_with(server.serve()).await;
                 });
                 future::ready(())
             })
