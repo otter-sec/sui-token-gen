@@ -2,7 +2,9 @@ use std::path::Path;
 use tarpc::{client, context, Response};
 
 use crate::{
-    TokenGen, TokenGenErrors, Result,
+    rpc::TokenGen,
+    TokenGenErrors,
+    Result,
     utils::verify_helper::verify_contract,
     variables::SUB_FOLDER,
 };

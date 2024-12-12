@@ -5,7 +5,7 @@ use std::{
 };
 use tarpc::{client, context, Response};
 
-use crate::{TokenGen, TokenGenErrors, Result};
+use crate::{rpc::TokenGen, TokenGenErrors, Result};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
     if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {

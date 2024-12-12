@@ -1,7 +1,7 @@
 use std::io;
 use tarpc::{client, context, Response};
 
-use crate::{TokenGen, TokenGenErrors, Result};
+use crate::{rpc::TokenGen, TokenGenErrors, Result};
 use crate::utils::prompts::get_user_prompt;
 
 impl From<TokenGenErrors> for io::Error {

@@ -71,9 +71,16 @@ impl TokenServer {
         listener
             .filter_map(|r| future::ready(r.ok()))
             .map(server::BaseChannel::with_defaults)
-            .for_each(|channel| async move {
+            .for_each(|channel| {
                 let server = self.clone();
-                channel.execute(server).await;
+                tokio::spawn(async move {
+                    channel.execute(server).for_each(|resp| async {
+                        if let Err(e) = resp.await {
+                            eprintln!("Error processing request: {}", e);
+                        }
+                    }).await;
+                });
+                future::ready(())
             })
             .await;
 
