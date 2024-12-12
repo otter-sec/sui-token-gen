@@ -38,6 +38,6 @@ pub async fn verify_token_from_path(path: &str, client: &impl TokenGen) -> Resul
 }
 
 pub async fn verify_token_using_url(url: &str, client: &impl TokenGen) -> Result<()> {
-    client.verify_url(url.to_string()).await?;
+    client.verify_url(context::current(), url.to_string()).await?;
     Ok(())
 }

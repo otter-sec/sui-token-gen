@@ -17,6 +17,7 @@ pub async fn create_token(client: &impl TokenGen) -> Result<()> {
     // Calling RPC create function
     let (token_content, move_toml) = client
         .create(
+            context::current(),
             token_data.decimals,
             token_data.name.to_owned(),
             token_data.symbol,

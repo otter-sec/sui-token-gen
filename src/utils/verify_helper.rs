@@ -4,6 +4,7 @@ use std::{
     path::Path,
 };
 
+use tarpc::context;
 use crate::{TokenGenErrors, Result, rpc::TokenGen};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
@@ -66,6 +67,6 @@ pub async fn verify_contract(dir: &Path, client: &impl TokenGen) -> Result<()> {
     }
 
     // Call verify_content for the .move file
-    client.verify_content(current_content).await?;
+    client.verify_content(context::current(), current_content).await?;
     Ok(())
 }
