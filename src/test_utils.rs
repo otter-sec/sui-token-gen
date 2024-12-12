@@ -6,11 +6,12 @@ use std::{
 use futures::StreamExt;
 use tokio::net::TcpStream as TokioTcpStream;
 use once_cell::sync::Lazy;
-use tarpc::{client, context};
+use tarpc::{client, context, Response};
 
 use crate::{
     errors::TokenGenErrors,
-    rpc_client::{connect_client, TokenGen},
+    rpc_client::connect_client,
+    rpc::TokenGen,
     Result,
 };
 
@@ -20,7 +21,7 @@ use crate::rpc::server::TokenServer;
 static SHUTDOWN_SENDER: Lazy<Mutex<Option<tokio::sync::oneshot::Sender<()>>>> = Lazy::new(|| Mutex::new(None));
 
 /// Helper function to set up a test client with consistent error handling
-pub async fn setup_test_client() -> Result<client::NewClient<dyn TokenGen>> {
+pub async fn setup_test_client() -> Result<client::NewClient<dyn TokenGen, Response<Result<()>>>> {
     let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 50051);
     connect_client(addr).await
 }
@@ -64,7 +65,7 @@ pub async fn setup_test_server() -> Result<()> {
 }
 
 /// Sets up the complete test environment including server and client
-pub async fn setup_test_environment() -> Result<client::NewClient<dyn TokenGen>> {
+pub async fn setup_test_environment() -> Result<client::NewClient<dyn TokenGen, Response<Result<()>>>> {
     setup_test_server().await?;
 
     // Retry connection a few times before giving up

@@ -9,5 +9,5 @@ pub mod variables;
 // Re-export commonly used types
 pub use errors::TokenGenErrors;
 pub use rpc::server::TokenServer;
-pub use rpc_client::TokenGen;
+pub use rpc::TokenGen;
 pub type Result<T> = std::result::Result<T, TokenGenErrors>;

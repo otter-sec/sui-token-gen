@@ -6,9 +6,11 @@ use tarpc::{
 };
 use tarpc::tokio_serde::formats::Json;
 
-use crate::errors::TokenGenErrors;
-use crate::Result;
-use crate::rpc_client::TokenGen;
+use crate::{
+    errors::TokenGenErrors,
+    Result,
+    rpc::TokenGen,
+};
 
 #[derive(Clone)]
 pub struct TokenServer {
@@ -17,7 +19,7 @@ pub struct TokenServer {
 
 #[tarpc::server]
 impl TokenGen for TokenServer {
-    async fn verify_url(self, ctx: context::Context, url: String) -> Result<()> {
+    async fn verify_url(self, _: context::Context, url: String) -> Result<()> {
         if url.starts_with("http") || url.starts_with("https") {
             Ok(())
         } else {
@@ -25,7 +27,7 @@ impl TokenGen for TokenServer {
         }
     }
 
-    async fn verify_content(self, ctx: context::Context, content: String) -> Result<()> {
+    async fn verify_content(self, _: context::Context, content: String) -> Result<()> {
         if content.trim().is_empty() {
             Err(TokenGenErrors::InvalidContent("Empty content".to_string()))
         } else {
@@ -35,7 +37,7 @@ impl TokenGen for TokenServer {
 
     async fn create(
         self,
-        ctx: context::Context,
+        _: context::Context,
         decimals: u8,
         name: String,
         symbol: String,
@@ -69,11 +71,9 @@ impl TokenServer {
         listener
             .filter_map(|r| future::ready(r.ok()))
             .map(server::BaseChannel::with_defaults)
-            .for_each(|channel| {
+            .for_each(|channel| async move {
                 let server = self.clone();
-                async move {
-                    let _ = channel.execute(server).await;
-                }
+                channel.execute(server).await;
             })
             .await;
 
