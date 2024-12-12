@@ -67,13 +67,9 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
     }
 
     // Call verify_content for the .move file
-    let response = client
+    let _ = client
         .verify_content(context::current(), current_content)
-        .await;
-    if let Err(rpc_err) = response {
-        // Handle the RpcError
-        return Err(TokenGenErrors::RpcError(rpc_err));
-    }
-
+        .await
+        .map_err(|e| TokenGenErrors::RpcError(e))?;
     Ok(())
 }

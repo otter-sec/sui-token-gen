@@ -56,7 +56,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
     // Ensure the cloned repository contains the required folder
     if templates_path_ref.exists() && templates_path_ref.is_dir() {
         // Call verify function
-        verify_contract(templates_path_ref).await?;
+        verify_contract(templates_path_ref, clone_path).await?;
 
         // Ensure the cloned contract is clean after verification
         check_cloned_contract(clone_path);
@@ -101,7 +101,7 @@ pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
    Genarate new token with that data
    Compare that newly created contract with user given contract
 */
-pub async fn verify_contract(dir: &Path) -> Result<String, TokenGenErrors> {
+pub async fn verify_contract(dir: &Path, clone_path: &Path) -> Result<(), TokenGenErrors> {
     if !dir.is_dir() {
         return Err(TokenGenErrors::InvalidPath(
             "Path is not a directory".to_string(),
@@ -120,7 +120,7 @@ pub async fn verify_contract(dir: &Path) -> Result<String, TokenGenErrors> {
                     match read_file(&path) {
                         Ok(current_content) => {
                             // Call compare_contract_content and propagate any error
-                            compare_contract_content(current_content)?
+                            compare_contract_content(current_content, Some(clone_path))?
                         }
                         Err(e) => {
                             return Err(TokenGenErrors::FileIoError(e.to_string()));
@@ -134,11 +134,13 @@ pub async fn verify_contract(dir: &Path) -> Result<String, TokenGenErrors> {
         }
     }
 
-    // If no error, return success message
-    Ok("Contract is not modified".to_string())
+    Ok(()) // Return success if the contract is not modified
 }
 
-pub fn compare_contract_content(current_content: String) -> Result<(), TokenGenErrors> {
+pub fn compare_contract_content(
+    current_content: String,
+    clone_path: Option<&Path>,
+) -> Result<(), TokenGenErrors> {
     // Filtering file content
     let cleaned_current_content: String = filter_token_content(&current_content);
 
@@ -159,6 +161,12 @@ pub fn compare_contract_content(current_content: String) -> Result<(), TokenGenE
 
     // Comparing both expected contract and user contract
     if cleaned_current_content != cleaned_expected_content {
+        // Ensure the cloned contract is clean after verification
+        // only if clone_path exists
+        if let Some(path) = clone_path {
+            check_cloned_contract(path);
+        }
+
         return Err(TokenGenErrors::VerifyResultError(
             "Contract is modified".to_string(),
         )); // Return error if modified

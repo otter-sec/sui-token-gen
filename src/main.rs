@@ -4,6 +4,7 @@ use errors::TokenGenErrors;
 mod commands;
 mod errors;
 mod rpc_client;
+pub mod test_utils;
 mod utils;
 mod variables;
 
@@ -79,8 +80,8 @@ mod test {
 
     use crate::{
         commands::verify::verify_token_using_url,
-        errors::TokenGenErrors,
-        rpc_client::{initiate_client, TokenGenClient},
+        rpc_client::TokenGenClient,
+        test_utils::setup_test_client,
         utils::{
             generation::{create_base_folder, create_contract_file, create_move_toml},
             helpers::sanitize_name,
@@ -90,10 +91,7 @@ mod test {
     };
 
     async fn test_initiate_client() -> Result<TokenGenClient> {
-        let client = initiate_client().await.map_err(|e| {
-            TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e))
-        })?;
-        Ok(client)
+        setup_test_client().await
     }
 
     #[tokio::test]

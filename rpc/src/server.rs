@@ -91,11 +91,9 @@ impl TokenGen for TokenServer {
         _: context::Context,
         url: String,
     ) -> anyhow::Result<(), TokenGenErrors> {
-        let response = verify_helper::verify_token_using_url(&url).await;
-        if let Err(rpc_err) = response {
-            return Err(TokenGenErrors::VerifyResultError(rpc_err.to_string()));
-        }
-        Ok(())
+        verify_helper::verify_token_using_url(&url)
+            .await
+            .map_err(|e| TokenGenErrors::VerifyResultError(e.to_string()))
     }
 
     async fn verify_content(
@@ -103,11 +101,8 @@ impl TokenGen for TokenServer {
         _: context::Context,
         content: String,
     ) -> anyhow::Result<(), TokenGenErrors> {
-        let response = verify_helper::compare_contract_content(content);
-        if let Err(rpc_err) = response {
-            return Err(TokenGenErrors::VerifyResultError(rpc_err.to_string()));
-        }
-        Ok(())
+        verify_helper::compare_contract_content(content, None)
+            .map_err(|e| TokenGenErrors::VerifyResultError(e.to_string()))
     }
 }
 
