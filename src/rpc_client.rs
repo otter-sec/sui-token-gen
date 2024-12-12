@@ -18,12 +18,9 @@ pub trait TokenGen {
 }
 
 // Initializing RPC client
-pub async fn initiate_client() -> Result<TokenGenClient, Error> {
-    // RPC server address
-    const ADDRESS: &str = "[::1]:5000";
-
+pub async fn initiate_client(address: &str) -> Result<TokenGenClient, Error> {
     // Parse address
-    let server_addr: SocketAddr = ADDRESS.parse().map_err(|_| {
+    let server_addr: SocketAddr = address.parse().map_err(|_| {
         std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid address format")
     })?;
 

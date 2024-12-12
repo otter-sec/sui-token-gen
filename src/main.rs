@@ -9,6 +9,7 @@ mod utils;
 mod variables;
 
 use rpc_client::{initiate_client, TokenGenClient};
+use variables::ADDRESS;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -46,7 +47,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Initialize the RPC client
-    let client: TokenGenClient = initiate_client()
+    let client: TokenGenClient = initiate_client(ADDRESS)
         .await
         .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
 
@@ -87,12 +88,100 @@ mod test {
             generation::{create_base_folder, create_contract_file, create_move_toml},
             helpers::sanitize_name,
         },
-        variables::SUB_FOLDER,
+        variables::{ADDRESS, SUB_FOLDER},
         Result,
     };
 
     async fn test_initiate_client() -> Result<TokenGenClient> {
-        setup_test_client().await
+        setup_test_client(ADDRESS).await
+    }
+    #[tokio::test]
+    async fn test_environment_specific_token_creation() -> Result<()> {
+        let client = setup_test_client(ADDRESS).await?;
+        for env in ["devnet", "testnet", "mainnet"] {
+            let result = client
+                .create(
+                    context::current(),
+                    6,
+                    "TestToken".to_string(),
+                    "TEST".to_string(),
+                    "Test Description".to_string(),
+                    false,
+                    env.to_string(),
+                )
+                .await;
+            assert!(
+                result.is_ok(),
+                "Token creation failed for environment: {}",
+                env
+            );
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_verify_token_rpc_error_mapping() -> Result<()> {
+        let client = setup_test_client(ADDRESS).await?;
+
+        // Test invalid URL scenario
+        let invalid_url = "https://invalid-url-that-does-not-exist";
+        let result = verify_token_using_url(invalid_url, client.to_owned()).await;
+        assert!(matches!(result, Err(TokenGenErrors::RpcError(_))));
+
+        // Test malformed URL scenario
+        let malformed_url = "not-a-url";
+        let result = verify_token_using_url(malformed_url, client).await;
+        assert!(matches!(result, Err(TokenGenErrors::RpcError(_))));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_error_propagation_flow() -> Result<()> {
+        let client = setup_test_client(ADDRESS).await?;
+
+        // Test invalid decimals
+        let result = client
+            .create(
+                context::current(),
+                255, // Invalid decimals
+                "TestToken".to_string(),
+                "TEST".to_string(),
+                "Description".to_string(),
+                false,
+                "devnet".to_string(),
+            )
+            .await?;
+        assert!(result.is_err());
+
+        // Test empty name
+        let result = client
+            .create(
+                context::current(),
+                6,
+                "".to_string(), // Empty name
+                "TEST".to_string(),
+                "Description".to_string(),
+                false,
+                "devnet".to_string(),
+            )
+            .await?;
+        assert!(result.is_err());
+
+        // Test invalid environment should be succeed. i.e taking devnet as default if it's invalid
+        let result = client
+            .create(
+                context::current(),
+                6,
+                "TestToken".to_string(),
+                "TEST".to_string(),
+                "Description".to_string(),
+                false,
+                "invalid_env".to_string(),
+            )
+            .await?;
+        assert!(result.is_ok());
+
+        Ok(())
     }
 
     #[tokio::test]

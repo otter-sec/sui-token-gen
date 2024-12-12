@@ -48,8 +48,8 @@ impl TokenGen for TokenServer {
         // Log the address when a request is handled
         self.log_address().await;
 
-        // Validate decimals: must be a number greater than 0
-        if decimals <= 0 {
+        // Validate decimals: must be a number greater than 0 and less than 100
+        if decimals <= 0 || decimals >= 100 {
             return Err(TokenGenErrors::InvalidDecimals);
         }
 
@@ -58,7 +58,7 @@ impl TokenGen for TokenServer {
         if !symbol_regex.is_match(&symbol) {
             return Err(TokenGenErrors::InvalidSymbol);
         }
-        if symbol.len() >= 5 {
+        if symbol.len() > 6 {
             return Err(TokenGenErrors::InvalidSymbol);
         }
 
