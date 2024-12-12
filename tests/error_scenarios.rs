@@ -134,3 +134,39 @@ async fn test_invalid_url_verification() -> Result<()> {
     cleanup_test_environment();
     Ok(())
 }
+
+#[tokio::test]
+async fn test_server_shutdown_handling() -> Result<()> {
+    let client = setup_test_environment().await?;
+
+    // Initial request should succeed
+    let result = client.verify_url(context::current(), "https://github.com/test/repo".into()).await;
+    assert!(result.is_ok());
+
+    // Shutdown server
+    cleanup_test_environment();
+
+    // Request after shutdown should fail
+    let result = client.verify_url(context::current(), "https://github.com/test/repo".into()).await;
+    assert!(matches!(result, Err(TokenGenErrors::RpcError(_))));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_timeout_handling() -> Result<()> {
+    let client = setup_test_environment().await?;
+
+    // Create context with timeout
+    let mut ctx = context::current();
+    ctx.deadline = Some(std::time::SystemTime::now() + Duration::from_millis(1));
+
+    // Sleep in server to trigger timeout
+    tokio::time::sleep(Duration::from_millis(10)).await;
+
+    let result = client.verify_url(ctx, "https://github.com/test/repo".into()).await;
+    assert!(matches!(result, Err(TokenGenErrors::RpcError(_))));
+
+    cleanup_test_environment();
+    Ok(())
+}
