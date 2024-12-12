@@ -96,6 +96,101 @@ mod test {
     }
 
     #[tokio::test]
+    async fn test_rpc_client_connection_failure() -> Result<()> {
+        // Test invalid address scenario
+        let result = setup_test_client().await;
+        assert!(result.is_err());
+        assert!(matches!(result, Err(TokenGenErrors::InvalidInput(_))));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_environment_specific_token_creation() -> Result<()> {
+        let client = setup_test_client().await?;
+        for env in ["devnet", "testnet", "mainnet"] {
+            let result = client
+                .create(
+                    context::current(),
+                    6,
+                    "TestToken".to_string(),
+                    "TEST".to_string(),
+                    "Test Description".to_string(),
+                    false,
+                    env.to_string(),
+                )
+                .await;
+            assert!(result.is_ok(), "Token creation failed for environment: {}", env);
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_verify_token_rpc_error_mapping() -> Result<()> {
+        let client = setup_test_client().await?;
+
+        // Test invalid URL scenario
+        let invalid_url = "https://invalid-url-that-does-not-exist";
+        let result = verify_token_using_url(invalid_url, &client).await;
+        assert!(matches!(result, Err(TokenGenErrors::RpcError(_))));
+
+        // Test malformed URL scenario
+        let malformed_url = "not-a-url";
+        let result = verify_token_using_url(malformed_url, &client).await;
+        assert!(matches!(result, Err(TokenGenErrors::InvalidInput(_))));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_error_propagation_flow() -> Result<()> {
+        let client = setup_test_client().await?;
+
+        // Test invalid decimals
+        let result = client
+            .create(
+                context::current(),
+                255, // Invalid decimals
+                "TestToken".to_string(),
+                "TEST".to_string(),
+                "Description".to_string(),
+                false,
+                "devnet".to_string(),
+            )
+            .await;
+        assert!(result.is_err());
+
+        // Test empty name
+        let result = client
+            .create(
+                context::current(),
+                6,
+                "".to_string(), // Empty name
+                "TEST".to_string(),
+                "Description".to_string(),
+                false,
+                "devnet".to_string(),
+            )
+            .await;
+        assert!(result.is_err());
+
+        // Test invalid environment
+        let result = client
+            .create(
+                context::current(),
+                6,
+                "TestToken".to_string(),
+                "TEST".to_string(),
+                "Description".to_string(),
+                false,
+                "invalid_env".to_string(),
+            )
+            .await;
+        assert!(result.is_err());
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_create_command() -> Result<()> {
         // Test user inputs
         let decimals: u8 = 6;
