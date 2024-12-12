@@ -43,7 +43,7 @@ impl TokenGen for TokenServer {
         symbol: String,
         description: String,
         is_frozen: bool,
-    ) -> anyhow::Result<(String, String), TokenGenErrors> {
+    ) -> anyhow::Result<(String, String, String), TokenGenErrors> {
         // Log the address when a request is handled
         self.log_address().await;
 
@@ -80,10 +80,19 @@ impl TokenGen for TokenServer {
             &name,
             description.clone(),
             is_frozen,
+            false
+        );
+        let test_token_content: String = generation::generate_token(
+            decimals,
+            symbol.clone(),
+            &name,
+            description.clone(),
+            is_frozen,
+            true
         );
         let move_toml_content = generation::generate_move_toml(&base_folder);
 
-        Ok((token_content, move_toml_content)) // Return both toml file and contract as strings
+        Ok((token_content, move_toml_content, test_token_content)) // Return both toml file and contract as strings
     }
 
     async fn verify_url(

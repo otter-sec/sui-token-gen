@@ -9,6 +9,7 @@ use crate::{
         helpers::sanitize_name,
         prompts::get_user_prompt,
     },
+    variables::{SUB_FOLDER, TEST_FOLDER},
     Result,
 };
 
@@ -23,7 +24,7 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     println!("Creating contract...");
 
     // Calling RPC create function
-    let (token_content, move_toml) = client
+    let (token_content, move_toml, test_token_content) = client
         .create(
             context::current(),
             token_data.decimals,
@@ -43,7 +44,22 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
 
     // Creating .toml and contract files
     create_move_toml(base_folder.to_owned(), move_toml)?;
-    create_contract_file(token_data.name, base_folder, token_content)?;
+
+    // Creating contract file
+    create_contract_file(
+        token_data.name.to_owned(),
+        base_folder.to_owned(),
+        token_content,
+        SUB_FOLDER,
+    )?;
+
+    // Creating tests file
+    create_contract_file(
+        token_data.name,
+        base_folder,
+        test_token_content,
+        TEST_FOLDER,
+    )?;
 
     println!("Contract has been generated!");
     Ok(())

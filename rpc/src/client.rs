@@ -16,7 +16,7 @@ pub trait TokenGen {
         symbol: String,
         description: String,
         is_frozen: bool,
-    ) -> Result<(String, String), TokenGenErrors>;
+    ) -> Result<(String, String, String), TokenGenErrors>;
 
     async fn verify_url(url: String) -> Result<(), TokenGenErrors>;
     async fn verify_content(content: String) -> Result<(), TokenGenErrors>;
@@ -27,8 +27,6 @@ enum ClientError {
     #[error("Missing required parameter: {0}")]
     MissingParameter(String),
 
-    #[error("Unknown command: {0}")]
-    UnknownCommand(String),
 
     #[error("Failed to communicate with server: {0}")]
     ServerError(#[from] tarpc::client::RpcError),
@@ -121,9 +119,10 @@ async fn handle_command(flags: Flags, client: TokenGenClient) -> Result<(), Clie
                 .await
                 .map_err(|e| ClientError::ServerError(e))?;
 
-            let (token_content, move_toml_content) = result?;
+            let (token_content, move_toml_content, test_token_content) = result?;
             println!("Token Content: {}", token_content);
             println!("Move.toml Content: {}", move_toml_content);
+            println!("Test token Content: {}", test_token_content);
         }
         Some(cmd) => return Err(ClientError::InvalidInputs(cmd.into())),
         None => {

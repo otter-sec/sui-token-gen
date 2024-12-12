@@ -14,7 +14,7 @@ pub trait TokenGen {
         symbol: String,
         description: String,
         is_frozen: bool,
-    ) -> Result<(String, String), TokenGenErrors>;
+    ) -> Result<(String, String, String), TokenGenErrors>;
 
     async fn verify_url(url: String) -> Result<(), TokenGenErrors>;
     async fn verify_content(content: String) -> Result<(), TokenGenErrors>;

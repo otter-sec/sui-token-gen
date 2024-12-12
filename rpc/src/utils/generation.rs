@@ -41,6 +41,7 @@ pub fn generate_token(
     name: &str,
     description: String,
     is_frozen: bool,
+    is_test: bool
 ) -> String {
     // Filtering alphanumeric characters only
     let slug = sanitize_name(name.to_owned());
@@ -63,7 +64,12 @@ pub fn generate_token(
     context.insert("description", &description);
     context.insert("is_frozen", &is_frozen);
 
-    let token_template: String = tera.render("token_template.move", &context).unwrap();
+    let template_file = if is_test {
+        "test_token_template.move"
+    } else {
+        "token_template.move"
+    };
+    let token_template: String = tera.render(template_file, &context).unwrap();
     token_template
 }
 

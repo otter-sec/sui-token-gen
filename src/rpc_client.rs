@@ -10,7 +10,7 @@ pub trait TokenGen {
         symbol: String,
         description: String,
         is_frozen: bool,
-    ) -> Result<(String, String), String>;
+    ) -> Result<(String, String, String), String>;
 
     async fn verify_url(url: String) -> Result<(), String>;
     async fn verify_content(content: String) -> Result<(), String>;
