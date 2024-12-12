@@ -3,7 +3,6 @@ use git2::Repository;
 use std::{
     env,
     fs::{self, ReadDir},
-    io,
     path::Path,
 };
 use url::Url;
@@ -39,7 +38,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
     let clone_path = Path::new(repo_name);
 
     // Ensure the cloned contract is in a good state
-    check_cloned_contract(clone_path);
+    check_cloned_contract(clone_path)?;
 
     // Clone the repository
     Repository::clone(url, clone_path).map_err(|e| TokenGenErrors::GitError(e.to_string()))?;
@@ -59,7 +58,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
         verify_contract(templates_path_ref, clone_path).await?;
 
         // Ensure the cloned contract is clean after verification
-        check_cloned_contract(clone_path);
+        check_cloned_contract(clone_path)?;
     } else {
         return Err(TokenGenErrors::InvalidPath(
             "Cloned repo not found".to_string(),
@@ -69,12 +68,12 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
     Ok(())
 }
 
-fn check_cloned_contract(path: &Path) {
+fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
     if path.exists() && path.is_dir() && !is_running_test() {
-        if let Err(e) = fs::remove_dir_all(path) {
-            TokenGenErrors::FileIoError(e.to_string());
-        }
+        fs::remove_dir_all(path)
+            .map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
     }
+    Ok(())
 }
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
@@ -164,12 +163,12 @@ pub fn compare_contract_content(
         // Ensure the cloned contract is clean after verification
         // only if clone_path exists
         if let Some(path) = clone_path {
-            check_cloned_contract(path);
+            check_cloned_contract(path)?;
         }
 
         return Err(TokenGenErrors::VerifyResultError(
-            "Contract is modified".to_string(),
-        )); // Return error if modified
+            "Contract verification failed: content mismatch detected".to_string(),
+        ));
     }
 
     Ok(()) // Return success if the contract is not modified
