@@ -19,7 +19,7 @@ pub struct TokenServer {
 
 #[tarpc::server]
 impl TokenGen for TokenServer {
-    async fn verify_url(self, _: context::Context, url: String) -> Result<()> {
+    async fn verify_url(ctx: context::Context, url: String) -> Result<()> {
         if url.starts_with("http") || url.starts_with("https") {
             Ok(())
         } else {
@@ -27,7 +27,7 @@ impl TokenGen for TokenServer {
         }
     }
 
-    async fn verify_content(self, _: context::Context, content: String) -> Result<()> {
+    async fn verify_content(ctx: context::Context, content: String) -> Result<()> {
         if content.trim().is_empty() {
             Err(TokenGenErrors::InvalidContent("Empty content".to_string()))
         } else {
@@ -36,8 +36,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn create(
-        self,
-        _: context::Context,
+        ctx: context::Context,
         decimals: u8,
         name: String,
         symbol: String,
@@ -75,7 +74,7 @@ impl TokenServer {
                 let server = self.clone();
                 tokio::spawn(async move {
                     channel.execute(server).for_each(|resp| async {
-                        if let Err(e) = resp.await {
+                        if let Err(e) = resp {
                             eprintln!("Error processing request: {}", e);
                         }
                     }).await;

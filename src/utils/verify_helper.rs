@@ -3,7 +3,7 @@ use std::{
     io,
     path::Path,
 };
-use tarpc::{client, context, Response};
+use tarpc::{client, context};
 
 use crate::{rpc::TokenGen, TokenGenErrors, Result};
 
@@ -29,7 +29,7 @@ pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
    Take all .move files in that folder
    Call verify_content function from RPC
 */
-pub async fn verify_contract(dir: &Path, client: &client::NewClient<dyn TokenGen, Response<Result<()>>>) -> Result<()> {
+pub async fn verify_contract(dir: &Path, client: &client::NewClient<dyn TokenGen>) -> Result<()> {
     if !dir.is_dir() {
         return Err(TokenGenErrors::InvalidPath(
             "Path is not a directory".to_string(),
