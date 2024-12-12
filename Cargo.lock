@@ -1841,6 +1841,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-std",
+ "async-trait",
  "clap",
  "git2",
  "inquire",
