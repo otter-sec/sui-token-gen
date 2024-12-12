@@ -3,8 +3,8 @@ use std::{
     io,
     path::Path,
 };
-
 use tarpc::context;
+
 use crate::{TokenGenErrors, Result, rpc::TokenGen};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {

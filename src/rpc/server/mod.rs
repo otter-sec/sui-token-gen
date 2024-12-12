@@ -4,9 +4,8 @@ use std::{
 };
 use futures::StreamExt;
 use tarpc::{
-    server::{self, Channel},
+    server::{self, BaseChannel},
     context,
-    serde_transport::tcp,
     tokio_serde::formats::Json,
 };
 
@@ -17,9 +16,67 @@ pub struct TokenServer {
     addr: SocketAddr,
 }
 
+impl TokenServer {
+    pub fn new(addr: SocketAddr) -> Self {
+        Self { addr }
+    }
+
+    pub async fn serve(self) -> Result<()> {
+        let listener = tarpc::serde_transport::tcp::listen(&self.addr, Json::default)
+            .await
+            .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?;
+
+        listener
+            .filter_map(|r| future::ready(r.ok()))
+            .map(BaseChannel::with_defaults)
+            .for_each(|channel| {
+                let server = self.clone();
+                tokio::spawn(async move {
+                    channel.execute(server).await;
+                });
+                future::ready(())
+            })
+            .await;
+
+        Ok(())
+    }
+
+    fn serve_fn(
+        self,
+    ) -> impl Fn(tarpc::context::Context, TokenGenRequest) -> impl future::Future<Output = TokenGenResponse> + Send
+           + 'static {
+        move |_ctx, req| {
+            let server = self.clone();
+            async move {
+                match req {
+                    TokenGenRequest::VerifyUrl { url } => {
+                        TokenGenResponse::VerifyUrl(server.verify_url(url).await)
+                    }
+                    TokenGenRequest::VerifyContent { content } => {
+                        TokenGenResponse::VerifyContent(server.verify_content(content).await)
+                    }
+                    TokenGenRequest::Create {
+                        decimals,
+                        name,
+                        symbol,
+                        description,
+                        is_frozen,
+                    } => {
+                        TokenGenResponse::Create(
+                            server
+                                .create(decimals, name, symbol, description, is_frozen)
+                                .await,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[tarpc::server]
 impl TokenGen for TokenServer {
-    async fn verify_url(&self, ctx: context::Context, url: String) -> Result<()> {
+    async fn verify_url(self, ctx: context::Context, url: String) -> Result<()> {
         if url.starts_with("http") || url.starts_with("https") {
             Ok(())
         } else {
@@ -27,7 +84,7 @@ impl TokenGen for TokenServer {
         }
     }
 
-    async fn verify_content(&self, ctx: context::Context, content: String) -> Result<()> {
+    async fn verify_content(self, ctx: context::Context, content: String) -> Result<()> {
         if content.trim().is_empty() {
             Err(TokenGenErrors::InvalidContent("Empty content".to_string()))
         } else {
@@ -36,7 +93,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn create(
-        &self,
+        self,
         ctx: context::Context,
         decimals: u8,
         name: String,
@@ -55,32 +112,5 @@ impl TokenGen for TokenServer {
         );
 
         Ok((token_content, move_toml))
-    }
-}
-
-impl TokenServer {
-    pub fn new(addr: SocketAddr) -> Self {
-        Self { addr }
-    }
-
-    pub async fn serve(self) -> Result<()> {
-        let listener = tcp::listen(&self.addr, Json::default)
-            .await
-            .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?;
-
-        let server = self.clone();
-        listener
-            .filter_map(|r| future::ready(r.ok()))
-            .map(server::BaseChannel::with_defaults)
-            .for_each(|channel| {
-                let server = server.clone();
-                tokio::spawn(async move {
-                    channel.execute(server).await;
-                });
-                future::ready(())
-            })
-            .await;
-
-        Ok(())
     }
 }
