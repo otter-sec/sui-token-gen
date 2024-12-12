@@ -4,7 +4,7 @@ use std::{
 };
 use futures::StreamExt;
 use tarpc::{
-    server::{self, BaseChannel},
+    server::{self, Channel},
     context,
     serde_transport::tcp,
     tokio_serde::formats::Json,
@@ -19,7 +19,7 @@ pub struct TokenServer {
 
 #[tarpc::server]
 impl TokenGen for TokenServer {
-    async fn verify_url(&self, ctx: context::Context, url: String) -> Result<()> {
+    async fn verify_url(&self, url: String) -> Result<()> {
         if url.starts_with("http") || url.starts_with("https") {
             Ok(())
         } else {
@@ -27,7 +27,7 @@ impl TokenGen for TokenServer {
         }
     }
 
-    async fn verify_content(&self, ctx: context::Context, content: String) -> Result<()> {
+    async fn verify_content(&self, content: String) -> Result<()> {
         if content.trim().is_empty() {
             Err(TokenGenErrors::InvalidContent("Empty content".to_string()))
         } else {
@@ -37,7 +37,6 @@ impl TokenGen for TokenServer {
 
     async fn create(
         &self,
-        ctx: context::Context,
         decimals: u8,
         name: String,
         symbol: String,
@@ -64,7 +63,7 @@ impl TokenServer {
     }
 
     pub async fn serve(self) -> Result<()> {
-        let listener = tarpc::serde_transport::tcp::listen(&self.addr, Json::default)
+        let listener = tcp::listen(&self.addr, Json::default)
             .await
             .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?;
 
@@ -75,8 +74,7 @@ impl TokenServer {
             .for_each(|channel| {
                 let server = server.clone();
                 tokio::spawn(async move {
-                    let server = server.serve();
-                    channel.respond_with(server).await;
+                    channel.execute(server.serve()).await;
                 });
                 future::ready(())
             })

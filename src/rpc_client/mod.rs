@@ -4,8 +4,9 @@ use tarpc::tokio_serde::formats::Json;
 
 use crate::{errors::TokenGenErrors, Result, rpc::TokenGen};
 
-pub type TokenGenClient = client::Client<tarpc::client::Channel<tarpc::serde_transport::tcp::Transport<Json<Vec<u8>, Vec<u8>>, tokio::net::TcpStream>, Json<Vec<u8>, Vec<u8>>>>;
+pub type TokenGenClient = tarpc::client::Client<tarpc::client::Channel<tarpc::serde_transport::Transport<Json<Vec<u8>, Vec<u8>>, tokio::net::TcpStream>, Json<Vec<u8>, Vec<u8>>>>;
 
+#[tarpc::client]
 impl TokenGen for TokenGenClient {}
 
 pub async fn connect_client(addr: SocketAddr) -> Result<TokenGenClient> {
