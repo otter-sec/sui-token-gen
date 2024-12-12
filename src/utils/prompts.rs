@@ -14,6 +14,7 @@ pub struct TokenInfo {
     pub name: String,
     pub description: String,
     pub is_frozen: bool,
+    pub environment: String,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -25,6 +26,7 @@ impl Default for TokenInfo {
             name: String::new(),
             description: String::new(),
             is_frozen: false,
+            environment: "devnet".to_string(),
         }
     }
 }
@@ -127,11 +129,26 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         .map_err(TokenGenErrors::PromptError)?;
     let is_frozen: bool = frozen_metadata.value == "Yes";
 
+    /*
+        Prompt for environment:
+        Options mainnet, devnet, testnet
+        Default: devnet
+    */
+    let env_options = vec!["mainnet", "devnet", "testnet"];
+    let default_index = env_options.iter().position(|&r| r == "devnet").unwrap(); 
+    let env_option = Select::new("Select environment:", &env_options)
+        .with_starting_cursor(default_index)
+        .prompt()
+        .map_err(TokenGenErrors::PromptError)?;
+
+    let environment: String = env_option.value;
+
     Ok(TokenInfo {
         decimals,
         symbol,
         name,
         description,
         is_frozen,
+        environment
     })
 }

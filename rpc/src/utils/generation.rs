@@ -1,11 +1,14 @@
 use chrono::{Datelike, Utc};
 use serde::Serialize;
 use std::{collections::HashMap, env};
-
-use crate::utils::helpers::sanitize_name;
 use tera::{Context, Tera};
 
-use crate::utils::variables::{SUI_PROJECT, SUI_PROJECT_SUB_DIR};
+use crate::utils::{
+    helpers::sanitize_name,
+    variables::{
+        SUI_PROJECT, SUI_PROJECT_SUB_DIR
+    }
+};
 
 #[derive(Serialize)]
 struct Package {
@@ -74,7 +77,7 @@ pub fn generate_token(
 }
 
 // Generating move.toml file with basic requirements
-pub fn generate_move_toml(package_name: &str) -> String {
+pub fn generate_move_toml(package_name: &str, environment: String) -> String {
     let current_year: u32 = Utc::now().year_ce().1;
 
     let move_toml = MoveToml {
@@ -87,7 +90,7 @@ pub fn generate_move_toml(package_name: &str) -> String {
             sui: SuiDependency {
                 git: SUI_PROJECT.to_string(),
                 subdir: SUI_PROJECT_SUB_DIR.to_string(),
-                rev: "framework/testnet".to_string(),
+                rev: format!("framework/{}", environment),
             },
         },
         addresses: {

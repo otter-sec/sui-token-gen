@@ -43,6 +43,7 @@ impl TokenGen for TokenServer {
         symbol: String,
         description: String,
         is_frozen: bool,
+        environment: String
     ) -> anyhow::Result<(String, String, String), TokenGenErrors> {
         // Log the address when a request is handled
         self.log_address().await;
@@ -72,6 +73,14 @@ impl TokenGen for TokenServer {
             return Err(TokenGenErrors::InvalidDescription);
         }
 
+        // Validate environment: must be one of "mainnet", "devnet", or "testnet"
+        let valid_environments = ["mainnet", "devnet", "testnet"];
+        let environment = if valid_environments.contains(&environment.as_str()) {
+            environment
+        } else {
+            "devnet".to_string() // Default to "devnet" if invalid
+        };
+        
         // Proceed with the token generation logic
         let base_folder: String = sanitize_name(name.to_owned());
         let token_content: String = generation::generate_token(
@@ -90,7 +99,8 @@ impl TokenGen for TokenServer {
             is_frozen,
             true
         );
-        let move_toml_content = generation::generate_move_toml(&base_folder);
+
+        let move_toml_content = generation::generate_move_toml(&base_folder, environment);
 
         Ok((token_content, move_toml_content, test_token_content)) // Return both toml file and contract as strings
     }

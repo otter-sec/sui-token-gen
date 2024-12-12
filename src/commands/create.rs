@@ -32,6 +32,7 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
             token_data.symbol,
             token_data.description,
             token_data.is_frozen,
+            token_data.environment
         )
         .await
         .map_err(TokenGenErrors::RpcError)?

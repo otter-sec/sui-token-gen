@@ -102,6 +102,7 @@ mod test {
         let name: &str = "SampleToken";
         let description: String = "This is a sample token for testing.".to_string();
         let is_frozen: bool = false;
+        let environment: String = "devnet".to_string();
 
         // Testing contract folder
         let base_folder = sanitize_name(name.to_owned());
@@ -123,6 +124,7 @@ mod test {
                 symbol.to_owned(),
                 description.to_owned(),
                 is_frozen,
+                environment
             )
             .await
         {

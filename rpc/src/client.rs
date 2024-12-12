@@ -16,6 +16,7 @@ pub trait TokenGen {
         symbol: String,
         description: String,
         is_frozen: bool,
+        environment: String
     ) -> Result<(String, String, String), TokenGenErrors>;
 
     async fn verify_url(url: String) -> Result<(), TokenGenErrors>;
@@ -57,6 +58,8 @@ struct Flags {
     decimals: Option<u8>,
     #[clap(long)]
     is_frozen: Option<bool>,
+    #[clap(long)]
+    environment: Option<String>,
     #[clap(long)]
     url: Option<String>,
     #[clap(long)]
@@ -106,6 +109,7 @@ async fn handle_command(flags: Flags, client: TokenGenClient) -> Result<(), Clie
             let description = require_param(flags.description, "description", "create")?;
             let decimals = require_param(flags.decimals, "decimals", "create")?;
             let is_frozen = require_param(flags.is_frozen, "is_frozen", "create")?;
+            let environment = require_param(flags.environment, "environment", "create")?;
 
             let result = client
                 .create(
@@ -115,6 +119,7 @@ async fn handle_command(flags: Flags, client: TokenGenClient) -> Result<(), Clie
                     symbol,
                     description,
                     is_frozen,
+                    environment
                 )
                 .await
                 .map_err(|e| ClientError::ServerError(e))?;
