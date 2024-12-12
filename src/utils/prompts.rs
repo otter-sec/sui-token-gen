@@ -53,7 +53,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
             Ok(_) => eprintln!("Decimals must be greater than 0. Please try again."),
             Err(e) => {
                 if e.to_string() == CANCEL_ERROR_MESSAGE {
-                    return Err(TokenGenErrors::PromptError(e));
+                    return Err(TokenGenErrors::PromptError(e.to_string()));
                 } else {
                     eprintln!("Error: {e}. Please try again.");
                 }
@@ -69,9 +69,9 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     */
     let symbol: String = Text::new("Symbol: ")
         .with_validator(required!("Symbol is required"))
-        .with_validator(&|input| {
+        .with_validator(&|input: &str| {
             if symbol_regex.is_match(input) {
-                if input.len() <= 5 {
+                if input.chars().count() <= 5 {
                     Ok(())
                 } else {
                     Err("Symbol has to be less than 5 letters".into())
@@ -81,7 +81,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
             }
         })
         .prompt()
-        .map_err(TokenGenErrors::PromptError)?;
+        .map_err(|e| TokenGenErrors::PromptError(e.to_string()))?;
 
     /*
         Prompt for name:
@@ -91,7 +91,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     let name: String = Text::new("Name: ")
         .with_validator(required!("Name is required"))
         .with_help_message("e.g. MyToken")
-        .with_validator(&|input| {
+        .with_validator(&|input: &str| {
             if valid_regex.is_match(input) {
                 Ok(())
             } else {
@@ -99,7 +99,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
             }
         })
         .prompt()
-        .map_err(TokenGenErrors::PromptError)?;
+        .map_err(|e| TokenGenErrors::PromptError(e.to_string()))?;
 
     /*
         Prompt for description - optional:
@@ -108,8 +108,8 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     */
     let description: String = Text::new("Description: ")
         .with_help_message("Optional")
-        .with_validator(&|input| {
-            if input.is_empty() || valid_regex.is_match(input) {
+        .with_validator(&|input: &str| {
+            if input.trim().is_empty() || valid_regex.is_match(input) {
                 Ok(())
             } else {
                 Err("Description can only contain alphabets, numbers, and whitespace".into())
@@ -124,7 +124,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     */
     let frozen_metadata = Select::new("Frozen metadata?", &FROZEN_OPTIONS)
         .prompt()
-        .map_err(TokenGenErrors::PromptError)?;
+        .map_err(|e| TokenGenErrors::PromptError(e.to_string()))?;
     let is_frozen: bool = frozen_metadata.value == "Yes";
 
     Ok(TokenInfo {

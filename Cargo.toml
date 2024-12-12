@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1", features = ["full"] } 
+tokio = { version = "1", features = ["full"] }
 inquire = "=0.0.7"
 url = "2.5.4"
 serde = { version = "1.0", features = ["derive"] }
@@ -15,4 +15,15 @@ clap = { version = "4.5.21", features = ["derive"] }
 git2 = "0.17"
 anyhow = "1.0.94"
 thiserror = "2.0.4"
-tarpc = { version = "0.35", features = ["full"] }
+tarpc = { version = "0.35", features = ["full", "tokio1", "serde1", "serde-transport", "tcp"] }
+tempfile = "3.10.1"
+futures = "0.3"
+once_cell = "1.19.0"
+
+[lib]
+name = "suitokengentest"
+path = "src/lib.rs"
+
+[[bin]]
+name = "suitokengentest"
+path = "src/main.rs"

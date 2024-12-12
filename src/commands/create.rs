@@ -1,16 +1,8 @@
 use std::io;
-use tarpc::context;
+use tarpc::{client, context};
 
-use crate::{
-    errors::TokenGenErrors,
-    rpc_client::TokenGenClient,
-    utils::{
-        generation::{create_base_folder, create_contract_file, create_move_toml},
-        helpers::sanitize_name,
-        prompts::get_user_prompt,
-    },
-    Result,
-};
+use crate::{TokenGen, TokenGenErrors, Result};
+use crate::utils::prompts::get_user_prompt;
 
 impl From<TokenGenErrors> for io::Error {
     fn from(err: TokenGenErrors) -> io::Error {
@@ -18,7 +10,7 @@ impl From<TokenGenErrors> for io::Error {
     }
 }
 
-pub async fn create_token(client: TokenGenClient) -> Result<()> {
+pub async fn create_token(client: &client::NewClient<dyn TokenGen>) -> Result<()> {
     let token_data = get_user_prompt()?;
     println!("Creating contract...");
 
@@ -33,18 +25,10 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
             token_data.is_frozen,
         )
         .await
-        .map_err(TokenGenErrors::RpcError)?
-        .map_err(TokenGenErrors::FailedToCreateTokenContract)?;
+        .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?;
 
-    let base_folder = sanitize_name(token_data.name.to_owned());
-
-    // Creating base contract folder
-    create_base_folder(base_folder.to_owned())?;
-
-    // Creating .toml and contract files
-    create_move_toml(base_folder.to_owned(), move_toml)?;
-    create_contract_file(token_data.name, base_folder, token_content)?;
-
+    println!("Contract content: {}", token_content);
+    println!("Move.toml content: {}", move_toml);
     println!("Contract has been generated!");
     Ok(())
 }

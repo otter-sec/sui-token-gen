@@ -81,7 +81,7 @@ mod test {
     use crate::{
         commands::verify::verify_token_using_url,
         rpc_client::TokenGenClient,
-        test_utils::setup_test_client,
+        test_utils::{cleanup_test_environment, setup_test_environment},
         utils::{
             generation::{create_base_folder, create_contract_file, create_move_toml},
             helpers::sanitize_name,
@@ -89,10 +89,6 @@ mod test {
         variables::SUB_FOLDER,
         Result,
     };
-
-    async fn test_initiate_client() -> Result<TokenGenClient> {
-        setup_test_client().await
-    }
 
     #[tokio::test]
     async fn test_create_command() -> Result<()> {
@@ -106,30 +102,21 @@ mod test {
         // Testing contract folder
         let base_folder = sanitize_name(name.to_owned());
 
-        // Initialize the RPC client
-        let client: TokenGenClient = test_initiate_client().await?;
+        // Initialize the RPC client using test environment
+        let client: TokenGenClient = setup_test_environment().await?;
 
         // If the test base folder already exists, delete it
         if Path::new(&base_folder).exists() {
             fs::remove_dir_all(&base_folder).expect("Failed to delete test base folder");
         }
 
-        // Call the `create` method and handle nested `Result`
+        // Call the `create` method with context
+        let ctx = context::current();
         match client
-            .create(
-                context::current(),
-                decimals,
-                name.to_owned(),
-                symbol.to_owned(),
-                description.to_owned(),
-                is_frozen,
-            )
+            .create(ctx, decimals, name.to_owned(), symbol.to_owned(), description.to_owned(), is_frozen)
             .await
         {
             Ok(Ok((token_content, move_toml))) => {
-                println!("Token Content:\n{}", token_content);
-                println!("Move.toml Content:\n{}", move_toml);
-
                 // Create base folder
                 create_base_folder(base_folder.to_owned()).expect("Failed to create base folder");
 
@@ -188,13 +175,17 @@ mod test {
                 // Clean up: Delete the test base folder
                 fs::remove_dir_all(base_folder).expect("Failed to delete test base folder");
             }
-            Ok(Err(service_error)) => {
-                eprintln!("Service error: {:?}", service_error);
+            Ok(Err(e)) => {
+                cleanup_test_environment();
+                return Err(TokenGenErrors::FailedToCreateTokenContract(e));
             }
-            Err(rpc_error) => {
-                eprintln!("RPC error: {:?}", rpc_error);
+            Err(e) => {
+                cleanup_test_environment();
+                return Err(TokenGenErrors::RpcError(e));
             }
         }
+
+        cleanup_test_environment();
         Ok(())
     }
 
@@ -203,17 +194,18 @@ mod test {
         let current_dir = env::current_dir().expect("Failed to get current directory");
         let templates_path = format!("{}/src/test_tokens/valid_token.move", current_dir.display());
 
-        // Initialize the RPC client
-        let client: TokenGenClient = test_initiate_client().await?;
+        // Initialize the RPC client using test environment
+        let client: TokenGenClient = setup_test_environment().await?;
 
         // Read content from the existing valid token file
         let valid_content =
             fs::read_to_string(templates_path).expect("Failed to read valid token file");
 
-        let response = client
-            .verify_content(context::current(), valid_content)
-            .await;
-        assert!(response.is_ok(), "Verification failed");
+        let ctx = context::current();
+        let result = client.verify_content(ctx, valid_content).await;
+        assert!(result.is_ok(), "Verification failed");
+
+        cleanup_test_environment();
         Ok(())
     }
 
@@ -225,18 +217,18 @@ mod test {
             current_dir.display()
         );
 
-        // Initialize the RPC client
-        let client: TokenGenClient = test_initiate_client().await?;
+        // Initialize the RPC client using test environment
+        let client: TokenGenClient = setup_test_environment().await?;
 
-        // Read content from the existing valid token file
-        let valid_content =
-            fs::read_to_string(templates_path).expect("Failed to read valid token file");
+        // Read content from the existing invalid token file
+        let invalid_content =
+            fs::read_to_string(templates_path).expect("Failed to read invalid token file");
 
-        let response = client
-            .verify_content(context::current(), valid_content)
-            .await;
-        assert!(response.is_err(), "Verification failed");
+        let ctx = context::current();
+        let result = client.verify_content(ctx, invalid_content).await;
+        assert!(result.is_err(), "Expected verification to fail");
 
+        cleanup_test_environment();
         Ok(())
     }
 
@@ -245,12 +237,14 @@ mod test {
         // Testing repo
         let valid_url = "https://github.com/meumar-osec/test-sui-token";
 
-        // Initialize the RPC client
-        let client: TokenGenClient = test_initiate_client().await?;
+        // Initialize the RPC client using test environment
+        let client: TokenGenClient = setup_test_environment().await?;
 
-        // Call verify_token
-        let response = verify_token_using_url(valid_url, client).await;
-        assert!(response.is_ok(), "Failed to verify URL");
+        // Call verify_token with context
+        let result = verify_token_using_url(valid_url, client).await;
+        assert!(result.is_ok(), "Failed to verify URL");
+
+        cleanup_test_environment();
         Ok(())
     }
 
@@ -258,12 +252,14 @@ mod test {
     async fn test_verify_command_invalid_git() -> Result<()> {
         let valid_url = "https://github.com/meumar-osec/sui-token1";
 
-        // Initialize the RPC client
-        let client: TokenGenClient = test_initiate_client().await?;
+        // Initialize the RPC client using test environment
+        let client: TokenGenClient = setup_test_environment().await?;
 
-        // Call verify_token
-        let response = verify_token_using_url(valid_url, client).await;
-        assert!(response.is_err(), "Failed to verify URL");
+        // Call verify_token with context
+        let result = verify_token_using_url(valid_url, client).await;
+        assert!(result.is_err(), "Expected URL verification to fail");
+
+        cleanup_test_environment();
         Ok(())
     }
 }

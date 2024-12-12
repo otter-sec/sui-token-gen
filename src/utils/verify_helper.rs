@@ -3,9 +3,9 @@ use std::{
     io,
     path::Path,
 };
-use tarpc::context;
+use tarpc::{client, context};
 
-use crate::{errors::TokenGenErrors, rpc_client::TokenGenClient, Result};
+use crate::{TokenGen, TokenGenErrors, Result};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
     if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {
@@ -29,7 +29,7 @@ pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
    Take all .move files in that folder
    Call verify_content function from RPC
 */
-pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
+pub async fn verify_contract(dir: &Path, client: &client::NewClient<dyn TokenGen>) -> Result<()> {
     if !dir.is_dir() {
         return Err(TokenGenErrors::InvalidPath(
             "Path is not a directory".to_string(),
@@ -47,14 +47,14 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
                 // Check for .move file
                 if path.is_file() && path.extension().map(|e| e == "move").unwrap_or(false) {
                     // Reading the .move file content
-                    let content = read_file(&path).map_err(TokenGenErrors::FileIoError)?;
+                    let content = read_file(&path)?;
                     current_content.push_str(&content);
                     break; // Exit loop once a .move file is found
                 }
             }
             Err(e) => {
                 eprintln!("Error reading entry in directory: {}", e);
-                return Err(TokenGenErrors::FileIoError(e));
+                return Err(TokenGenErrors::FileIoError(e.to_string()));
             }
         }
     }
@@ -67,9 +67,6 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
     }
 
     // Call verify_content for the .move file
-    let _ = client
-        .verify_content(context::current(), current_content)
-        .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?;
+    client.verify_content(context::current(), current_content).await?;
     Ok(())
 }
