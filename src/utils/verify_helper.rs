@@ -67,6 +67,6 @@ pub async fn verify_contract(dir: &Path, client: &client::NewClient<TokenServer,
     }
 
     // Call verify_content for the .move file
-    client.verify_content(context::current(), current_content).await?;
+    client.verify_content(current_content).await?;
     Ok(())
 }
