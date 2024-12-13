@@ -28,7 +28,7 @@ pub fn filter_token_content(content: &str) -> String {
 
 // Extracting decimals, symbol, name, description, is_frozen from contract (String)
 pub fn get_token_info(content: &str) -> (u8, String, String, String, bool) {
-    //Default values
+    // Default values
     let mut decimals = 0;
     let mut symbol = String::new();
     let mut name = String::new();

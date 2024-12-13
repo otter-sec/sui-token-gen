@@ -4,12 +4,14 @@ use errors::TokenGenErrors;
 mod commands;
 mod errors;
 mod rpc_client;
-pub mod tests;
 mod utils;
 mod variables;
 
 use rpc_client::{initiate_client, TokenGenClient};
 use variables::ADDRESS;
+
+#[cfg(test)]
+pub mod tests;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -73,4 +75,3 @@ async fn main() -> Result<()> {
     }
     Ok(())
 }
-
