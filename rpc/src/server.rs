@@ -82,7 +82,7 @@ impl TokenGen for TokenServer {
         };
 
         // Proceed with the token generation logic
-        let base_folder: String = sanitize_name(name.to_owned());
+        let base_folder: String = sanitize_name(&name);
         let token_content: String = generation::generate_token(
             decimals,
             symbol.clone(),

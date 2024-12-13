@@ -35,7 +35,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     // Regex for allowing only alphabets, numbers, and whitespace
     let valid_regex: Regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap();
 
-    //Regex for allowing only alphabets, numbers
+    // Regex for allowing only alphabets, numbers
     let symbol_regex: Regex = Regex::new(r"^[a-zA-Z0-9]+$").unwrap();
 
     /*

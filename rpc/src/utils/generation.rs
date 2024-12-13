@@ -45,7 +45,7 @@ pub fn generate_token(
     is_test: bool,
 ) -> String {
     // Filtering alphanumeric characters only
-    let slug = sanitize_name(name.to_owned());
+    let slug = sanitize_name(&name.to_string());
 
     let module_name = slug.clone();
     let token_type = slug.to_uppercase();

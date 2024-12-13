@@ -76,15 +76,15 @@ fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
     Ok(())
 }
 
-pub fn read_file(file_path: &Path) -> io::Result<String> {
+pub fn read_file(file_path: &Path) -> Result<String, TokenGenErrors> {
     if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "File is not a .move file",
+        return Err(TokenGenErrors::FileIoError(
+            "File is not a .move file".to_string(),
         ));
     }
 
-    let content = fs::read_to_string(file_path)?;
+    let content =
+        fs::read_to_string(file_path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
     Ok(content)
 }
 
@@ -101,39 +101,33 @@ pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
    Compare that newly created contract with user given contract
 */
 pub async fn verify_contract(dir: &Path, clone_path: &Path) -> Result<(), TokenGenErrors> {
+    // Ensure the given path is a directory
     if !dir.is_dir() {
         return Err(TokenGenErrors::InvalidPath(
             "Path is not a directory".to_string(),
         ));
     }
 
+    // Read all entries in the directory
     let entries = read_dir(dir)
-        .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read current dir: {}", e)))?;
+        .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read directory: {}", e)))?;
 
+    // Iterate over the entries
     for entry in entries {
-        match entry {
-            Ok(entry) => {
-                let path = entry.path();
-                if path.is_file() && path.extension().map(|e| e == "move").unwrap_or(false) {
-                    // Read contract file
-                    match read_file(&path) {
-                        Ok(current_content) => {
-                            // Call compare_contract_content and propagate any error
-                            compare_contract_content(current_content, Some(clone_path))?
-                        }
-                        Err(e) => {
-                            return Err(TokenGenErrors::FileIoError(e.to_string()));
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                return Err(TokenGenErrors::FileIoError(e.to_string()));
-            }
+        let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
+        let path = entry.path();
+
+        // Check if the entry is a file with a `.move` extension
+        if path.is_file() && path.extension().is_some_and(|e| e == "move") {
+            // Read the contract file content
+            let current_content = read_file(&path)?;
+
+            // Compare contract content, propagate errors if any
+            compare_contract_content(current_content, Some(clone_path))?;
         }
     }
 
-    Ok(()) // Return success if the contract is not modified
+    Ok(()) // Success: No modifications detected
 }
 
 pub fn compare_contract_content(

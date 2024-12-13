@@ -8,7 +8,7 @@ pub fn is_valid_github_url(url: &str) -> bool {
 }
 
 // Returing filtered alphanumeric characters string
-pub fn sanitize_name(name: String) -> String {
+pub fn sanitize_name(name: &String) -> String {
     name.chars()
         .filter(|c| c.is_alphanumeric())
         .collect::<String>()

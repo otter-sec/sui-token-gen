@@ -195,7 +195,7 @@ mod test {
         let environment: String = "devnet".to_string();
 
         // Testing contract folder
-        let base_folder = sanitize_name(name.to_owned());
+        let base_folder = sanitize_name(&name.to_string());
 
         // Initialize the RPC client
         let client: TokenGenClient = test_initiate_client().await?;
@@ -224,7 +224,7 @@ mod test {
         println!("Move.toml Content:\n{}", move_toml);
 
         // Create base folder
-        create_base_folder(base_folder.to_owned()).expect("Failed to create base folder");
+        create_base_folder(&base_folder)?;
 
         // Generate Move.toml file
         create_move_toml(base_folder.to_owned(), move_toml).expect("Failed to create Move.toml");
@@ -240,8 +240,8 @@ mod test {
 
         // Validate folder and file creation
         let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);
-        let toml_file = format!("{}/Move.toml", base_folder);
-        let move_file = format!("{}/{}.move", sources_folder, sanitize_name(name.to_owned()));
+        let toml_file: String = format!("{}/Move.toml", base_folder);
+        let move_file: String = format!("{}/{}.move", sources_folder, sanitize_name(&name.to_string()));
 
         assert!(
             Path::new(&sources_folder).exists(),

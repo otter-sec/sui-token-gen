@@ -38,10 +38,10 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
         .map_err(TokenGenErrors::RpcError)?
         .map_err(TokenGenErrors::FailedToCreateTokenContract)?;
 
-    let base_folder = sanitize_name(token_data.name.to_owned());
+    let base_folder: String = sanitize_name(&token_data.name);
 
     // Creating base contract folder
-    create_base_folder(base_folder.to_owned())?;
+    create_base_folder(&base_folder)?;
 
     // Creating .toml and contract files
     create_move_toml(base_folder.to_owned(), move_toml)?;
