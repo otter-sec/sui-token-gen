@@ -2,6 +2,8 @@ use anyhow::Result;
 use std::{io::Error, net::SocketAddr};
 use tarpc::{client, tokio_serde::formats::Json};
 
+use crate::errors::RpcResponseErrors;
+
 #[tarpc::service]
 pub trait TokenGen {
     async fn create(
@@ -11,10 +13,10 @@ pub trait TokenGen {
         description: String,
         is_frozen: bool,
         environment: String,
-    ) -> Result<(String, String, String), String>;
+    ) -> Result<(String, String, String), RpcResponseErrors>;
 
-    async fn verify_url(url: String) -> Result<(), String>;
-    async fn verify_content(content: String) -> Result<(), String>;
+    async fn verify_url(url: String) -> Result<(), RpcResponseErrors>;
+    async fn verify_content(content: String) -> Result<(), RpcResponseErrors>;
 }
 
 // Initializing RPC client

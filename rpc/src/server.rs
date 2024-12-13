@@ -190,7 +190,7 @@ mod tests {
                 ctx.clone(),
                 8,
                 "Test".into(),
-                "TSTSTS".into(),
+                "TSTSTST".into(),
                 "Description".into(),
                 false,
                 "devnet".into(),

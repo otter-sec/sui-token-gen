@@ -35,8 +35,8 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
             token_data.environment,
         )
         .await
-        .map_err(TokenGenErrors::RpcError)?
-        .map_err(TokenGenErrors::FailedToCreateTokenContract)?;
+        .map_err(|e| TokenGenErrors::RpcError(e))?
+        .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
 
     let base_folder: String = sanitize_name(&token_data.name);
 
