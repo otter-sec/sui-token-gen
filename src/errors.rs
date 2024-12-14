@@ -16,26 +16,26 @@ pub enum TokenGenErrors {
     InvalidUrl(String),
 
     #[error("Git operation failed: {0}")]
-    GitError(#[from] git2::Error),
+    GitError(git2::Error),
 
     #[error("File I/O error: {0}")]
-    FileIoError(#[from] io::Error),
+    FileIoError(io::Error),
 
     #[error("Tera error: {0}")]
-    TeraError(#[from] tera::Error),
+    TeraError(tera::Error),
 
     #[error(transparent)]
-    PromptError(#[from] inquire::error::InquireError),
+    PromptError(inquire::error::InquireError),
 
     #[error(transparent)]
-    RpcError(#[from] tarpc::client::RpcError),
+    RpcError(tarpc::client::RpcError),
 
     #[error("Verification failed: {0}")]
     VerificationError(String),
 }
 
 impl TokenGenErrors {
-    fn log(&self) {
+    pub fn log(&self) {
         use crate::utils::helpers::log_error_message;
         log_error_message(&self.to_string());
     }
