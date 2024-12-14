@@ -86,7 +86,7 @@ async fn error_propagation_flow() -> Result<()> {
         .await?;
     assert!(result.is_err());
 
-    // Test invalid environment should be succeed. i.e taking devnet as default if it's invalid
+    // Test invalid environment should be succeed. i.e if environment invalid 'devnet' as default
     let result = client
         .create(
             context::current(),

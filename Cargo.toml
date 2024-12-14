@@ -17,6 +17,7 @@ anyhow = "1.0.94"
 thiserror = "2.0.4"
 tarpc = { version = "0.35", features = ["full"] }
 async-trait = "0.1.83"
+colored = "2.0"
 
 [dev-dependencies]
 tokio-test = "0.4"

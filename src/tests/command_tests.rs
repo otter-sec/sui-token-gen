@@ -60,9 +60,6 @@ async fn create_command() -> Result<()> {
         .map_err(|e| TokenGenErrors::RpcError(e))?
         .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
 
-    println!("Token Content:\n{}", token_content);
-    println!("Move.toml Content:\n{}", move_toml);
-
     // Create base folder
     create_base_folder(&base_folder)?;
 

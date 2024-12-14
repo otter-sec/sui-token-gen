@@ -6,7 +6,7 @@ use crate::{
     rpc_client::TokenGenClient,
     utils::{
         generation::{create_base_folder, create_contract_file, create_move_toml},
-        helpers::sanitize_name,
+        helpers::{log_success_message, sanitize_name},
         prompts::get_user_prompt,
     },
     variables::{SUB_FOLDER, TEST_FOLDER},
@@ -62,6 +62,6 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
         TEST_FOLDER,
     )?;
 
-    println!("Contract has been generated!");
+    log_success_message("Contract has been generated!");
     Ok(())
 }

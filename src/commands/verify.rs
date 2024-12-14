@@ -2,8 +2,11 @@ use std::path::Path;
 use tarpc::context;
 
 use crate::{
-    errors::TokenGenErrors, rpc_client::TokenGenClient, utils::verify_helper::verify_contract,
-    variables::SUB_FOLDER, Result,
+    errors::TokenGenErrors,
+    rpc_client::TokenGenClient,
+    utils::{helpers::log_success_message, verify_helper::verify_contract},
+    variables::SUB_FOLDER,
+    Result,
 };
 
 pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Result<()> {
@@ -30,7 +33,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
             "The path is not a directory.".to_string(),
         ));
     }
-    println!("Verified successfully");
+    log_success_message("Verified successfully");
     Ok(())
 }
 
@@ -40,6 +43,6 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
         .await
         .map_err(|e| TokenGenErrors::RpcError(e))?
         .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
-    println!("Verified successfully");
+    log_success_message("Verified successfully");
     Ok(())
 }
