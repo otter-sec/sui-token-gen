@@ -34,6 +34,53 @@ pub enum TokenGenErrors {
     VerificationError(String),
 }
 
+impl TokenGenErrors {
+    fn log(&self) {
+        use crate::utils::helpers::log_error_message;
+        log_error_message(&self.to_string());
+    }
+}
+
+impl From<io::Error> for TokenGenErrors {
+    fn from(e: io::Error) -> Self {
+        let error = Self::FileIoError(e);
+        error.log();
+        error
+    }
+}
+
+impl From<git2::Error> for TokenGenErrors {
+    fn from(e: git2::Error) -> Self {
+        let error = Self::GitError(e);
+        error.log();
+        error
+    }
+}
+
+impl From<tera::Error> for TokenGenErrors {
+    fn from(e: tera::Error) -> Self {
+        let error = Self::TeraError(e);
+        error.log();
+        error
+    }
+}
+
+impl From<inquire::error::InquireError> for TokenGenErrors {
+    fn from(e: inquire::error::InquireError) -> Self {
+        let error = Self::PromptError(e);
+        error.log();
+        error
+    }
+}
+
+impl From<tarpc::client::RpcError> for TokenGenErrors {
+    fn from(e: tarpc::client::RpcError) -> Self {
+        let error = Self::RpcError(e);
+        error.log();
+        error
+    }
+}
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Error, Debug, Deserialize, Serialize)]
