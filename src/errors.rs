@@ -1,5 +1,6 @@
 use std::io;
 use thiserror::Error;
+use colored::*;
 
 #[derive(Error, Debug)]
 pub enum TokenGenErrors {
@@ -36,8 +37,7 @@ pub enum TokenGenErrors {
 
 impl TokenGenErrors {
     pub fn log(&self) {
-        use crate::utils::helpers::log_error_message;
-        log_error_message(&self.to_string());
+        println!("{} {}", "ERROR: ".red(), self.to_string());
     }
 }
 
