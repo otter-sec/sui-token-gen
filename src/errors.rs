@@ -1,8 +1,10 @@
 use std::io;
-use thiserror::Error;
 use colored::*;
+use inquire::error::InquireError;
+use tarpc::client::RpcError;
+use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error)]
 pub enum TokenGenErrors {
     #[error("Failed to create token contract: {0}")]
     FailedToCreateTokenContract(String),
@@ -17,19 +19,19 @@ pub enum TokenGenErrors {
     InvalidUrl(String),
 
     #[error("Git operation failed: {0}")]
-    GitError(git2::Error),
+    GitError(#[from] git2::Error),
 
     #[error("File I/O error: {0}")]
     FileIoError(io::Error),
 
     #[error("Tera error: {0}")]
-    TeraError(tera::Error),
+    TeraError(#[from] tera::Error),
 
     #[error(transparent)]
-    PromptError(inquire::error::InquireError),
+    PromptError(#[from] InquireError),
 
     #[error(transparent)]
-    RpcError(tarpc::client::RpcError),
+    RpcError(#[from] RpcError),
 
     #[error("Verification failed: {0}")]
     VerificationError(String),
@@ -37,47 +39,15 @@ pub enum TokenGenErrors {
 
 impl TokenGenErrors {
     pub fn log(&self) {
-        println!("{} {}", "ERROR: ".red(), self.to_string());
+        let error = format!("ERROR: ").red().bold();
+        eprintln!("{} {}", error, self);
     }
 }
 
+// Implement From for io::Error separately since we can't use #[from]
 impl From<io::Error> for TokenGenErrors {
     fn from(e: io::Error) -> Self {
-        let error = Self::FileIoError(e);
-        error.log();
-        error
-    }
-}
-
-impl From<git2::Error> for TokenGenErrors {
-    fn from(e: git2::Error) -> Self {
-        let error = Self::GitError(e);
-        error.log();
-        error
-    }
-}
-
-impl From<tera::Error> for TokenGenErrors {
-    fn from(e: tera::Error) -> Self {
-        let error = Self::TeraError(e);
-        error.log();
-        error
-    }
-}
-
-impl From<inquire::error::InquireError> for TokenGenErrors {
-    fn from(e: inquire::error::InquireError) -> Self {
-        let error = Self::PromptError(e);
-        error.log();
-        error
-    }
-}
-
-impl From<tarpc::client::RpcError> for TokenGenErrors {
-    fn from(e: tarpc::client::RpcError) -> Self {
-        let error = Self::RpcError(e);
-        error.log();
-        error
+        TokenGenErrors::FileIoError(e)
     }
 }
 

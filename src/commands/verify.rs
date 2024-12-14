@@ -13,8 +13,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
     let path = Path::new(path);
 
     if !path.exists() {
-        let error = TokenGenErrors::InvalidPath("The provided path for the contract is invalid.".to_string());
-        return Err(error);
+        return Err(TokenGenErrors::InvalidPath("The provided path for the contract is invalid.".to_string()));
     }
 
     if path.is_dir() {
@@ -28,8 +27,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
             verify_contract(path, client).await?;
         }
     } else {
-        let error = TokenGenErrors::InvalidPath("The path is not a directory.".to_string());
-        return Err(error);
+        return Err(TokenGenErrors::InvalidPath("The path is not a directory.".to_string()));
     }
     log_success_message("Verified successfully");
     Ok(())
@@ -39,14 +37,8 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
     client
         .verify_url(context::current(), url.to_string())
         .await
-        .map_err(|e| {
-            let error = TokenGenErrors::RpcError(e);
-            error
-        })?
-        .map_err(|e| {
-            let error = TokenGenErrors::VerificationError(e.to_string());
-            error
-        })?;
+        .map_err(TokenGenErrors::RpcError)?
+        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
     log_success_message("Verified successfully");
     Ok(())
 }
