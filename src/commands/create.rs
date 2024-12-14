@@ -37,12 +37,10 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
         .await
         .map_err(|e| {
             let error = TokenGenErrors::RpcError(e);
-            error.log();
             error
         })?
         .map_err(|e| {
             let error = TokenGenErrors::FailedToCreateTokenContract(e.to_string());
-            error.log();
             error
         })?;
 
