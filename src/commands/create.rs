@@ -6,7 +6,7 @@ use crate::{
     rpc_client::TokenGenClient,
     utils::{
         generation::{create_base_folder, create_contract_file, create_move_toml},
-        helpers::{log_success_message, sanitize_name},
+        helpers::{log_success_message, log_error_message, sanitize_name},
         prompts::get_user_prompt,
     },
     variables::{SUB_FOLDER, TEST_FOLDER},
@@ -35,8 +35,14 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
             token_data.environment,
         )
         .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?
-        .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
+        .map_err(|e| {
+            log_error_message(&e.to_string());
+            TokenGenErrors::RpcError(e)
+        })?
+        .map_err(|e| {
+            log_error_message(&e.to_string());
+            TokenGenErrors::FailedToCreateTokenContract(e.to_string())
+        })?;
 
     let base_folder: String = sanitize_name(&token_data.name);
 
