@@ -80,7 +80,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
             Ok(_) => eprintln!("Decimals must be greater than 0. Please try again."),
             Err(e) => {
                 if e.to_string() == CANCEL_ERROR_MESSAGE {
-                    return Err(TokenGenErrors::PromptError(e));
+                    return Err(TokenGenErrors::PromptError(e.to_string()));
                 } else {
                     eprintln!("Error: {e}. Please try again.");
                 }
@@ -108,7 +108,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
             }
         })
         .prompt()
-        .map_err(TokenGenErrors::PromptError)?;
+        .map_err(|e| TokenGenErrors::PromptError(e.to_string()))?;
 
     /*
         Prompt for name:
@@ -126,7 +126,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
             }
         })
         .prompt()
-        .map_err(TokenGenErrors::PromptError)?;
+        .map_err(|e| TokenGenErrors::PromptError(e.to_string()))?;
 
     /*
         Prompt for description - optional:
@@ -151,7 +151,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     */
     let frozen_metadata = Select::new("Frozen metadata?", &FROZEN_OPTIONS)
         .prompt()
-        .map_err(TokenGenErrors::PromptError)?;
+        .map_err(|e| TokenGenErrors::PromptError(e.to_string()))?;
     let is_frozen: bool = frozen_metadata.value == "Yes";
 
     /*
@@ -164,7 +164,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     let env_option = Select::new("Select environment:", &env_options)
         .with_starting_cursor(default_index)
         .prompt()
-        .map_err(TokenGenErrors::PromptError)?;
+        .map_err(|e| TokenGenErrors::PromptError(e.to_string()))?;
 
     let environment: String = env_option.value;
 

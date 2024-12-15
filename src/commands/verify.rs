@@ -38,7 +38,7 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
     client
         .verify_url(context::current(), url.to_string())
         .await
-        .map_err(TokenGenErrors::RpcError)?
+        .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?
         .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
     handle_success(SuccessType::TokenVerified { path: None, url: Some(url.to_string()) });
     Ok(())

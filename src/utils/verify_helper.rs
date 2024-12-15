@@ -62,7 +62,7 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
     client
         .verify_content(context::current(), current_content)
         .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?
+        .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?
         .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
     Ok(())
 }

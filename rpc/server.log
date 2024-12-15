@@ -1,0 +1,9 @@
+   Compiling tarpc-example-service v0.16.0 (/home/ubuntu/repos/sui-token-gen-test/rpc)
+error[E0432]: unresolved import `service::RpcResponseErrors`
+ --> src/bin/server.rs:9:5
+  |
+9 |     RpcResponseErrors,
+  |     ^^^^^^^^^^^^^^^^^ no `RpcResponseErrors` in the root
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `tarpc-example-service` (bin "server") due to 1 previous error
