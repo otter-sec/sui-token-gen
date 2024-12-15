@@ -2,7 +2,6 @@ use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
 use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
 use suitokengentest::errors::TokenGenErrors;
-use serde::{Deserialize, Serialize};
 
 pub mod utils;
 

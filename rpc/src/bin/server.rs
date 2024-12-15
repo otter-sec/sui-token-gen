@@ -6,7 +6,7 @@ use service::{
     utils::{helpers::sanitize_name, verify_helper},
     TokenGen,
 };
-use suitokengentest::errors::{RpcResponseErrors, TokenGenErrors};
+use suitokengentest::errors::TokenGenErrors;
 use std::{
     fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -49,7 +49,7 @@ impl TokenGen for TokenServer {
         description: String,
         is_frozen: bool,
         environment: String,
-    ) -> anyhow::Result<(String, String, String), TokenGenErrors> {
+    ) -> Result<(String, String, String), TokenGenErrors> {
         // Log the address when a request is handled
         self.log_address().await;
 
@@ -80,7 +80,7 @@ impl TokenGen for TokenServer {
 
         // Validate environment: must be one of "mainnet", "devnet", or "testnet"
         let valid_environments = ["mainnet", "devnet", "testnet"];
-        let environment = if valid_environments.contains(&environment.as_str()) {
+        let env = if valid_environments.contains(&environment.as_str()) {
             environment
         } else {
             "devnet".to_string() // Default to "devnet" if invalid
@@ -103,14 +103,14 @@ impl TokenGen for TokenServer {
 
         let move_toml_content = toml_template.replace("{{package_name}}", &sanitize_name(&name));
 
-        Ok((token_content.clone(), move_toml_content, token_content)) // Return both toml file and contract as strings
+        Ok((token_content.clone(), move_toml_content, token_content))
     }
 
     async fn verify_url(
         self,
         _: context::Context,
         url: String,
-    ) -> anyhow::Result<(), TokenGenErrors> {
+    ) -> Result<(), TokenGenErrors> {
         verify_helper::verify_token_using_url(&url)
             .await
             .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))
@@ -120,7 +120,7 @@ impl TokenGen for TokenServer {
         self,
         _: context::Context,
         content: String,
-    ) -> anyhow::Result<(), TokenGenErrors> {
+    ) -> Result<(), TokenGenErrors> {
         verify_helper::compare_contract_content(content, None)
             .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))
     }
@@ -157,9 +157,9 @@ async fn main() -> anyhow::Result<()> {
     // Add more debug logging
     tracing::info!("Starting server with configuration: {:?}", listener.config());
 
-    // Create a shutdown signal channel
-    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
-    let shutdown_tx_clone = shutdown_tx.clone();
+    // Create a broadcast channel for shutdown signal
+    let (shutdown_tx, _) = tokio::sync::broadcast::channel::<()>(1);
+    let shutdown_tx_for_signal = shutdown_tx.clone();
 
     // Spawn server in a separate task
     let server_handle = tokio::spawn(async move {
@@ -177,11 +177,11 @@ async fn main() -> anyhow::Result<()> {
             })
             .map(|channel| {
                 let server = TokenServer::new(channel.transport().peer_addr().unwrap());
+                let mut shutdown_rx = shutdown_tx.subscribe();
 
                 // Keep connection alive until shutdown signal
-                let mut shutdown_rx = shutdown_rx.clone();
                 tokio::spawn(async move {
-                    let _ = shutdown_rx.await;
+                    let _ = shutdown_rx.recv().await;
                 });
 
                 channel.execute(server.serve()).for_each(spawn)
@@ -202,8 +202,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Send shutdown signal to all connections
-    let _ = shutdown_tx.send(());
-    let _ = shutdown_tx_clone.send(());
+    let _ = shutdown_tx_for_signal.send(());
 
     // Wait for server to finish
     tracing::info!("Waiting for server to shut down...");
