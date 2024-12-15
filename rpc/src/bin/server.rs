@@ -11,6 +11,7 @@ use service::{
     init_tracing,
     utils::verify_helper,
     TokenGen,
+    serve_token_gen,
 };
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
@@ -34,8 +35,6 @@ struct TokenServer;
 #[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
-        &self,
-        _: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -80,22 +79,14 @@ impl TokenGen for TokenServer {
         ))
     }
 
-    async fn verify_url(
-        &self,
-        _: context::Context,
-        url: String
-    ) -> Result<(), TokenGenErrors> {
+    async fn verify_url(url: String) -> Result<(), TokenGenErrors> {
         match verify_helper::verify_token_using_url(&url).await {
             Ok(_) => Ok(()),
             Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
         }
     }
 
-    async fn verify_content(
-        &self,
-        _: context::Context,
-        content: String
-    ) -> Result<(), TokenGenErrors> {
+    async fn verify_content(content: String) -> Result<(), TokenGenErrors> {
         let temp_dir = tempdir()
             .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
         let temp_file = temp_dir.path().join("temp.move");
@@ -114,7 +105,7 @@ async fn main() -> Result<()> {
     let flags = Flags::parse();
     init_tracing("server")?;
 
-    let server = TokenServer;
+    let server = serve_token_gen::Server::new(TokenServer);
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let listener = tarpc::serde_transport::tcp::listen(addr, Json::default).await?;
     println!("Server listening on {}", addr);
@@ -125,7 +116,7 @@ async fn main() -> Result<()> {
         .for_each(move |channel| {
             let server = server.clone();
             tokio::spawn(async move {
-                channel.execute(server).await;
+                channel.execute(server.serve()).await;
             });
             future::ready(())
         })
