@@ -11,12 +11,11 @@ use service::{
     init_tracing,
     utils::verify_helper,
     TokenGen,
-    ServeTokenGen,
 };
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
     context,
-    server::{BaseChannel, Channel},
+    server::{BaseChannel, Channel, Server},
     tokio_serde::formats::Json,
 };
 use tempfile::tempdir;
@@ -34,9 +33,9 @@ struct TokenServer;
 
 #[async_trait]
 impl TokenGen for TokenServer {
-    async fn create(
-        &self,
-        ctx: context::Context,
+    async fn create<'life0, 'life1, 'life2, 'life3, 'life4, 'life5, 'async_trait>(
+        &'life0 self,
+        _ctx: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -81,9 +80,9 @@ impl TokenGen for TokenServer {
         ))
     }
 
-    async fn verify_url(
-        &self,
-        ctx: context::Context,
+    async fn verify_url<'life0, 'life1, 'async_trait>(
+        &'life0 self,
+        _ctx: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
         match verify_helper::verify_token_using_url(&url).await {
@@ -92,9 +91,9 @@ impl TokenGen for TokenServer {
         }
     }
 
-    async fn verify_content(
-        &self,
-        ctx: context::Context,
+    async fn verify_content<'life0, 'life1, 'async_trait>(
+        &'life0 self,
+        _ctx: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
         let temp_dir = tempdir()
@@ -115,22 +114,17 @@ async fn main() -> Result<()> {
     let flags = Flags::parse();
     init_tracing("server")?;
 
-    let server = ServeTokenGen::new(TokenServer);
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
-    let listener = tarpc::serde_transport::tcp::listen(addr, Json::default).await?;
-    println!("Server listening on {}", addr);
-
-    listener
+    let server = Server::new(tarpc::server::Config::default())
+        .incoming(tarpc::serde_transport::tcp::listen(
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port),
+            Json::default,
+        ).await?)
         .filter_map(|r| future::ready(r.ok()))
         .map(BaseChannel::with_defaults)
-        .for_each(move |channel| {
-            let server = server.clone();
-            tokio::spawn(async move {
-                channel.execute(server).await;
-            });
-            future::ready(())
-        })
-        .await;
+        .execute(TokenServer.serve());
+
+    println!("Server listening on {}", SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port));
+    server.await;
 
     Ok(())
 }
