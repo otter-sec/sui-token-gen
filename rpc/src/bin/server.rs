@@ -2,12 +2,19 @@ use std::{
     fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::Path,
+    sync::Arc,
 };
 
 use anyhow::Result;
 use clap::Parser;
 use futures::{future, prelude::*};
-use service::{init_tracing, utils::verify_helper, TokenGen};
+use service::{
+    init_tracing,
+    utils::verify_helper,
+    TokenGen,
+    TokenGenRequest,
+    TokenGenResponse,
+};
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
     context,
@@ -148,16 +155,15 @@ async fn main() -> Result<()> {
     let server = TokenServer::new();
     server.log_address(server_addr);
 
-    let server_task = listener
+    listener
         .map(BaseChannel::with_defaults)
-        .map(move |channel| {
+        .map(|channel| {
             let server = server.clone();
             channel.execute(server.serve())
         })
-        .buffer_unordered(10)
-        .for_each(|_| async {});
+        .for_each(|_| async {})
+        .await;
 
-    server_task.await;
     Ok(())
 }
 
