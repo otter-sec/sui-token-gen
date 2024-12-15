@@ -36,7 +36,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
 
 pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<()> {
     client
-        .verify_url(context::current(), url.to_string())
+        .verify_url(crate::rpc_client::create_timeout_context(), url.to_string())
         .await
         .map_err(|e| TokenGenErrors::RpcError(e.to_string()))?
         .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
