@@ -1,8 +1,8 @@
-use anyhow::Result;
-use std::{io::Error, net::SocketAddr, time::Duration};
+use std::time::Duration;
+
 use tarpc::{client, context, tokio_serde::formats::Json};
 
-use crate::errors::RpcResponseErrors;
+use crate::errors::TokenGenErrors;
 
 #[tarpc::service]
 pub trait TokenGen {
@@ -13,57 +13,58 @@ pub trait TokenGen {
         description: String,
         is_frozen: bool,
         environment: String,
-    ) -> Result<(String, String, String), RpcResponseErrors>;
+    ) -> Result<(String, String, String), TokenGenErrors>;
 
-    async fn verify_url(url: String) -> Result<(), RpcResponseErrors>;
-    async fn verify_content(content: String) -> Result<(), RpcResponseErrors>;
+    async fn verify_url(url: String) -> Result<(), TokenGenErrors>;
+    async fn verify_content(content: String) -> Result<(), TokenGenErrors>;
 }
 
-// Helper function to create a context with timeout
+// Helper function to create a context with timeout and keep-alive
 pub fn create_timeout_context() -> context::Context {
     let mut ctx = context::current();
     ctx.deadline = (tokio::time::Instant::now() + Duration::from_secs(30)).into();
     ctx
 }
 
-// Initializing RPC client
-pub async fn initiate_client(address: &str) -> Result<TokenGenClient, Error> {
-    // Parse address
-    let server_addr: SocketAddr = address.parse().map_err(|_| {
-        std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid address format")
-    })?;
-
-    let mut transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default);
-    transport.config_mut().max_frame_length(usize::MAX);
-
-    // Configure client with increased buffer sizes for better reliability
-    let mut client_config = client::Config::default();
-    client_config.max_in_flight_requests = 1024;
-    client_config.pending_request_buffer = 1024;
-
-    // Add retry logic for connection establishment
+pub async fn initiate_client(server_addr: &str) -> Result<TokenGenClient, TokenGenErrors> {
+    let max_retries = 3;
     let mut retry_count = 0;
-    const MAX_RETRIES: u32 = 3;
-    const RETRY_DELAY: Duration = Duration::from_secs(1);
+    let mut last_error = None;
 
-    loop {
-        match transport.await {
-            Ok(transport) => {
-                let client = TokenGenClient::new(client_config.clone(), transport).spawn();
-                return Ok(client);
-            }
+    while retry_count < max_retries {
+        match try_connect(server_addr).await {
+            Ok(client) => return Ok(client),
             Err(e) => {
+                last_error = Some(e);
                 retry_count += 1;
-                if retry_count >= MAX_RETRIES {
-                    return Err(Error::new(
-                        std::io::ErrorKind::ConnectionRefused,
-                        format!("Failed to connect after {} retries: {}", MAX_RETRIES, e),
-                    ));
+                if retry_count < max_retries {
+                    tokio::time::sleep(Duration::from_secs(2)).await;
                 }
-                tokio::time::sleep(RETRY_DELAY).await;
-                transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default);
-                transport.config_mut().max_frame_length(usize::MAX);
             }
         }
     }
+
+    Err(last_error.unwrap_or_else(|| {
+        TokenGenErrors::RpcError("Failed to connect to RPC server after max retries".into())
+    }))
+}
+
+async fn try_connect(server_addr: &str) -> Result<TokenGenClient, TokenGenErrors> {
+    let transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default)
+        .await
+        .map_err(|e| TokenGenErrors::RpcError(format!("Failed to connect to RPC server: {}", e)))?;
+
+    let client = TokenGenClient::new(client::Config::default(), transport).spawn();
+
+    // Test connection with a small timeout
+    let mut ctx = context::current();
+    ctx.deadline = (tokio::time::Instant::now() + Duration::from_secs(5)).into();
+
+    // Verify connection with a ping
+    client
+        .verify_content(ctx, String::new())
+        .await
+        .map_err(|e| TokenGenErrors::RpcError(format!("Failed to verify connection: {}", e)))?;
+
+    Ok(client)
 }

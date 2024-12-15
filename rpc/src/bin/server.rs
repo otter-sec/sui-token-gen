@@ -138,8 +138,18 @@ async fn main() -> anyhow::Result<()> {
     // Use IPv4 localhost instead of IPv6 for better compatibility
     let server_addr = (IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     tracing::info!("Attempting to bind to {:?}", server_addr);
-    let mut listener = tarpc::serde_transport::tcp::listen(&server_addr, Json::default).await?;
-    tracing::info!("Successfully bound to {:?}", listener.local_addr());
+
+    // Configure and start TCP listener with error handling
+    let mut listener = match tarpc::serde_transport::tcp::listen(&server_addr, Json::default).await {
+        Ok(l) => {
+            tracing::info!("Successfully bound to {:?}", l.local_addr());
+            l
+        }
+        Err(e) => {
+            tracing::error!("Failed to bind to {:?}: {}", server_addr, e);
+            return Err(e.into());
+        }
+    };
 
     // Configure server with longer timeouts and larger frame size
     listener.config_mut().max_frame_length(usize::MAX);
@@ -147,6 +157,11 @@ async fn main() -> anyhow::Result<()> {
     // Add more debug logging
     tracing::info!("Starting server with configuration: {:?}", listener.config());
 
+    // Create a shutdown signal channel
+    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+    let shutdown_tx_clone = shutdown_tx.clone();
+
+    // Spawn server in a separate task
     let server_handle = tokio::spawn(async move {
         listener
             .filter_map(|r| {
@@ -162,11 +177,11 @@ async fn main() -> anyhow::Result<()> {
             })
             .map(|channel| {
                 let server = TokenServer::new(channel.transport().peer_addr().unwrap());
-                let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
-                // Keep connection alive until explicitly closed
+                // Keep connection alive until shutdown signal
+                let mut shutdown_rx = shutdown_rx.clone();
                 tokio::spawn(async move {
-                    let _ = rx.await;
+                    let _ = shutdown_rx.await;
                 });
 
                 channel.execute(server.serve()).for_each(spawn)
@@ -177,9 +192,26 @@ async fn main() -> anyhow::Result<()> {
     });
 
     // Handle server shutdown gracefully
-    tokio::signal::ctrl_c().await?;
-    tracing::info!("Shutting down server...");
+    tokio::select! {
+        _ = tokio::signal::ctrl_c() => {
+            tracing::info!("Received Ctrl+C, initiating graceful shutdown...");
+        }
+        _ = server_handle => {
+            tracing::info!("Server task completed, initiating shutdown...");
+        }
+    }
+
+    // Send shutdown signal to all connections
+    let _ = shutdown_tx.send(());
+    let _ = shutdown_tx_clone.send(());
+
+    // Wait for server to finish
+    tracing::info!("Waiting for server to shut down...");
     server_handle.abort();
+    match server_handle.await {
+        Ok(_) => tracing::info!("Server shut down successfully"),
+        Err(e) => tracing::warn!("Server shutdown error: {:?}", e),
+    }
 
     Ok(())
 }
