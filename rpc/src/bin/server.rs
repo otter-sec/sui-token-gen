@@ -11,7 +11,6 @@ use service::{
     init_tracing,
     utils::verify_helper,
     TokenGen,
-    Server,
 };
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
@@ -35,6 +34,7 @@ struct TokenServer;
 #[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
+        self,
         _: context::Context,
         name: String,
         symbol: String,
@@ -81,6 +81,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
+        self,
         _: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
@@ -91,6 +92,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
+        self,
         _: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
@@ -112,7 +114,7 @@ async fn main() -> Result<()> {
     let flags = Flags::parse();
     init_tracing("server")?;
 
-    let server = Server::new(TokenServer);
+    let server = TokenServer;
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let listener = tarpc::serde_transport::tcp::listen(addr, Json::default).await?;
 
@@ -121,9 +123,7 @@ async fn main() -> Result<()> {
         .map(BaseChannel::with_defaults)
         .for_each(move |channel| {
             let server = server.clone();
-            async move {
-                channel.execute(server.serve()).await;
-            }
+            channel.execute(tarpc::server::BaseChannel::serve(server));
         })
         .await;
 
