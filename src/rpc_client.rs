@@ -22,7 +22,7 @@ pub trait TokenGen {
 // Helper function to create a context with timeout
 pub fn create_timeout_context() -> context::Context {
     let mut ctx = context::current();
-    ctx.deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    ctx.deadline = (tokio::time::Instant::now() + Duration::from_secs(30)).into();
     ctx
 }
 
