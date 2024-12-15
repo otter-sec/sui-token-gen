@@ -7,6 +7,10 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
 };
+use service::{
+    utils::verify_helper,
+    TokenGen,
+};
 use tarpc::{
     context,
     server::{BaseChannel, Channel},
@@ -36,10 +40,9 @@ fn get_project_root() -> Result<PathBuf, io::Error> {
     Ok(project_root)
 }
 
-#[tarpc::server]
+#[tarpc::service]
 impl TokenGen for TokenServer {
     async fn create(
-        self,
         _context: context::Context,
         name: String,
         symbol: String,
@@ -81,7 +84,6 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
-        self,
         _context: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
@@ -89,7 +91,6 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
-        self,
         _context: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
