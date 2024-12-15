@@ -51,8 +51,26 @@ fi
 echo "Starting RPC server process..."
 RUST_BACKTRACE=1 nohup cargo run --bin server -- --port 5000 > server.log 2>&1 & SERVER_PID=$!
 
+# Function to check server connection
+check_server_connection() {
+    local max_retries=5
+    local retry_count=0
+    local connected=false
+
+    while [ $retry_count -lt $max_retries ]; do
+        if (echo > /dev/tcp/127.0.0.1/5000) 2>/dev/null; then
+            connected=true
+            break
+        fi
+        retry_count=$((retry_count + 1))
+        sleep 1
+    done
+
+    echo $connected
+}
+
 # Wait for server to start and verify it's running
-for i in {1..30}; do
+for i in {1..60}; do
     if ! ps -p $SERVER_PID > /dev/null 2>&1; then
         echo "Error: RPC server process died"
         echo "Server log:"
@@ -60,19 +78,22 @@ for i in {1..30}; do
         exit 1
     fi
 
-    if (echo > /dev/tcp/127.0.0.1/5000) 2>/dev/null; then
+    connection_status=$(check_server_connection)
+    if [ "$connection_status" = "true" ]; then
         echo "RPC server is running and listening on port 5000"
+        # Add extra wait time to ensure server is fully ready
+        sleep 5
         break
     fi
 
-    if [ $i -eq 30 ]; then
-        echo "Error: RPC server failed to bind to port 5000 after 30 attempts"
+    if [ $i -eq 60 ]; then
+        echo "Error: RPC server failed to bind to port 5000 after 60 attempts"
         echo "Server log:"
         cat server.log
         exit 1
     fi
 
-    echo "Waiting for RPC server to start (attempt $i/30)..."
+    echo "Waiting for RPC server to start (attempt $i/60)..."
     sleep 2
 done
 
@@ -86,8 +107,16 @@ export TOKEN_FROZEN=false
 export TOKEN_ENVIRONMENT="mainnet"
 
 echo "Testing token creation..."
+# Verify server is still running before token creation
+if ! $(check_server_connection); then
+    echo "Error: RPC server is not responding before token creation"
+    cat server.log
+    exit 1
+fi
+
 if ! cargo run -- create; then
     echo "Error: Token creation failed"
+    cat server.log
     exit 1
 fi
 
