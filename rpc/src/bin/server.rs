@@ -15,14 +15,15 @@ use service::{
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
     context,
-    server::Channel,
+    server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
 };
 use tempfile::tempdir;
 
 #[derive(Parser)]
+#[clap(name = "server")]
 struct Flags {
-    /// The port to run on.
+    /// The port the server should listen on.
     #[clap(long, default_value = "5000")]
     port: u16,
 }
@@ -30,9 +31,12 @@ struct Flags {
 #[derive(Clone)]
 struct TokenServer;
 
-#[tarpc::server]
 #[async_trait]
 impl TokenGen for TokenServer {
+    fn serve(self) -> service::ServeTokenGen<TokenServer> {
+        service::serve(self)
+    }
+
     async fn create(
         self,
         _: context::Context,
@@ -43,38 +47,21 @@ impl TokenGen for TokenServer {
         frozen: bool,
         environment: String,
     ) -> Result<(String, String, String), TokenGenErrors> {
-        // Validate environment: must be one of "mainnet", "devnet", or "testnet"
-        let valid_environments = ["mainnet", "devnet", "testnet"];
-        let validated_environment = if valid_environments.contains(&environment.as_str()) {
-            environment
-        } else {
-            "devnet".to_string() // Default to "devnet" if invalid
-        };
-
-        // Use validated environment for further processing
-        tracing::info!("Using environment: {}", validated_environment);
-
-        // Get project root directory (two levels up from rpc/src/bin)
         let current_dir = std::env::current_dir()
             .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to get current directory: {}", e)))?;
-
         let project_root = current_dir
-            .parent() // up from bin
-            .and_then(|p| p.parent()) // up from src
-            .and_then(|p| p.parent()) // up from rpc
+            .parent()
+            .and_then(|p| p.parent())
             .ok_or_else(|| TokenGenErrors::FileIoError("Failed to find project root".into()))?;
 
-        // Read template files from project root
-        let template_dir = project_root.join("src").join("templates");
-        tracing::info!("Template directory: {:?}", template_dir);
+        let token_template = fs::read_to_string(
+            project_root.join("src/templates/move/token.move.template")
+        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
 
-        let token_template = fs::read_to_string(template_dir.join("move/token.move.template"))
-            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
+        let toml_template = fs::read_to_string(
+            project_root.join("src/templates/toml/Move.toml.template")
+        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
 
-        let toml_template = fs::read_to_string(template_dir.join("toml/Move.toml.template"))
-            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
-
-        // Replace placeholders in token template
         let token_content = token_template
             .replace("{{name}}", &name)
             .replace("{{symbol}}", &symbol)
@@ -82,18 +69,19 @@ impl TokenGen for TokenServer {
             .replace("{{decimals}}", &decimals.to_string())
             .replace("{{is_frozen}}", &frozen.to_string());
 
-        // Replace placeholders in toml template
         let toml_content = toml_template
             .replace("{{name}}", &name)
             .replace("{{symbol}}", &symbol)
-            .replace("{{environment}}", &validated_environment);
+            .replace("{{environment}}", &environment);
 
-        // Create temporary directory for token files and return it with contents
-        let temp_dir = tempdir().map_err(|e| {
-            TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e))
-        })?;
+        let temp_dir = tempdir()
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
 
-        Ok((token_content.clone(), toml_content, temp_dir.path().to_string_lossy().to_string()))
+        Ok((
+            temp_dir.path().to_string_lossy().to_string(),
+            token_content,
+            toml_content,
+        ))
     }
 
     async fn verify_url(
@@ -112,18 +100,12 @@ impl TokenGen for TokenServer {
         _: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
-        // Create a temporary directory for verification
-        let temp_dir = tempdir().map_err(|e| {
-            TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e))
-        })?;
-
-        // Write content to a temporary file
+        let temp_dir = tempdir()
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
         let temp_file = temp_dir.path().join("temp.move");
-        fs::write(&temp_file, &content).map_err(|e| {
-            TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e))
-        })?;
+        fs::write(&temp_file, &content)
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
 
-        // Verify the contract
         match verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await {
             Ok(_) => Ok(()),
             Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
@@ -142,7 +124,7 @@ async fn main() -> Result<()> {
 
     listener
         .filter_map(|r| future::ready(r.ok()))
-        .map(Channel::new)
+        .map(BaseChannel::with_defaults)
         .for_each(move |channel| {
             let server = server.clone();
             async move {
