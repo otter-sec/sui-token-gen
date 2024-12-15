@@ -34,7 +34,7 @@ struct TokenServer;
 #[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
-        self,
+        &self,
         _: context::Context,
         name: String,
         symbol: String,
@@ -81,7 +81,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
-        self,
+        &self,
         _: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
@@ -92,7 +92,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
-        self,
+        &self,
         _: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
@@ -117,13 +117,17 @@ async fn main() -> Result<()> {
     let server = TokenServer;
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let listener = tarpc::serde_transport::tcp::listen(addr, Json::default).await?;
+    println!("Server listening on {}", addr);
 
     listener
         .filter_map(|r| future::ready(r.ok()))
         .map(BaseChannel::with_defaults)
         .for_each(move |channel| {
             let server = server.clone();
-            channel.execute(tarpc::server::BaseChannel::serve(server));
+            tokio::spawn(async move {
+                channel.execute(server).await;
+            });
+            future::ready(())
         })
         .await;
 
