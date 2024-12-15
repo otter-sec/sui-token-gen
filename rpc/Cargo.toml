@@ -42,7 +42,6 @@ thiserror = "2.0.4"
 async-trait = "0.1.83"
 suitokengentest = { path = ".." }
 tempfile = "3.10.1"
-service = { path = "." }
 
 [lib]
 name = "service"

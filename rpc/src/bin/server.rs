@@ -1,14 +1,9 @@
 use clap::Parser;
-use futures::{future, prelude::*};
 use std::{
-    error::Error,
-    fs,
-    io,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
 };
 use service::{
-    utils::verify_helper,
     TokenGen,
     init_tracing,
 };
@@ -17,8 +12,7 @@ use tarpc::{
     server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
 };
-use tempfile::tempdir;
-use suitokengentest::errors::TokenGenErrors;
+use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -31,7 +25,7 @@ struct Flags {
 #[derive(Clone)]
 struct TokenServer;
 
-fn get_project_root() -> Result<PathBuf, io::Error> {
+fn get_project_root() -> Result<PathBuf, std::io::Error> {
     let current_dir = std::env::current_dir()?;
     let project_root = if current_dir.ends_with("rpc") {
         current_dir.parent().unwrap().to_path_buf()
@@ -41,26 +35,27 @@ fn get_project_root() -> Result<PathBuf, io::Error> {
     Ok(project_root)
 }
 
-#[tarpc::service]
-impl TokenGen for TokenServer {
+#[async_trait::async_trait]
+impl service::TokenGen for TokenServer {
     async fn create(
-        _context: context::Context,
+        &self,
+        _ctx: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
         description: String,
         frozen: bool,
         environment: String,
-    ) -> Result<(String, String, String), TokenGenErrors> {
+    ) -> Result<(String, String, String), suitokengentest::errors::TokenGenErrors> {
         let project_root = get_project_root()?;
 
-        let token_template = fs::read_to_string(
+        let token_template = std::fs::read_to_string(
             project_root.join("src/templates/move/token.move.template")
-        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
+        ).map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
 
-        let toml_template = fs::read_to_string(
+        let toml_template = std::fs::read_to_string(
             project_root.join("src/templates/toml/Move.toml.template")
-        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
+        ).map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
 
         let token_content = token_template
             .replace("{{name}}", &name)
@@ -74,8 +69,8 @@ impl TokenGen for TokenServer {
             .replace("{{symbol}}", &symbol)
             .replace("{{environment}}", &environment);
 
-        let temp_dir = tempdir()
-            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
+        let temp_dir = tempfile::tempdir()
+            .map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
 
         Ok((
             temp_dir.path().to_string_lossy().to_string(),
@@ -85,51 +80,52 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
-        _context: context::Context,
+        &self,
+        _ctx: context::Context,
         url: String
-    ) -> Result<(), TokenGenErrors> {
-        verify_helper::verify_token_using_url(&url).await
+    ) -> Result<(), suitokengentest::errors::TokenGenErrors> {
+        service::utils::verify_helper::verify_token_using_url(&url).await
     }
 
     async fn verify_content(
-        _context: context::Context,
+        &self,
+        _ctx: context::Context,
         content: String
-    ) -> Result<(), TokenGenErrors> {
-        let temp_dir = tempdir()
-            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
+    ) -> Result<(), suitokengentest::errors::TokenGenErrors> {
+        let temp_dir = tempfile::tempdir()
+            .map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
         let temp_file = temp_dir.path().join("temp.move");
-        fs::write(&temp_file, &content)
-            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
+        std::fs::write(&temp_file, &content)
+            .map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
 
-        verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await
+        service::utils::verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await
     }
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_tracing("token-gen-server")?;
 
     let flags = Flags::parse();
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
 
     let server = TokenServer;
-    let mut listener = tarpc::serde_transport::tcp::listen(&addr, Json::default).await?;
-    listener.config_mut().max_frame_length(usize::MAX);
 
-    println!("Server listening on {}", addr);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    tracing::info!("listening on {}", addr);
 
-    listener
-        .filter_map(|r| future::ready(r.ok()))
-        .map(BaseChannel::with_defaults)
-        .for_each(|channel| {
-            let server = server.clone();
-            async move {
-                channel.execute(server.serve()).await;
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let transport = tarpc::serde_transport::tcp::from_stream(stream, Json::default);
+        let server = server.clone();
+
+        tokio::spawn(async move {
+            if let Ok(transport) = transport.await {
+                let _ = BaseChannel::with_defaults(transport)
+                    .execute(service::TokenGen::serve(server));
             }
-        })
-        .await;
-
-    Ok(())
+        });
+    }
 }
 
 #[cfg(test)]
