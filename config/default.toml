@@ -1,0 +1,12 @@
+# Default configuration for Sui Token Generator
+
+[rpc]
+address = "[::1]:5000"
+timeout_ms = 5000
+
+[templates]
+path = "src/templates"
+
+[token]
+default_environment = "devnet"
+environments = ["mainnet", "testnet", "devnet"]

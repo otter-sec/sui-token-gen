@@ -1,0 +1,24 @@
+module {{ package_name }}::{{ module_name }} {
+    use std::option;
+    use sui::coin::{Self, Coin, TreasuryCap};
+    use sui::transfer;
+    use sui::tx_context::{Self, TxContext};
+
+    /// The type identifier of coin
+    struct {{ token_name }} has drop {}
+
+    /// Register the {{ token_name }} currency to acquire its `TreasuryCap`.
+    fun init(witness: {{ token_name }}, ctx: &mut TxContext) {
+        let (treasury_cap, metadata) = coin::create_currency<{{ token_name }}>(
+            witness,
+            {{ decimals }},
+            b"{{ symbol }}",
+            b"{{ name }}",
+            b"{{ description }}",
+            option::none(),
+            ctx
+        );
+        transfer::public_freeze_object(metadata);
+        transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
+    }
+}
