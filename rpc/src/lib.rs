@@ -2,17 +2,18 @@ use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
 use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
 use suitokengentest::errors::TokenGenErrors;
+use serde::{Deserialize, Serialize};
 
 pub mod utils;
 
 #[tarpc::service]
 pub trait TokenGen {
     async fn create(
-        decimals: u8,
         name: String,
         symbol: String,
+        decimals: u8,
         description: String,
-        is_frozen: bool,
+        frozen: bool,
         environment: String,
     ) -> Result<(String, String, String), TokenGenErrors>;
 

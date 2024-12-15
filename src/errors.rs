@@ -19,10 +19,10 @@ pub enum TokenGenErrors {
     InvalidUrl(String),
 
     #[error("Git operation failed: {0}")]
-    GitError(#[from] git2::Error),
+    GitError(String),
 
     #[error("File I/O error: {0}")]
-    FileIoError(io::Error),
+    FileIoError(#[serde(skip)] io::Error),
 
     #[error("Tera error: {0}")]
     TeraError(#[from] tera::Error),
@@ -47,6 +47,13 @@ impl From<io::Error> for TokenGenErrors {
     }
 }
 
+// Implement From for git2::Error
+impl From<git2::Error> for TokenGenErrors {
+    fn from(e: git2::Error) -> Self {
+        TokenGenErrors::GitError(e.message().to_string())
+    }
+}
+
 // Implement From<RpcResponseErrors> for TokenGenErrors
 impl From<RpcResponseErrors> for TokenGenErrors {
     fn from(e: RpcResponseErrors) -> Self {
@@ -59,7 +66,7 @@ impl From<RpcResponseErrors> for TokenGenErrors {
             RpcResponseErrors::GeneralError(msg) => TokenGenErrors::InvalidInput(msg),
             RpcResponseErrors::InvalidPath(msg) => TokenGenErrors::InvalidPath(msg),
             RpcResponseErrors::InvalidUrl(msg) => TokenGenErrors::InvalidUrl(msg),
-            RpcResponseErrors::GitError(msg) => TokenGenErrors::GitError(git2::Error::from_str(&msg)),
+            RpcResponseErrors::GitError(msg) => TokenGenErrors::GitError(msg),
             RpcResponseErrors::FileIoError(msg) => TokenGenErrors::FileIoError(io::Error::new(io::ErrorKind::Other, msg)),
             RpcResponseErrors::VerifyResultError(msg) => TokenGenErrors::VerificationError(msg),
             RpcResponseErrors::TemplateNotFound(msg) => TokenGenErrors::TemplateNotFound(msg),
