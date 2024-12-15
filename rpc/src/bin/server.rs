@@ -1,17 +1,16 @@
 use clap::Parser;
 use futures::{future, prelude::*};
 use regex::Regex;
-use service::{init_tracing, TokenGen, TokenGenErrors};
+use service::{
+    init_tracing, utils::{generation, helpers::sanitize_name, verify_helper},
+    TokenGen, TokenGenErrors,
+};
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use tarpc::{
     context,
     server::{self, Channel},
     tokio_serde::formats::Json,
 };
-
-mod utils;
-
-use utils::{generation, helpers::sanitize_name, verify_helper};
 
 #[derive(Parser)]
 struct Flags {
