@@ -1,5 +1,4 @@
 use std::io;
-use colored::*;
 use inquire::error::InquireError;
 use tarpc::client::RpcError;
 use thiserror::Error;

@@ -5,11 +5,12 @@ mod commands;
 mod errors;
 mod error_handler;
 mod rpc_client;
+mod success_handler;
 mod utils;
 mod variables;
 
 use error_handler::handle_error;
-use rpc_client::{initiate_client, TokenGenClient};
+use rpc_client::initiate_client;
 use variables::ADDRESS;
 
 #[cfg(test)]
