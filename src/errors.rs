@@ -24,14 +24,14 @@ pub enum TokenGenErrors {
     #[error("File I/O error: {0}")]
     FileIoError(#[serde(skip)] io::Error),
 
-    #[error("Tera error: {0}")]
-    TeraError(#[from] tera::Error),
+    #[error("Template error: {0}")]
+    TeraError(String),
 
-    #[error(transparent)]
-    PromptError(#[from] InquireError),
+    #[error("Prompt error: {0}")]
+    PromptError(String),
 
-    #[error(transparent)]
-    RpcError(#[from] RpcError),
+    #[error("RPC error: {0}")]
+    RpcError(String),
 
     #[error("Verification failed: {0}")]
     VerificationError(String),
@@ -47,6 +47,27 @@ impl From<io::Error> for TokenGenErrors {
     }
 }
 
+// Implement From for tera::Error
+impl From<tera::Error> for TokenGenErrors {
+    fn from(e: tera::Error) -> Self {
+        TokenGenErrors::TeraError(e.to_string())
+    }
+}
+
+// Implement From for InquireError
+impl From<InquireError> for TokenGenErrors {
+    fn from(e: InquireError) -> Self {
+        TokenGenErrors::PromptError(e.to_string())
+    }
+}
+
+// Implement From for RpcError
+impl From<RpcError> for TokenGenErrors {
+    fn from(e: RpcError) -> Self {
+        TokenGenErrors::RpcError(e.to_string())
+    }
+}
+
 // Implement From for git2::Error
 impl From<git2::Error> for TokenGenErrors {
     fn from(e: git2::Error) -> Self {
@@ -58,17 +79,16 @@ impl From<git2::Error> for TokenGenErrors {
 impl From<RpcResponseErrors> for TokenGenErrors {
     fn from(e: RpcResponseErrors) -> Self {
         match e {
-            RpcResponseErrors::ProgramModified => TokenGenErrors::VerificationError("Program modified".to_string()),
-            RpcResponseErrors::InvalidDecimals => TokenGenErrors::InvalidInput("Invalid decimals".to_string()),
-            RpcResponseErrors::InvalidSymbol => TokenGenErrors::InvalidInput("Invalid symbol".to_string()),
-            RpcResponseErrors::InvalidName => TokenGenErrors::InvalidInput("Invalid name".to_string()),
-            RpcResponseErrors::InvalidDescription => TokenGenErrors::InvalidInput("Invalid description".to_string()),
-            RpcResponseErrors::GeneralError(msg) => TokenGenErrors::InvalidInput(msg),
+            RpcResponseErrors::FailedToCreateTokenContract(msg) => TokenGenErrors::FailedToCreateTokenContract(msg),
+            RpcResponseErrors::InvalidInput(msg) => TokenGenErrors::InvalidInput(msg),
             RpcResponseErrors::InvalidPath(msg) => TokenGenErrors::InvalidPath(msg),
             RpcResponseErrors::InvalidUrl(msg) => TokenGenErrors::InvalidUrl(msg),
             RpcResponseErrors::GitError(msg) => TokenGenErrors::GitError(msg),
             RpcResponseErrors::FileIoError(msg) => TokenGenErrors::FileIoError(io::Error::new(io::ErrorKind::Other, msg)),
-            RpcResponseErrors::VerifyResultError(msg) => TokenGenErrors::VerificationError(msg),
+            RpcResponseErrors::TeraError(msg) => TokenGenErrors::TeraError(msg),
+            RpcResponseErrors::PromptError(msg) => TokenGenErrors::PromptError(msg),
+            RpcResponseErrors::RpcError(msg) => TokenGenErrors::RpcError(msg),
+            RpcResponseErrors::VerificationError(msg) => TokenGenErrors::VerificationError(msg),
             RpcResponseErrors::TemplateNotFound(msg) => TokenGenErrors::TemplateNotFound(msg),
         }
     }
@@ -76,23 +96,11 @@ impl From<RpcResponseErrors> for TokenGenErrors {
 
 #[derive(Error, Debug, Deserialize, Serialize)]
 pub enum RpcResponseErrors {
-    #[error("Given contract is modified")]
-    ProgramModified,
+    #[error("Failed to create token contract: {0}")]
+    FailedToCreateTokenContract(String),
 
-    #[error("Invalid decimals provided")]
-    InvalidDecimals,
-
-    #[error("Invalid symbol provided")]
-    InvalidSymbol,
-
-    #[error("Invalid name provided")]
-    InvalidName,
-
-    #[error("Invalid description provided")]
-    InvalidDescription,
-
-    #[error("An error occurred: {0}")]
-    GeneralError(String),
+    #[error("{0}")]
+    InvalidInput(String),
 
     #[error("Invalid path: {0}")]
     InvalidPath(String),
@@ -106,8 +114,17 @@ pub enum RpcResponseErrors {
     #[error("File I/O error: {0}")]
     FileIoError(String),
 
-    #[error("{0}")]
-    VerifyResultError(String),
+    #[error("Template error: {0}")]
+    TeraError(String),
+
+    #[error("Prompt error: {0}")]
+    PromptError(String),
+
+    #[error("RPC error: {0}")]
+    RpcError(String),
+
+    #[error("Verification failed: {0}")]
+    VerificationError(String),
 
     #[error("Template not found: {0}")]
     TemplateNotFound(String),
