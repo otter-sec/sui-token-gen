@@ -1,6 +1,5 @@
 use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
-use serde::{Deserialize, Serialize};
 use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
 use suitokengentest::errors::TokenGenErrors;
 

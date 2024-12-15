@@ -2,8 +2,9 @@ use std::io;
 use inquire::error::InquireError;
 use tarpc::client::RpcError;
 use thiserror::Error;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Serialize, Deserialize)]
 pub enum TokenGenErrors {
     #[error("Failed to create token contract: {0}")]
     FailedToCreateTokenContract(String),
@@ -65,8 +66,6 @@ impl From<RpcResponseErrors> for TokenGenErrors {
         }
     }
 }
-
-use serde::{Deserialize, Serialize};
 
 #[derive(Error, Debug, Deserialize, Serialize)]
 pub enum RpcResponseErrors {

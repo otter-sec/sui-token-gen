@@ -12,7 +12,7 @@ serde_json = "1.0"
 tera = "1.20"
 regex = "1.11.1"
 clap = { version = "4.5.21", features = ["derive"] }
-git2 = "0.17"
+git2 = { version = "0.17", features = ["serde"] }
 anyhow = "1.0.94"
 thiserror = "2.0.4"
 tarpc = { version = "0.35", features = ["full"] }
