@@ -34,8 +34,8 @@ struct TokenServer;
 #[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
-        self,
-        context: context::Context,
+        &self,
+        _context: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -81,8 +81,8 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
-        self,
-        context: context::Context,
+        &self,
+        _context: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
         match verify_helper::verify_token_using_url(&url).await {
@@ -92,8 +92,8 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
-        self,
-        context: context::Context,
+        &self,
+        _context: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
         let temp_dir = tempdir()
@@ -124,7 +124,7 @@ async fn main() -> Result<()> {
         .for_each(move |channel| {
             let server = TokenServer;
             tokio::spawn(async move {
-                channel.execute(server.serve()).await;
+                let _ = channel.execute(server.serve()).await;
             });
             future::ready(())
         })
