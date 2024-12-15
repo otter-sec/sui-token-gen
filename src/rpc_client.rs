@@ -60,8 +60,8 @@ async fn try_connect(server_addr: &str) -> Result<TokenGenClient, TokenGenErrors
     let mut ctx = context::current();
     ctx.deadline = (tokio::time::Instant::now() + Duration::from_secs(5)).into();
 
-    // Verify connection with a ping
-    client
+    // Verify connection with a ping and store result
+    let _ = client
         .verify_content(ctx, String::new())
         .await
         .map_err(|e| TokenGenErrors::RpcError(format!("Failed to verify connection: {}", e)))?;

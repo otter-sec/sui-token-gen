@@ -80,11 +80,14 @@ impl TokenGen for TokenServer {
 
         // Validate environment: must be one of "mainnet", "devnet", or "testnet"
         let valid_environments = ["mainnet", "devnet", "testnet"];
-        let env = if valid_environments.contains(&environment.as_str()) {
+        let validated_environment = if valid_environments.contains(&environment.as_str()) {
             environment
         } else {
             "devnet".to_string() // Default to "devnet" if invalid
         };
+
+        // Use validated environment for further processing
+        tracing::info!("Using environment: {}", validated_environment);
 
         // Read template files from project root
         let template_dir = Path::new("../src/templates");
@@ -162,7 +165,7 @@ async fn main() -> anyhow::Result<()> {
     let shutdown_tx_for_signal = shutdown_tx.clone();
 
     // Spawn server in a separate task
-    let server_handle = tokio::spawn(async move {
+    let server_task = tokio::spawn(async move {
         listener
             .filter_map(|r| {
                 if let Err(e) = &r {
@@ -192,13 +195,8 @@ async fn main() -> anyhow::Result<()> {
     });
 
     // Handle server shutdown gracefully
-    tokio::select! {
-        _ = tokio::signal::ctrl_c() => {
-            tracing::info!("Received Ctrl+C, initiating graceful shutdown...");
-        }
-        _ = server_handle => {
-            tracing::info!("Server task completed, initiating shutdown...");
-        }
+    if tokio::signal::ctrl_c().await.is_ok() {
+        tracing::info!("Received Ctrl+C, initiating graceful shutdown...");
     }
 
     // Send shutdown signal to all connections
@@ -206,10 +204,10 @@ async fn main() -> anyhow::Result<()> {
 
     // Wait for server to finish
     tracing::info!("Waiting for server to shut down...");
-    server_handle.abort();
-    match server_handle.await {
-        Ok(_) => tracing::info!("Server shut down successfully"),
-        Err(e) => tracing::warn!("Server shutdown error: {:?}", e),
+    if let Err(e) = server_task.await {
+        tracing::warn!("Server shutdown error: {:?}", e);
+    } else {
+        tracing::info!("Server shut down successfully");
     }
 
     Ok(())
