@@ -43,9 +43,9 @@ impl TokenGen for TokenServer {
     async fn create(
         self,
         _: context::Context,
-        decimals: String,
         name: String,
         symbol: String,
+        decimals: u8,
         description: String,
         is_frozen: bool,
         environment: String,
@@ -54,7 +54,6 @@ impl TokenGen for TokenServer {
         self.log_address().await;
 
         // Validate decimals: must be a number greater than 0 and less than 100
-        let decimals: u8 = decimals.parse().map_err(|_| TokenGenErrors::InvalidDecimals("Decimals must be a valid number".to_string()))?;
         if decimals <= 0 || decimals >= 100 {
             return Err(TokenGenErrors::InvalidDecimals("Decimals must be between 1 and 99".to_string()));
         }
@@ -104,7 +103,7 @@ impl TokenGen for TokenServer {
 
         let move_toml_content = toml_template.replace("{{package_name}}", &sanitize_name(&name));
 
-        Ok((token_content, move_toml_content, token_content.clone())) // Return both toml file and contract as strings
+        Ok((token_content.clone(), move_toml_content, token_content)) // Return both toml file and contract as strings
     }
 
     async fn verify_url(
