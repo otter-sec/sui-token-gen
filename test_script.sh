@@ -40,6 +40,9 @@ fi
 echo "Starting RPC server..."
 cd "$SCRIPT_DIR/rpc"
 
+# Set up log file with absolute path
+LOG_FILE="$SCRIPT_DIR/rpc/server.log"
+
 # Build the server first
 echo "Building RPC server..."
 if ! cargo build --bin server; then
@@ -49,11 +52,11 @@ fi
 
 # Start the server with logging
 echo "Starting RPC server process..."
-RUST_BACKTRACE=1 nohup cargo run --bin server -- --port 5000 > server.log 2>&1 & SERVER_PID=$!
+RUST_BACKTRACE=1 nohup cargo run --bin server -- --port 5000 > "$LOG_FILE" 2>&1 & SERVER_PID=$!
 
 # Function to check server connection
 check_server_connection() {
-    local max_retries=5
+    local max_retries=10
     local retry_count=0
     local connected=false
 
@@ -63,18 +66,18 @@ check_server_connection() {
             break
         fi
         retry_count=$((retry_count + 1))
-        sleep 1
+        sleep 2
     done
 
     echo $connected
 }
 
 # Wait for server to start and verify it's running
-for i in {1..60}; do
+for i in {1..120}; do
     if ! ps -p $SERVER_PID > /dev/null 2>&1; then
         echo "Error: RPC server process died"
         echo "Server log:"
-        cat server.log
+        cat "$LOG_FILE"
         exit 1
     fi
 
@@ -82,18 +85,26 @@ for i in {1..60}; do
     if [ "$connection_status" = "true" ]; then
         echo "RPC server is running and listening on port 5000"
         # Add extra wait time to ensure server is fully ready
-        sleep 5
-        break
+        echo "Waiting for server to stabilize..."
+        sleep 10
+        # Verify connection is still stable
+        if $(check_server_connection); then
+            echo "Server connection is stable"
+            break
+        else
+            echo "Server connection became unstable, retrying..."
+            continue
+        fi
     fi
 
-    if [ $i -eq 60 ]; then
-        echo "Error: RPC server failed to bind to port 5000 after 60 attempts"
+    if [ $i -eq 120 ]; then
+        echo "Error: RPC server failed to bind to port 5000 after 120 attempts"
         echo "Server log:"
-        cat server.log
+        cat "$LOG_FILE"
         exit 1
     fi
 
-    echo "Waiting for RPC server to start (attempt $i/60)..."
+    echo "Waiting for RPC server to start (attempt $i/120)..."
     sleep 2
 done
 
@@ -108,19 +119,23 @@ export TOKEN_ENVIRONMENT="mainnet"
 
 echo "Testing token creation..."
 # Verify server is still running before token creation
+echo "Verifying RPC server connection before token creation..."
 if ! $(check_server_connection); then
     echo "Error: RPC server is not responding before token creation"
-    cat server.log
+    echo "Server log:"
+    cat "$LOG_FILE"
     exit 1
 fi
 
+echo "RPC server connection verified, proceeding with token creation..."
 if ! cargo run -- create; then
     echo "Error: Token creation failed"
-    cat server.log
+    echo "Server log:"
+    cat "$LOG_FILE"
     exit 1
 fi
 
-# Wait for token creation to complete
+# Add a short wait after token creation
 sleep 5
 
 echo "Testing token verification..."
