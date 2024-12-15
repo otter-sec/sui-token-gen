@@ -141,38 +141,45 @@ async fn main() -> anyhow::Result<()> {
     let mut listener = tarpc::serde_transport::tcp::listen(&server_addr, Json::default).await?;
     tracing::info!("Successfully bound to {:?}", listener.local_addr());
 
-    // Configure server with longer timeouts
+    // Configure server with longer timeouts and larger frame size
     listener.config_mut().max_frame_length(usize::MAX);
 
     // Add more debug logging
     tracing::info!("Starting server with configuration: {:?}", listener.config());
 
-    listener
-        .filter_map(|r| {
-            if let Err(e) = &r {
-                tracing::error!("Connection error: {:?}", e);
-            }
-            future::ready(r.ok())
-        })
-        .map(|channel| {
-            let channel = server::BaseChannel::with_defaults(channel);
-            tracing::info!("New client connected from: {:?}", channel.transport().peer_addr());
-            channel
-        })
-        .map(|channel| {
-            let server = TokenServer::new(channel.transport().peer_addr().unwrap());
-            let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+    let server_handle = tokio::spawn(async move {
+        listener
+            .filter_map(|r| {
+                if let Err(e) = &r {
+                    tracing::error!("Connection error: {:?}", e);
+                }
+                future::ready(r.ok())
+            })
+            .map(|channel| {
+                let channel = server::BaseChannel::with_defaults(channel);
+                tracing::info!("New client connected from: {:?}", channel.transport().peer_addr());
+                channel
+            })
+            .map(|channel| {
+                let server = TokenServer::new(channel.transport().peer_addr().unwrap());
+                let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
-            // Keep connection alive until explicitly closed
-            tokio::spawn(async move {
-                let _ = rx.await;
-            });
+                // Keep connection alive until explicitly closed
+                tokio::spawn(async move {
+                    let _ = rx.await;
+                });
 
-            channel.execute(server.serve()).for_each(spawn)
-        })
-        .buffer_unordered(10)
-        .for_each(|_| async {})
-        .await;
+                channel.execute(server.serve()).for_each(spawn)
+            })
+            .buffer_unordered(10)
+            .for_each(|_| async {})
+            .await;
+    });
+
+    // Handle server shutdown gracefully
+    tokio::signal::ctrl_c().await?;
+    tracing::info!("Shutting down server...");
+    server_handle.abort();
 
     Ok(())
 }

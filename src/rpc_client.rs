@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{io::Error, net::SocketAddr};
+use std::{io::Error, net::SocketAddr, time::Duration};
 use tarpc::{client, tokio_serde::formats::Json};
 
 use crate::errors::RpcResponseErrors;
@@ -29,13 +29,35 @@ pub async fn initiate_client(address: &str) -> Result<TokenGenClient, Error> {
     let mut transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default);
     transport.config_mut().max_frame_length(usize::MAX);
 
-    // Configure client with increased buffer sizes for better reliability
+    // Configure client with increased buffer sizes and timeouts for better reliability
     let mut client_config = client::Config::default();
     client_config.max_in_flight_requests = 1024;
     client_config.pending_request_buffer = 1024;
+    client_config.request_timeout = Some(Duration::from_secs(30));
 
-    let client: TokenGenClient =
-        TokenGenClient::new(client_config, transport.await?).spawn();
+    // Add retry logic for connection establishment
+    let mut retry_count = 0;
+    const MAX_RETRIES: u32 = 3;
+    const RETRY_DELAY: Duration = Duration::from_secs(1);
 
-    Ok(client)
+    loop {
+        match transport.await {
+            Ok(transport) => {
+                let client = TokenGenClient::new(client_config.clone(), transport).spawn();
+                return Ok(client);
+            }
+            Err(e) => {
+                retry_count += 1;
+                if retry_count >= MAX_RETRIES {
+                    return Err(Error::new(
+                        std::io::ErrorKind::ConnectionRefused,
+                        format!("Failed to connect after {} retries: {}", MAX_RETRIES, e),
+                    ));
+                }
+                tokio::time::sleep(RETRY_DELAY).await;
+                transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default);
+                transport.config_mut().max_frame_length(usize::MAX);
+            }
+        }
+    }
 }

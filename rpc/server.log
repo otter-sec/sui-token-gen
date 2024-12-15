@@ -148,6 +148,12 @@ warning: unused variable: `environment`
    |
    = note: `#[warn(unused_variables)]` on by default
 
-warning: `tarpc-example-service` (bin "server") generated 2 warnings (run `cargo fix --bin "server"` to apply 1 suggestion)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
+warning: unused variable: `tx`
+   --> src/bin/server.rs:164:18
+    |
+164 |             let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+    |                  ^^ help: if this is intentional, prefix it with an underscore: `_tx`
+
+warning: `tarpc-example-service` (bin "server") generated 3 warnings (run `cargo fix --bin "server"` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.18s
      Running `target/debug/server --port 5000`
