@@ -22,7 +22,7 @@ pub enum TokenGenErrors {
     GitError(String),
 
     #[error("File I/O error: {0}")]
-    FileIoError(#[serde(skip)] io::Error),
+    FileIoError(String),
 
     #[error("Template error: {0}")]
     TeraError(String),
@@ -43,7 +43,7 @@ pub enum TokenGenErrors {
 // Implement From for io::Error separately since we can't use #[from]
 impl From<io::Error> for TokenGenErrors {
     fn from(e: io::Error) -> Self {
-        TokenGenErrors::FileIoError(e)
+        TokenGenErrors::FileIoError(e.to_string())
     }
 }
 
@@ -84,7 +84,7 @@ impl From<RpcResponseErrors> for TokenGenErrors {
             RpcResponseErrors::InvalidPath(msg) => TokenGenErrors::InvalidPath(msg),
             RpcResponseErrors::InvalidUrl(msg) => TokenGenErrors::InvalidUrl(msg),
             RpcResponseErrors::GitError(msg) => TokenGenErrors::GitError(msg),
-            RpcResponseErrors::FileIoError(msg) => TokenGenErrors::FileIoError(io::Error::new(io::ErrorKind::Other, msg)),
+            RpcResponseErrors::FileIoError(msg) => TokenGenErrors::FileIoError(msg),
             RpcResponseErrors::TeraError(msg) => TokenGenErrors::TeraError(msg),
             RpcResponseErrors::PromptError(msg) => TokenGenErrors::PromptError(msg),
             RpcResponseErrors::RpcError(msg) => TokenGenErrors::RpcError(msg),

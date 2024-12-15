@@ -39,16 +39,24 @@ fi
 
 echo "Starting RPC server..."
 cd "$SCRIPT_DIR/rpc"
-RUST_BACKTRACE=1 nohup cargo run --bin server -- --port 5000 > server.log 2>&1 & SERVER_PID=$!
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to start RPC server"
+
+# Build the server first
+echo "Building RPC server..."
+if ! cargo build --bin server; then
+    echo "Error: Failed to build RPC server"
     exit 1
 fi
 
+# Start the server with logging
+echo "Starting RPC server process..."
+RUST_BACKTRACE=1 nohup cargo run --bin server -- --port 5000 > server.log 2>&1 & SERVER_PID=$!
+
 # Wait for server to start and verify it's running
-for i in {1..10}; do
+for i in {1..30}; do
     if ! ps -p $SERVER_PID > /dev/null 2>&1; then
         echo "Error: RPC server process died"
+        echo "Server log:"
+        cat server.log
         exit 1
     fi
 
@@ -57,13 +65,15 @@ for i in {1..10}; do
         break
     fi
 
-    if [ $i -eq 10 ]; then
-        echo "Error: RPC server failed to bind to port 5000 after 10 attempts"
+    if [ $i -eq 30 ]; then
+        echo "Error: RPC server failed to bind to port 5000 after 30 attempts"
+        echo "Server log:"
+        cat server.log
         exit 1
     fi
 
-    echo "Waiting for RPC server to start (attempt $i/10)..."
-    sleep 1
+    echo "Waiting for RPC server to start (attempt $i/30)..."
+    sleep 2
 done
 
 # Return to project root and set test environment variables
