@@ -1,51 +1,46 @@
+use clap::Parser;
+use futures::{future, prelude::*};
 use std::{
+    error::Error,
     fs,
+    io,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
 };
-
-use anyhow::Result;
-use clap::Parser;
-use futures::{future, StreamExt};
-use service::{
-    init_tracing,
-    utils::verify_helper,
-    TokenGen,
-};
-use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
+    context,
     server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
 };
 use tempfile::tempdir;
+use suitokengentest::errors::TokenGenErrors;
 
 #[derive(Parser)]
-#[clap(name = "server")]
+#[command(author, version, about, long_about = None)]
 struct Flags {
-    /// The port the server should listen on.
-    #[clap(long, default_value = "5000")]
+    /// The port to listen on.
+    #[arg(short, long, default_value_t = 5000)]
     port: u16,
 }
 
 #[derive(Clone)]
 struct TokenServer;
 
-fn get_project_root() -> Result<PathBuf, TokenGenErrors> {
-    let current_dir = std::env::current_dir()
-        .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to get current directory: {}", e)))?;
-    let project_root = current_dir
-        .parent()
-        .and_then(|p| p.parent())
-        .ok_or_else(|| TokenGenErrors::FileIoError("Failed to find project root".into()))?
-        .to_path_buf();
-
+fn get_project_root() -> Result<PathBuf, io::Error> {
+    let current_dir = std::env::current_dir()?;
+    let project_root = if current_dir.ends_with("rpc") {
+        current_dir.parent().unwrap().to_path_buf()
+    } else {
+        current_dir
+    };
     Ok(project_root)
 }
 
+#[tarpc::server]
 impl TokenGen for TokenServer {
     async fn create(
         self,
-        _context: ::tarpc::context::Context,
+        _context: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -87,7 +82,7 @@ impl TokenGen for TokenServer {
 
     async fn verify_url(
         self,
-        _context: ::tarpc::context::Context,
+        _context: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
         verify_helper::verify_token_using_url(&url).await
@@ -95,7 +90,7 @@ impl TokenGen for TokenServer {
 
     async fn verify_content(
         self,
-        _context: ::tarpc::context::Context,
+        _context: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
         let temp_dir = tempdir()
@@ -109,34 +104,26 @@ impl TokenGen for TokenServer {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn Error>> {
     let flags = Flags::parse();
-    let port = flags.port;
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
 
-    let addr = format!("127.0.0.1:{}", port).parse()?;
     let server = TokenServer;
-
     let mut listener = tarpc::serde_transport::tcp::listen(&addr, Json::default).await?;
     listener.config_mut().max_frame_length(usize::MAX);
 
     println!("Server listening on {}", addr);
 
-    let server_fut = listener
-        .filter_map(|r| futures::future::ready(r.ok()))
-        .map(tarpc::server::BaseChannel::with_defaults)
-        .map(|channel| {
+    listener
+        .filter_map(|r| future::ready(r.ok()))
+        .map(BaseChannel::with_defaults)
+        .for_each(|channel| {
             let server = server.clone();
-            channel.execute(server.serve())
+            async move {
+                channel.execute(server.serve()).await;
+            }
         })
-        .buffer_unordered(10)
-        .for_each(|_| async {});
-
-    tokio::select! {
-        _ = server_fut => {},
-        _ = tokio::signal::ctrl_c() => {
-            println!("Received Ctrl+C, shutting down...");
-        }
-    }
+        .await;
 
     Ok(())
 }
@@ -147,6 +134,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_server() {
-        // Test implementation will be added later
+        // Add server tests here
     }
 }
