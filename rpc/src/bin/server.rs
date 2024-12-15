@@ -89,9 +89,9 @@ impl TokenGen for TokenServer {
         // Read template files from project root
         let template_dir = Path::new("../src/templates");
         let token_template = fs::read_to_string(template_dir.join("move/token.move.template"))
-            .map_err(|e| RpcResponseErrors::TemplateNotFound(format!("Failed to read token template: {}", e)))?;
+            .map_err(|e| TokenGenErrors::TemplateNotFound(format!("Failed to read token template: {}", e)))?;
         let toml_template = fs::read_to_string(template_dir.join("toml/Move.toml.template"))
-            .map_err(|e| RpcResponseErrors::TemplateNotFound(format!("Failed to read toml template: {}", e)))?;
+            .map_err(|e| TokenGenErrors::TemplateNotFound(format!("Failed to read toml template: {}", e)))?;
 
         // Process templates with token info
         let token_content = token_template

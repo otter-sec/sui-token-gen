@@ -1,8 +1,8 @@
 use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
+use suitokengentest::errors::TokenGenErrors;
 
 pub mod utils;
 
@@ -19,42 +19,6 @@ pub trait TokenGen {
 
     async fn verify_url(url: String) -> Result<(), TokenGenErrors>;
     async fn verify_content(content: String) -> Result<(), TokenGenErrors>;
-}
-
-#[derive(Error, Debug, Deserialize, Serialize)]
-pub enum TokenGenErrors {
-    #[error("Given contract is modified")]
-    ProgramModified,
-
-    #[error("Invalid decimals provided")]
-    InvalidDecimals,
-
-    #[error("Invalid symbol provided")]
-    InvalidSymbol,
-
-    #[error("Invalid name provided")]
-    InvalidName,
-
-    #[error("Invalid description provided")]
-    InvalidDescription,
-
-    #[error("An error occurred: {0}")]
-    GeneralError(String),
-
-    #[error("Invalid path: {0}")]
-    InvalidPath(String),
-
-    #[error("Invalid URL: {0}")]
-    InvalidUrl(String),
-
-    #[error("Git operation failed: {0}")]
-    GitError(String),
-
-    #[error("File I/O error: {0}")]
-    FileIoError(String),
-
-    #[error("{0}")]
-    VerifyResultError(String),
 }
 
 /// Initializes an OpenTelemetry tracing subscriber with a OTLP backend.

@@ -46,6 +46,26 @@ impl From<io::Error> for TokenGenErrors {
     }
 }
 
+// Implement From<RpcResponseErrors> for TokenGenErrors
+impl From<RpcResponseErrors> for TokenGenErrors {
+    fn from(e: RpcResponseErrors) -> Self {
+        match e {
+            RpcResponseErrors::ProgramModified => TokenGenErrors::VerificationError("Program modified".to_string()),
+            RpcResponseErrors::InvalidDecimals => TokenGenErrors::InvalidInput("Invalid decimals".to_string()),
+            RpcResponseErrors::InvalidSymbol => TokenGenErrors::InvalidInput("Invalid symbol".to_string()),
+            RpcResponseErrors::InvalidName => TokenGenErrors::InvalidInput("Invalid name".to_string()),
+            RpcResponseErrors::InvalidDescription => TokenGenErrors::InvalidInput("Invalid description".to_string()),
+            RpcResponseErrors::GeneralError(msg) => TokenGenErrors::InvalidInput(msg),
+            RpcResponseErrors::InvalidPath(msg) => TokenGenErrors::InvalidPath(msg),
+            RpcResponseErrors::InvalidUrl(msg) => TokenGenErrors::InvalidUrl(msg),
+            RpcResponseErrors::GitError(msg) => TokenGenErrors::GitError(git2::Error::from_str(&msg)),
+            RpcResponseErrors::FileIoError(msg) => TokenGenErrors::FileIoError(io::Error::new(io::ErrorKind::Other, msg)),
+            RpcResponseErrors::VerifyResultError(msg) => TokenGenErrors::VerificationError(msg),
+            RpcResponseErrors::TemplateNotFound(msg) => TokenGenErrors::TemplateNotFound(msg),
+        }
+    }
+}
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Error, Debug, Deserialize, Serialize)]
