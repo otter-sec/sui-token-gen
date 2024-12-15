@@ -34,6 +34,9 @@ pub enum TokenGenErrors {
 
     #[error("Verification failed: {0}")]
     VerificationError(String),
+
+    #[error("Template not found: {0}")]
+    TemplateNotFound(String),
 }
 
 // Implement From for io::Error separately since we can't use #[from]
@@ -79,4 +82,7 @@ pub enum RpcResponseErrors {
 
     #[error("{0}")]
     VerifyResultError(String),
+
+    #[error("Template not found: {0}")]
+    TemplateNotFound(String),
 }
