@@ -161,7 +161,7 @@ pub fn compare_contract_content(
             check_cloned_contract(path)?;
         }
 
-        return Err(TokenGenErrors::VerifyResultError(
+        return Err(TokenGenErrors::VerificationError(
             "Contract verification failed: content mismatch detected".to_string(),
         ));
     }
