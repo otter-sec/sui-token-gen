@@ -15,7 +15,7 @@ use service::{
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
     context,
-    server::BaseChannel,
+    server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
 };
 use tempfile::tempdir;
@@ -33,98 +33,79 @@ struct TokenServer;
 
 #[async_trait]
 impl TokenGen for TokenServer {
-    fn create<'life0, 'async_trait>(
-        &'life0 self,
-        _ctx: context::Context,
+    async fn create(
+        self,
+        context: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
         description: String,
         frozen: bool,
         environment: String,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(String, String, String), TokenGenErrors>> + Send + 'async_trait>>
-    where
-        'life0: 'async_trait,
-        Self: 'async_trait,
-    {
-        Box::pin(async move {
-            let current_dir = std::env::current_dir()
-                .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to get current directory: {}", e)))?;
-            let project_root = current_dir
-                .parent()
-                .and_then(|p| p.parent())
-                .ok_or_else(|| TokenGenErrors::FileIoError("Failed to find project root".into()))?;
+    ) -> Result<(String, String, String), TokenGenErrors> {
+        let current_dir = std::env::current_dir()
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to get current directory: {}", e)))?;
+        let project_root = current_dir
+            .parent()
+            .and_then(|p| p.parent())
+            .ok_or_else(|| TokenGenErrors::FileIoError("Failed to find project root".into()))?;
 
-            let token_template = fs::read_to_string(
-                project_root.join("src/templates/move/token.move.template")
-            ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
+        let token_template = fs::read_to_string(
+            project_root.join("src/templates/move/token.move.template")
+        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
 
-            let toml_template = fs::read_to_string(
-                project_root.join("src/templates/toml/Move.toml.template")
-            ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
+        let toml_template = fs::read_to_string(
+            project_root.join("src/templates/toml/Move.toml.template")
+        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
 
-            let token_content = token_template
-                .replace("{{name}}", &name)
-                .replace("{{symbol}}", &symbol)
-                .replace("{{description}}", &description)
-                .replace("{{decimals}}", &decimals.to_string())
-                .replace("{{is_frozen}}", &frozen.to_string());
+        let token_content = token_template
+            .replace("{{name}}", &name)
+            .replace("{{symbol}}", &symbol)
+            .replace("{{description}}", &description)
+            .replace("{{decimals}}", &decimals.to_string())
+            .replace("{{is_frozen}}", &frozen.to_string());
 
-            let toml_content = toml_template
-                .replace("{{name}}", &name)
-                .replace("{{symbol}}", &symbol)
-                .replace("{{environment}}", &environment);
+        let toml_content = toml_template
+            .replace("{{name}}", &name)
+            .replace("{{symbol}}", &symbol)
+            .replace("{{environment}}", &environment);
 
-            let temp_dir = tempdir()
-                .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
+        let temp_dir = tempdir()
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
 
-            Ok((
-                temp_dir.path().to_string_lossy().to_string(),
-                token_content,
-                toml_content,
-            ))
-        })
+        Ok((
+            temp_dir.path().to_string_lossy().to_string(),
+            token_content,
+            toml_content,
+        ))
     }
 
-    fn verify_url<'life0, 'async_trait>(
-        &'life0 self,
-        _ctx: context::Context,
+    async fn verify_url(
+        self,
+        context: context::Context,
         url: String
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TokenGenErrors>> + Send + 'async_trait>>
-    where
-        'life0: 'async_trait,
-        Self: 'async_trait,
-    {
-        Box::pin(async move {
-            match verify_helper::verify_token_using_url(&url).await {
-                Ok(_) => Ok(()),
-                Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
-            }
-        })
+    ) -> Result<(), TokenGenErrors> {
+        match verify_helper::verify_token_using_url(&url).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
+        }
     }
 
-    fn verify_content<'life0, 'async_trait>(
-        &'life0 self,
-        _ctx: context::Context,
+    async fn verify_content(
+        self,
+        context: context::Context,
         content: String
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), TokenGenErrors>> + Send + 'async_trait>>
-    where
-        'life0: 'async_trait,
-        Self: 'async_trait,
-    {
-        Box::pin(async move {
-            let temp_dir = tempdir()
-                .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
-            let temp_file = temp_dir.path().join("temp.move");
-            fs::write(&temp_file, &content)
-                .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
+    ) -> Result<(), TokenGenErrors> {
+        let temp_dir = tempdir()
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
+        let temp_file = temp_dir.path().join("temp.move");
+        fs::write(&temp_file, &content)
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
 
-
-            match verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await {
-                Ok(_) => Ok(()),
-                Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
-            }
-        })
+        match verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
+        }
     }
 }
 
