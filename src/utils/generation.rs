@@ -1,9 +1,11 @@
+use std::fs;
+
 use crate::{
     utils::helpers::sanitize_name,
     variables::{SUB_FOLDER, TEST_FOLDER},
     Result,
 };
-use std::fs;
+
 pub fn create_contract_file(
     name: &str,
     base_folder: &str,

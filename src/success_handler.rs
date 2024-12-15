@@ -1,10 +1,13 @@
-use colored::*;
 use crate::utils::prompts::TokenInfo;
+use colored::*;
 
 #[derive(Debug)]
 pub enum SuccessType {
     TokenCreated(TokenInfo),
-    TokenVerified { path: Option<String>, url: Option<String> }
+    TokenVerified {
+        path: Option<String>,
+        url: Option<String>,
+    },
 }
 
 pub fn handle_success(success_type: SuccessType) {
@@ -19,14 +22,12 @@ pub fn handle_success(success_type: SuccessType) {
                 if token_info.description.is_empty() { "None".to_string() } else { token_info.description },
                 if token_info.is_frozen { "Yes" } else { "No" }
             )
-        },
-        SuccessType::TokenVerified { path, url } => {
-            match (path, url) {
-                (Some(p), None) => format!("Verified successfully from path: {}", p),
-                (None, Some(u)) => format!("Verified successfully from url: {}", u),
-                _ => "Verified successfully".to_string()
-            }
         }
+        SuccessType::TokenVerified { path, url } => match (path, url) {
+            (Some(p), None) => format!("Verified successfully from path: {}", p),
+            (None, Some(u)) => format!("Verified successfully from url: {}", u),
+            _ => "Verified successfully".to_string(),
+        },
     };
     println!("{}{}", success_prefix, message);
 }

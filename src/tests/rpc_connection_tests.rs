@@ -1,3 +1,5 @@
+use tarpc::context;
+
 use crate::{
     errors::TokenGenErrors,
     rpc_client::{initiate_client, TokenGenClient},
@@ -5,7 +7,6 @@ use crate::{
     Result,
 };
 
-use tarpc::context;
 /// Helper function to set up a test client with consistent error handling
 pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
     initiate_client(address)

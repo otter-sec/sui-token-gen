@@ -10,7 +10,6 @@ use tarpc::{
 };
 
 mod utils;
-
 use utils::{generation, helpers::sanitize_name, verify_helper};
 
 #[derive(Parser)]

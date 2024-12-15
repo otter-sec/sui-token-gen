@@ -48,12 +48,7 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     create_move_toml(&base_folder, &move_toml)?;
 
     // Creating contract file
-    create_contract_file(
-        &token_data.name,
-        &base_folder,
-        &token_content,
-        SUB_FOLDER,
-    )?;
+    create_contract_file(&token_data.name, &base_folder, &token_content, SUB_FOLDER)?;
 
     // Creating tests file
     create_contract_file(

@@ -5,7 +5,6 @@ use tarpc::{client, context, tokio_serde::formats::Json};
 use thiserror::Error;
 
 mod utils;
-
 use utils::errors::TokenGenErrors;
 
 #[tarpc::service]

@@ -67,13 +67,8 @@ async fn create_command() -> Result<()> {
     create_move_toml(&base_folder, &move_toml).expect("Failed to create Move.toml");
 
     // Generate token contract file
-    create_contract_file(
-        &name,
-        &base_folder,
-        &token_content,
-        SUB_FOLDER,
-    )
-    .expect("Failed to create contract file");
+    create_contract_file(&name, &base_folder, &token_content, SUB_FOLDER)
+        .expect("Failed to create contract file");
 
     // Validate folder and file creation
     let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);

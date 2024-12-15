@@ -34,8 +34,7 @@ pub async fn initiate_client(address: &str) -> Result<TokenGenClient, Error> {
     client_config.max_in_flight_requests = 1024;
     client_config.pending_request_buffer = 1024;
 
-    let client: TokenGenClient =
-        TokenGenClient::new(client_config, transport.await?).spawn();
+    let client: TokenGenClient = TokenGenClient::new(client_config, transport.await?).spawn();
 
     Ok(client)
 }

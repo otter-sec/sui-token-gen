@@ -1,3 +1,5 @@
+use tarpc::context;
+
 use crate::{
     commands::verify::verify_token_using_url,
     errors::TokenGenErrors,
@@ -5,7 +7,6 @@ use crate::{
     variables::ADDRESS,
     Result,
 };
-use tarpc::context;
 
 /// Helper function to set up a test client with consistent error handling
 pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {

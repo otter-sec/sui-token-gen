@@ -1,6 +1,5 @@
-use thiserror::Error;
-
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[derive(Error, Debug, Deserialize, Serialize)]
 pub enum TokenGenErrors {

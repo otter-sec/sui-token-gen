@@ -1,4 +1,5 @@
 use colored::*;
+
 use crate::errors::TokenGenErrors;
 
 /// Centralized error handler that handles both logging and process termination.

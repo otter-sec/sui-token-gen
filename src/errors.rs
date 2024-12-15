@@ -1,5 +1,5 @@
-use std::io;
 use inquire::error::InquireError;
+use std::io;
 use tarpc::client::RpcError;
 use thiserror::Error;
 

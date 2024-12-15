@@ -85,7 +85,3 @@ pub fn get_token_info(content: &str) -> (u8, String, String, String, bool) {
 
     (decimals, symbol, name, description, is_frozen)
 }
-
-pub fn is_running_test() -> bool {
-    std::env::var("RUNNING_TEST").map_or(false, |val| val == "true")
-}

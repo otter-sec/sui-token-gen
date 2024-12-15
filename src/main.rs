@@ -2,13 +2,12 @@ use clap::{Parser, Subcommand};
 use errors::TokenGenErrors;
 
 mod commands;
-mod errors;
 mod error_handler;
+mod errors;
 mod rpc_client;
 mod success_handler;
 mod utils;
 mod variables;
-
 use error_handler::handle_error;
 use rpc_client::initiate_client;
 use variables::ADDRESS;
@@ -56,8 +55,9 @@ async fn main() {
 async fn run_cli(cli: Cli) -> Result<()> {
     match &cli.command {
         Commands::Create => {
-            let client = initiate_client(ADDRESS).await
-                .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
+            let client = initiate_client(ADDRESS).await.map_err(|e| {
+                TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e))
+            })?;
             commands::create::create_token(client).await?;
         }
         Commands::Verify { path, url } => {
@@ -67,16 +67,9 @@ async fn run_cli(cli: Cli) -> Result<()> {
                 ));
             }
 
-            if let Some(path) = path {
-                if !std::path::Path::new(path).exists() {
-                    return Err(TokenGenErrors::InvalidPath(
-                        "The provided path for the contract is invalid.".to_string(),
-                    ));
-                }
-            }
-
-            let client = initiate_client(ADDRESS).await
-                .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
+            let client = initiate_client(ADDRESS).await.map_err(|e| {
+                TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e))
+            })?;
 
             if let Some(path) = path {
                 commands::verify::verify_token_from_path(path, client.clone()).await?;

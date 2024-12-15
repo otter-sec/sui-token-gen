@@ -1,17 +1,12 @@
 use anyhow::Result;
 use git2::Repository;
-use std::{
-    env,
-    fs::{self, ReadDir},
-    io,
-    path::Path,
-};
+use std::{env, fs, path::Path};
 use url::Url;
 
 use crate::utils::{
     errors::TokenGenErrors,
     generation::generate_token,
-    helpers::{filter_token_content, get_token_info, is_running_test, is_valid_github_url},
+    helpers::{filter_token_content, get_token_info, is_valid_github_url},
     variables::SUB_FOLDER,
 };
 
@@ -70,7 +65,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
 }
 
 fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
-    if path.exists() && path.is_dir() && !is_running_test() {
+    if path.exists() && path.is_dir() {
         fs::remove_dir_all(path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
     }
     Ok(())
@@ -85,11 +80,6 @@ pub fn read_file(file_path: &Path) -> Result<String, TokenGenErrors> {
 
     let content =
         fs::read_to_string(file_path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
-    Ok(content)
-}
-
-pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
-    let content = fs::read_dir(dir)?;
     Ok(content)
 }
 
@@ -109,7 +99,7 @@ pub async fn verify_contract(dir: &Path, clone_path: &Path) -> Result<(), TokenG
     }
 
     // Read all entries in the directory
-    let entries = read_dir(dir)
+    let entries = fs::read_dir(dir)
         .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read directory: {}", e)))?;
 
     // Iterate over the entries
@@ -162,7 +152,7 @@ pub fn compare_contract_content(
         }
 
         return Err(TokenGenErrors::VerifyResultError(
-            "Contract verification failed: content mismatch detected".to_string(),
+            "Content mismatch detected".to_string(),
         ));
     }
 
