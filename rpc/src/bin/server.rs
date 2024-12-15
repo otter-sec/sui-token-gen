@@ -161,7 +161,7 @@ async fn main() -> anyhow::Result<()> {
         })
         .map(|channel| {
             let server = TokenServer::new(channel.transport().peer_addr().unwrap());
-            let (tx, rx) = tokio::sync::oneshot::channel();
+            let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
             // Keep connection alive until explicitly closed
             tokio::spawn(async move {
