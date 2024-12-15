@@ -4,9 +4,10 @@ use tarpc::context;
 use crate::{
     errors::TokenGenErrors,
     rpc_client::TokenGenClient,
+    success_handler::{handle_success, SuccessType},
     utils::{
         generation::{create_base_folder, create_contract_file, create_move_toml},
-        helpers::{log_success_message, sanitize_name},
+        helpers::sanitize_name,
         prompts::get_user_prompt,
     },
     variables::{SUB_FOLDER, TEST_FOLDER},
@@ -23,19 +24,19 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     let token_data = get_user_prompt()?;
     println!("Creating contract...");
 
-    // Calling RPC create function
+    // Calling RPC create function with owned Strings
     let (token_content, move_toml, test_token_content) = client
         .create(
             context::current(),
             token_data.decimals,
-            token_data.name.to_owned(),
-            token_data.symbol,
-            token_data.description,
+            token_data.name.clone(),
+            token_data.symbol.clone(),
+            token_data.description.clone(),
             token_data.is_frozen,
-            token_data.environment,
+            token_data.environment.clone(),
         )
         .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?
+        .map_err(TokenGenErrors::RpcError)?
         .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
 
     let base_folder: String = sanitize_name(&token_data.name);
@@ -44,24 +45,24 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     create_base_folder(&base_folder)?;
 
     // Creating .toml and contract files
-    create_move_toml(base_folder.to_owned(), move_toml)?;
+    create_move_toml(&base_folder, &move_toml)?;
 
     // Creating contract file
     create_contract_file(
-        token_data.name.to_owned(),
-        base_folder.to_owned(),
-        token_content,
+        &token_data.name,
+        &base_folder,
+        &token_content,
         SUB_FOLDER,
     )?;
 
     // Creating tests file
     create_contract_file(
-        token_data.name,
-        base_folder,
-        test_token_content,
+        &token_data.name,
+        &base_folder,
+        &test_token_content,
         TEST_FOLDER,
     )?;
 
-    log_success_message("Contract has been generated!");
+    handle_success(SuccessType::TokenCreated(token_data));
     Ok(())
 }

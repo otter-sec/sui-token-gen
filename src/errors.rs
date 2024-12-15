@@ -1,7 +1,9 @@
 use std::io;
+use inquire::error::InquireError;
+use tarpc::client::RpcError;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error)]
 pub enum TokenGenErrors {
     #[error("Failed to create token contract: {0}")]
     FailedToCreateTokenContract(String),
@@ -19,19 +21,26 @@ pub enum TokenGenErrors {
     GitError(#[from] git2::Error),
 
     #[error("File I/O error: {0}")]
-    FileIoError(#[from] io::Error),
+    FileIoError(io::Error),
 
     #[error("Tera error: {0}")]
     TeraError(#[from] tera::Error),
 
     #[error(transparent)]
-    PromptError(#[from] inquire::error::InquireError),
+    PromptError(#[from] InquireError),
 
     #[error(transparent)]
-    RpcError(#[from] tarpc::client::RpcError),
+    RpcError(#[from] RpcError),
 
     #[error("Verification failed: {0}")]
     VerificationError(String),
+}
+
+// Implement From for io::Error separately since we can't use #[from]
+impl From<io::Error> for TokenGenErrors {
+    fn from(e: io::Error) -> Self {
+        TokenGenErrors::FileIoError(e)
+    }
 }
 
 use serde::{Deserialize, Serialize};

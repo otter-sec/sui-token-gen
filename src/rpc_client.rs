@@ -29,8 +29,13 @@ pub async fn initiate_client(address: &str) -> Result<TokenGenClient, Error> {
     let mut transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default);
     transport.config_mut().max_frame_length(usize::MAX);
 
+    // Configure client with increased buffer sizes for better reliability
+    let mut client_config = client::Config::default();
+    client_config.max_in_flight_requests = 1024;
+    client_config.pending_request_buffer = 1024;
+
     let client: TokenGenClient =
-        TokenGenClient::new(client::Config::default(), transport.await?).spawn();
+        TokenGenClient::new(client_config, transport.await?).spawn();
 
     Ok(client)
 }

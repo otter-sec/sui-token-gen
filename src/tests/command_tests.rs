@@ -64,13 +64,13 @@ async fn create_command() -> Result<()> {
     create_base_folder(&base_folder)?;
 
     // Generate Move.toml file
-    create_move_toml(base_folder.to_owned(), move_toml).expect("Failed to create Move.toml");
+    create_move_toml(&base_folder, &move_toml).expect("Failed to create Move.toml");
 
     // Generate token contract file
     create_contract_file(
-        name.to_owned(),
-        base_folder.to_owned(),
-        token_content,
+        &name,
+        &base_folder,
+        &token_content,
         SUB_FOLDER,
     )
     .expect("Failed to create contract file");

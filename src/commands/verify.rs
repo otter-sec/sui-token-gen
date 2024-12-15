@@ -4,7 +4,8 @@ use tarpc::context;
 use crate::{
     errors::TokenGenErrors,
     rpc_client::TokenGenClient,
-    utils::{helpers::log_success_message, verify_helper::verify_contract},
+    success_handler::{handle_success, SuccessType},
+    utils::verify_helper::verify_contract,
     variables::SUB_FOLDER,
     Result,
 };
@@ -13,9 +14,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
     let path = Path::new(path);
 
     if !path.exists() {
-        return Err(TokenGenErrors::InvalidPath(
-            "The provided path for the contract is invalid.".to_string(),
-        ));
+        return Err(TokenGenErrors::InvalidPath("The provided path for the contract is invalid.".to_string()));
     }
 
     if path.is_dir() {
@@ -29,11 +28,9 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
             verify_contract(path, client).await?;
         }
     } else {
-        return Err(TokenGenErrors::InvalidPath(
-            "The path is not a directory.".to_string(),
-        ));
+        return Err(TokenGenErrors::InvalidPath("The path is not a directory.".to_string()));
     }
-    log_success_message("Verified successfully");
+    handle_success(SuccessType::TokenVerified { path: Some(path.to_string_lossy().to_string()), url: None });
     Ok(())
 }
 
@@ -41,8 +38,8 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
     client
         .verify_url(context::current(), url.to_string())
         .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?
+        .map_err(TokenGenErrors::RpcError)?
         .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
-    log_success_message("Verified successfully");
+    handle_success(SuccessType::TokenVerified { path: None, url: Some(url.to_string()) });
     Ok(())
 }
