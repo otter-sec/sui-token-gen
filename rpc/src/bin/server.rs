@@ -46,8 +46,8 @@ fn get_project_root() -> Result<PathBuf, TokenGenErrors> {
 
 #[async_trait]
 impl TokenGen for TokenServer {
-    async fn create<'life0, 'async_trait>(
-        &'life0 self,
+    async fn create(
+        &self,
         _context: ::tarpc::context::Context,
         name: String,
         symbol: String,
@@ -88,8 +88,8 @@ impl TokenGen for TokenServer {
         ))
     }
 
-    async fn verify_url<'life0, 'async_trait>(
-        &'life0 self,
+    async fn verify_url(
+        &self,
         _context: ::tarpc::context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
@@ -99,8 +99,8 @@ impl TokenGen for TokenServer {
         }
     }
 
-    async fn verify_content<'life0, 'async_trait>(
-        &'life0 self,
+    async fn verify_content(
+        &self,
         _context: ::tarpc::context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
