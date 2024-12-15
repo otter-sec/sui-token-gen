@@ -37,13 +37,6 @@ pub enum TokenGenErrors {
     VerificationError(String),
 }
 
-impl TokenGenErrors {
-    pub fn log(&self) {
-        let error = format!("ERROR: ").red().bold();
-        eprintln!("{} {}", error, self);
-    }
-}
-
 // Implement From for io::Error separately since we can't use #[from]
 impl From<io::Error> for TokenGenErrors {
     fn from(e: io::Error) -> Self {

@@ -3,10 +3,12 @@ use errors::TokenGenErrors;
 
 mod commands;
 mod errors;
+mod error_handler;
 mod rpc_client;
 mod utils;
 mod variables;
 
+use error_handler::handle_error;
 use rpc_client::{initiate_client, TokenGenClient};
 use variables::ADDRESS;
 
@@ -45,66 +47,42 @@ enum Commands {
 pub type Result<T> = std::result::Result<T, TokenGenErrors>;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     let cli = Cli::parse();
+    handle_error(run_cli(cli).await);
+}
 
+async fn run_cli(cli: Cli) -> Result<()> {
     match &cli.command {
         Commands::Create => {
-            // Initialize the RPC client for create command
-            let client: TokenGenClient = match initiate_client(ADDRESS).await {
-                Ok(client) => client,
-                Err(e) => {
-                    let error = TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e));
-                    error.log();
-                    std::process::exit(1);
-                }
-            };
-
-            if let Err(error) = commands::create::create_token(client).await {
-                error.log();
-                std::process::exit(1);
-            }
+            let client = initiate_client(ADDRESS).await
+                .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
+            commands::create::create_token(client).await?;
         }
         Commands::Verify { path, url } => {
             if path.is_none() && url.is_none() {
-                let error = TokenGenErrors::InvalidInput(
+                return Err(TokenGenErrors::InvalidInput(
                     "Error: Either --path or --url must be provided.".to_string(),
-                );
-                error.log();
-                std::process::exit(1);
+                ));
             }
 
-            // Check path validity before initializing client
             if let Some(path) = path {
                 if !std::path::Path::new(path).exists() {
-                    let error = TokenGenErrors::InvalidPath("The provided path for the contract is invalid.".to_string());
-                    error.log();
-                    std::process::exit(1);
+                    return Err(TokenGenErrors::InvalidPath(
+                        "The provided path for the contract is invalid.".to_string(),
+                    ));
                 }
             }
 
-            // Initialize the RPC client for verify command
-            let client: TokenGenClient = match initiate_client(ADDRESS).await {
-                Ok(client) => client,
-                Err(e) => {
-                    let error = TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e));
-                    error.log();
-                    std::process::exit(1);
-                }
-            };
+            let client = initiate_client(ADDRESS).await
+                .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
 
             if let Some(path) = path {
-                if let Err(error) = commands::verify::verify_token_from_path(path, client.clone()).await {
-                    error.log();
-                    std::process::exit(1);
-                }
+                commands::verify::verify_token_from_path(path, client.clone()).await?;
             }
 
             if let Some(url) = url {
-                if let Err(error) = commands::verify::verify_token_using_url(url, client).await {
-                    error.log();
-                    std::process::exit(1);
-                }
+                commands::verify::verify_token_using_url(url, client).await?;
             }
         }
     }
