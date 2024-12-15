@@ -2,8 +2,11 @@ use clap::Parser;
 use futures::{future, prelude::*};
 use regex::Regex;
 use service::{
-    init_tracing, utils::{generation, helpers::sanitize_name, verify_helper},
-    TokenGen, TokenGenErrors,
+    init_tracing,
+    utils::{helpers::sanitize_name, verify_helper},
+    TokenGen,
+    TokenGenErrors,
+    RpcResponseErrors,
 };
 use std::{
     fs,
@@ -84,12 +87,12 @@ impl TokenGen for TokenServer {
             "devnet".to_string() // Default to "devnet" if invalid
         };
 
-        // Read template files
+        // Read template files from project root
         let template_dir = Path::new("../src/templates");
         let token_template = fs::read_to_string(template_dir.join("move/token.move.template"))
-            .map_err(|_| RpcResponseErrors::TemplateNotFound("token.move.template".to_string()))?;
+            .map_err(|e| RpcResponseErrors::TemplateNotFound(format!("Failed to read token template: {}", e)))?;
         let toml_template = fs::read_to_string(template_dir.join("toml/Move.toml.template"))
-            .map_err(|_| RpcResponseErrors::TemplateNotFound("Move.toml.template".to_string()))?;
+            .map_err(|e| RpcResponseErrors::TemplateNotFound(format!("Failed to read toml template: {}", e)))?;
 
         // Process templates with token info
         let token_content = token_template
