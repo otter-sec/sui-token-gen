@@ -6,7 +6,7 @@ use service::{
     utils::{helpers::sanitize_name, verify_helper},
     TokenGen,
 };
-use sui_token_gen_test::errors::RpcResponseErrors;
+use suitokengentest::errors::RpcResponseErrors;
 use std::{
     fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
