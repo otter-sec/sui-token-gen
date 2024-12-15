@@ -1,6 +1,7 @@
 use std::{
     fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
 };
 
 use anyhow::Result;
@@ -31,10 +32,21 @@ struct Flags {
 #[derive(Clone)]
 struct TokenServer;
 
+fn get_project_root() -> Result<PathBuf, TokenGenErrors> {
+    let current_dir = std::env::current_dir()
+        .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to get current directory: {}", e)))?;
+    let project_root = current_dir
+        .parent()
+        .and_then(|p| p.parent())
+        .ok_or_else(|| TokenGenErrors::FileIoError("Failed to find project root".into()))?
+        .to_path_buf();
+
+    Ok(project_root)
+}
+
 #[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
-        &self,
         _context: context::Context,
         name: String,
         symbol: String,
@@ -43,12 +55,7 @@ impl TokenGen for TokenServer {
         frozen: bool,
         environment: String,
     ) -> Result<(String, String, String), TokenGenErrors> {
-        let current_dir = std::env::current_dir()
-            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to get current directory: {}", e)))?;
-        let project_root = current_dir
-            .parent()
-            .and_then(|p| p.parent())
-            .ok_or_else(|| TokenGenErrors::FileIoError("Failed to find project root".into()))?;
+        let project_root = get_project_root()?;
 
         let token_template = fs::read_to_string(
             project_root.join("src/templates/move/token.move.template")
@@ -81,7 +88,6 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
-        &self,
         _context: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
@@ -92,7 +98,6 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
-        &self,
         _context: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
@@ -124,7 +129,7 @@ async fn main() -> Result<()> {
         .for_each(move |channel| {
             let server = TokenServer;
             tokio::spawn(async move {
-                let _ = channel.execute(server.serve()).await;
+                channel.execute(server.serve());
             });
             future::ready(())
         })
