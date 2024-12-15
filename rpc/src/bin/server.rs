@@ -47,8 +47,8 @@ fn get_project_root() -> Result<PathBuf, TokenGenErrors> {
 #[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
-        &self,
-        _context: context::Context,
+        self,
+        context: ::tarpc::context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -89,8 +89,8 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
-        &self,
-        _context: context::Context,
+        self,
+        context: ::tarpc::context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
         match verify_helper::verify_token_using_url(&url).await {
@@ -100,8 +100,8 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
-        &self,
-        _context: context::Context,
+        self,
+        context: ::tarpc::context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
         let temp_dir = tempdir()
