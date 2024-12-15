@@ -109,25 +109,34 @@ impl TokenGen for TokenServer {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let flags = Flags::parse();
-    init_tracing("server")?;
+    let port = flags.port;
 
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
-    let listener = tarpc::serde_transport::tcp::listen(addr, Json::default).await?;
+    let addr = format!("127.0.0.1:{}", port).parse()?;
+    let server = TokenServer;
+
+    let mut listener = tarpc::serde_transport::tcp::listen(&addr, Json::default).await?;
+    listener.config_mut().max_frame_length(usize::MAX);
+
     println!("Server listening on {}", addr);
 
-    listener
-        .filter_map(|r| future::ready(r.ok()))
-        .map(BaseChannel::with_defaults)
-        .for_each(move |channel| {
-            let server = TokenServer;
-            tokio::spawn(async move {
-                channel.execute(server.serve());
-            });
-            future::ready(())
+    let server_fut = listener
+        .filter_map(|r| futures::future::ready(r.ok()))
+        .map(tarpc::server::BaseChannel::with_defaults)
+        .map(|channel| {
+            let server = server.clone();
+            channel.execute(server.serve())
         })
-        .await;
+        .buffer_unordered(10)
+        .for_each(|_| async {});
+
+    tokio::select! {
+        _ = server_fut => {},
+        _ = tokio::signal::ctrl_c() => {
+            println!("Received Ctrl+C, shutting down...");
+        }
+    }
 
     Ok(())
 }
