@@ -47,7 +47,7 @@ fn get_project_root() -> Result<PathBuf, TokenGenErrors> {
 impl TokenGen for TokenServer {
     async fn create(
         &self,
-        context: ::tarpc::context::Context,
+        _context: ::tarpc::context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -89,18 +89,15 @@ impl TokenGen for TokenServer {
 
     async fn verify_url(
         &self,
-        context: ::tarpc::context::Context,
+        _context: ::tarpc::context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
-        match verify_helper::verify_token_using_url(&url).await {
-            Ok(_) => Ok(()),
-            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
-        }
+        verify_helper::verify_token_using_url(&url).await
     }
 
     async fn verify_content(
         &self,
-        context: ::tarpc::context::Context,
+        _context: ::tarpc::context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
         let temp_dir = tempdir()
@@ -109,10 +106,7 @@ impl TokenGen for TokenServer {
         fs::write(&temp_file, &content)
             .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
 
-        match verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await {
-            Ok(_) => Ok(()),
-            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
-        }
+        verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await
     }
 }
 
