@@ -17,6 +17,7 @@ use tarpc::{
     server::{self, Channel},
     tokio_serde::formats::Json,
 };
+use tempfile::tempdir;
 
 #[derive(Parser)]
 struct Flags {
@@ -91,21 +92,21 @@ impl TokenGen for TokenServer {
 
         // Get project root directory (two levels up from rpc/src/bin)
         let project_root = std::env::current_dir()
-            .map_err(|e| TokenGenErrors::FileError(format!("Failed to get current directory: {}", e)))?
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to get current directory: {}", e)))?
             .parent() // up from bin
             .and_then(|p| p.parent()) // up from src
             .and_then(|p| p.parent()) // up from rpc
-            .ok_or_else(|| TokenGenErrors::FileError("Failed to find project root".into()))?;
+            .ok_or_else(|| TokenGenErrors::FileIoError("Failed to find project root".into()))?;
 
         // Read template files from project root
         let template_dir = project_root.join("src").join("templates");
         tracing::info!("Template directory: {:?}", template_dir);
 
         let token_template = fs::read_to_string(template_dir.join("move/token.move.template"))
-            .map_err(|e| TokenGenErrors::FileError(format!("Failed to read token template: {}", e)))?;
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
 
         let toml_template = fs::read_to_string(template_dir.join("toml/Move.toml.template"))
-            .map_err(|e| TokenGenErrors::FileError(format!("Failed to read toml template: {}", e)))?;
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
 
         // Replace placeholders in token template
         let token_content = token_template
@@ -123,7 +124,7 @@ impl TokenGen for TokenServer {
 
         // Create temporary directory for token files
         let temp_dir = tempdir().map_err(|e| {
-            TokenGenErrors::FileError(format!("Failed to create temporary directory: {}", e))
+            TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e))
         })?;
 
         Ok((token_content.clone(), toml_content, token_content))

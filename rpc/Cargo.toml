@@ -41,6 +41,7 @@ git2 = "0.17"
 thiserror = "2.0.4"
 async-trait = "0.1.83"
 suitokengentest = { path = ".." }
+tempfile = "3.10.1"
 
 [lib]
 name = "service"
