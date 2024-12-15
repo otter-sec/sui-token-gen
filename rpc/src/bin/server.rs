@@ -47,6 +47,7 @@ fn get_project_root() -> Result<PathBuf, TokenGenErrors> {
 #[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
+        &self,
         _context: context::Context,
         name: String,
         symbol: String,
@@ -88,6 +89,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
+        &self,
         _context: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
@@ -98,6 +100,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
+        &self,
         _context: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
