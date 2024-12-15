@@ -4,7 +4,6 @@ use std::{
     path::PathBuf,
 };
 use service::{
-    TokenGen,
     init_tracing,
 };
 use tarpc::{
@@ -12,7 +11,6 @@ use tarpc::{
     server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
 };
-use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -37,8 +35,8 @@ fn get_project_root() -> Result<PathBuf, std::io::Error> {
 
 #[async_trait::async_trait]
 impl service::TokenGen for TokenServer {
-    async fn create(
-        &self,
+    async fn create<'life0, 'async_trait>(
+        &'life0 self,
         _ctx: context::Context,
         name: String,
         symbol: String,
@@ -46,7 +44,11 @@ impl service::TokenGen for TokenServer {
         description: String,
         frozen: bool,
         environment: String,
-    ) -> Result<(String, String, String), suitokengentest::errors::TokenGenErrors> {
+    ) -> Result<(String, String, String), suitokengentest::errors::TokenGenErrors>
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
         let project_root = get_project_root()?;
 
         let token_template = std::fs::read_to_string(
@@ -79,19 +81,27 @@ impl service::TokenGen for TokenServer {
         ))
     }
 
-    async fn verify_url(
-        &self,
+    async fn verify_url<'life0, 'async_trait>(
+        &'life0 self,
         _ctx: context::Context,
         url: String
-    ) -> Result<(), suitokengentest::errors::TokenGenErrors> {
+    ) -> Result<(), suitokengentest::errors::TokenGenErrors>
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
         service::utils::verify_helper::verify_token_using_url(&url).await
     }
 
-    async fn verify_content(
-        &self,
+    async fn verify_content<'life0, 'async_trait>(
+        &'life0 self,
         _ctx: context::Context,
         content: String
-    ) -> Result<(), suitokengentest::errors::TokenGenErrors> {
+    ) -> Result<(), suitokengentest::errors::TokenGenErrors>
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
         let temp_dir = tempfile::tempdir()
             .map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
         let temp_file = temp_dir.path().join("temp.move");
@@ -116,7 +126,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         let (stream, _) = listener.accept().await?;
-        let transport = tarpc::serde_transport::tcp::from_stream(stream, Json::default);
+        let transport = tarpc::serde_transport::tcp::new(stream, Json::default);
         let server = server.clone();
 
         tokio::spawn(async move {

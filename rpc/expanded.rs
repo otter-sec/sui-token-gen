@@ -3,14 +3,12 @@
 use std::prelude::rust_2021::*;
 #[macro_use]
 extern crate std;
-use async_trait::async_trait;
 use clap::Parser;
-use futures::{future, prelude::*};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
 };
-use service::{TokenGen, init_tracing};
+use service::init_tracing;
 use tarpc::{
     context, server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
@@ -276,7 +274,8 @@ impl service::TokenGen for TokenServer {
         clippy::type_repetition_in_bounds,
         clippy::used_underscore_binding
     )]
-    fn create<'async_trait>(
+    fn create<'life0, 'async_trait>(
+        &'life0 self,
         _ctx: context::Context,
         name: String,
         symbol: String,
@@ -293,13 +292,18 @@ impl service::TokenGen for TokenServer {
                 >,
             > + ::core::marker::Send + 'async_trait,
         >,
-    > {
+    >
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
         Box::pin(async move {
             if let ::core::option::Option::Some(__ret) = ::core::option::Option::None::<
                 Result<(String, String, String), suitokengentest::errors::TokenGenErrors>,
             > {
                 #[allow(unreachable_code)] return __ret;
             }
+            let __self = self;
             let _ctx = _ctx;
             let name = name;
             let symbol = symbol;
@@ -374,7 +378,8 @@ impl service::TokenGen for TokenServer {
         clippy::type_repetition_in_bounds,
         clippy::used_underscore_binding
     )]
-    fn verify_url<'async_trait>(
+    fn verify_url<'life0, 'async_trait>(
+        &'life0 self,
         _ctx: context::Context,
         url: String,
     ) -> ::core::pin::Pin<
@@ -383,13 +388,18 @@ impl service::TokenGen for TokenServer {
                 Output = Result<(), suitokengentest::errors::TokenGenErrors>,
             > + ::core::marker::Send + 'async_trait,
         >,
-    > {
+    >
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
         Box::pin(async move {
             if let ::core::option::Option::Some(__ret) = ::core::option::Option::None::<
                 Result<(), suitokengentest::errors::TokenGenErrors>,
             > {
                 #[allow(unreachable_code)] return __ret;
             }
+            let __self = self;
             let _ctx = _ctx;
             let url = url;
             let __ret: Result<(), suitokengentest::errors::TokenGenErrors> = {
@@ -410,7 +420,8 @@ impl service::TokenGen for TokenServer {
         clippy::type_repetition_in_bounds,
         clippy::used_underscore_binding
     )]
-    fn verify_content<'async_trait>(
+    fn verify_content<'life0, 'async_trait>(
+        &'life0 self,
         _ctx: context::Context,
         content: String,
     ) -> ::core::pin::Pin<
@@ -419,13 +430,18 @@ impl service::TokenGen for TokenServer {
                 Output = Result<(), suitokengentest::errors::TokenGenErrors>,
             > + ::core::marker::Send + 'async_trait,
         >,
-    > {
+    >
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
         Box::pin(async move {
             if let ::core::option::Option::Some(__ret) = ::core::option::Option::None::<
                 Result<(), suitokengentest::errors::TokenGenErrors>,
             > {
                 #[allow(unreachable_code)] return __ret;
             }
+            let __self = self;
             let _ctx = _ctx;
             let content = content;
             let __ret: Result<(), suitokengentest::errors::TokenGenErrors> = {
@@ -464,23 +480,178 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let flags = Flags::parse();
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
         let server = TokenServer;
-        let mut listener = tarpc::serde_transport::tcp::listen(&addr, Json::default)
-            .await?;
-        listener.config_mut().max_frame_length(usize::MAX);
+        let listener = tokio::net::TcpListener::bind(addr).await?;
         {
-            ::std::io::_print(format_args!("Server listening on {0}\n", addr));
+            use ::tracing::__macro_support::Callsite as _;
+            static __CALLSITE: ::tracing::callsite::DefaultCallsite = {
+                static META: ::tracing::Metadata<'static> = {
+                    ::tracing_core::metadata::Metadata::new(
+                        "event src/bin/server.rs:113",
+                        "server",
+                        ::tracing::Level::INFO,
+                        ::tracing_core::__macro_support::Option::Some(
+                            "src/bin/server.rs",
+                        ),
+                        ::tracing_core::__macro_support::Option::Some(113u32),
+                        ::tracing_core::__macro_support::Option::Some("server"),
+                        ::tracing_core::field::FieldSet::new(
+                            &["message"],
+                            ::tracing_core::callsite::Identifier(&__CALLSITE),
+                        ),
+                        ::tracing::metadata::Kind::EVENT,
+                    )
+                };
+                ::tracing::callsite::DefaultCallsite::new(&META)
+            };
+            let enabled = ::tracing::Level::INFO
+                <= ::tracing::level_filters::STATIC_MAX_LEVEL
+                && ::tracing::Level::INFO
+                    <= ::tracing::level_filters::LevelFilter::current()
+                && {
+                    let interest = __CALLSITE.interest();
+                    !interest.is_never()
+                        && ::tracing::__macro_support::__is_enabled(
+                            __CALLSITE.metadata(),
+                            interest,
+                        )
+                };
+            if enabled {
+                (|value_set: ::tracing::field::ValueSet| {
+                    let meta = __CALLSITE.metadata();
+                    ::tracing::Event::dispatch(meta, &value_set);
+                    if match ::tracing::Level::INFO {
+                        ::tracing::Level::ERROR => ::tracing::log::Level::Error,
+                        ::tracing::Level::WARN => ::tracing::log::Level::Warn,
+                        ::tracing::Level::INFO => ::tracing::log::Level::Info,
+                        ::tracing::Level::DEBUG => ::tracing::log::Level::Debug,
+                        _ => ::tracing::log::Level::Trace,
+                    } <= ::tracing::log::STATIC_MAX_LEVEL
+                    {
+                        if !::tracing::dispatcher::has_been_set() {
+                            {
+                                use ::tracing::log;
+                                let level = match ::tracing::Level::INFO {
+                                    ::tracing::Level::ERROR => ::tracing::log::Level::Error,
+                                    ::tracing::Level::WARN => ::tracing::log::Level::Warn,
+                                    ::tracing::Level::INFO => ::tracing::log::Level::Info,
+                                    ::tracing::Level::DEBUG => ::tracing::log::Level::Debug,
+                                    _ => ::tracing::log::Level::Trace,
+                                };
+                                if level <= log::max_level() {
+                                    let meta = __CALLSITE.metadata();
+                                    let log_meta = log::Metadata::builder()
+                                        .level(level)
+                                        .target(meta.target())
+                                        .build();
+                                    let logger = log::logger();
+                                    if logger.enabled(&log_meta) {
+                                        ::tracing::__macro_support::__tracing_log(
+                                            meta,
+                                            logger,
+                                            log_meta,
+                                            &value_set,
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            {}
+                        }
+                    } else {
+                        {}
+                    };
+                })({
+                    #[allow(unused_imports)]
+                    use ::tracing::field::{debug, display, Value};
+                    let mut iter = __CALLSITE.metadata().fields().iter();
+                    __CALLSITE
+                        .metadata()
+                        .fields()
+                        .value_set(
+                            &[
+                                (
+                                    &::tracing::__macro_support::Iterator::next(&mut iter)
+                                        .expect("FieldSet corrupted (this is a bug)"),
+                                    ::tracing::__macro_support::Option::Some(
+                                        &format_args!("listening on {0}", addr) as &dyn Value,
+                                    ),
+                                ),
+                            ],
+                        )
+                });
+            } else {
+                if match ::tracing::Level::INFO {
+                    ::tracing::Level::ERROR => ::tracing::log::Level::Error,
+                    ::tracing::Level::WARN => ::tracing::log::Level::Warn,
+                    ::tracing::Level::INFO => ::tracing::log::Level::Info,
+                    ::tracing::Level::DEBUG => ::tracing::log::Level::Debug,
+                    _ => ::tracing::log::Level::Trace,
+                } <= ::tracing::log::STATIC_MAX_LEVEL
+                {
+                    if !::tracing::dispatcher::has_been_set() {
+                        {
+                            use ::tracing::log;
+                            let level = match ::tracing::Level::INFO {
+                                ::tracing::Level::ERROR => ::tracing::log::Level::Error,
+                                ::tracing::Level::WARN => ::tracing::log::Level::Warn,
+                                ::tracing::Level::INFO => ::tracing::log::Level::Info,
+                                ::tracing::Level::DEBUG => ::tracing::log::Level::Debug,
+                                _ => ::tracing::log::Level::Trace,
+                            };
+                            if level <= log::max_level() {
+                                let meta = __CALLSITE.metadata();
+                                let log_meta = log::Metadata::builder()
+                                    .level(level)
+                                    .target(meta.target())
+                                    .build();
+                                let logger = log::logger();
+                                if logger.enabled(&log_meta) {
+                                    ::tracing::__macro_support::__tracing_log(
+                                        meta,
+                                        logger,
+                                        log_meta,
+                                        &{
+                                            #[allow(unused_imports)]
+                                            use ::tracing::field::{debug, display, Value};
+                                            let mut iter = __CALLSITE.metadata().fields().iter();
+                                            __CALLSITE
+                                                .metadata()
+                                                .fields()
+                                                .value_set(
+                                                    &[
+                                                        (
+                                                            &::tracing::__macro_support::Iterator::next(&mut iter)
+                                                                .expect("FieldSet corrupted (this is a bug)"),
+                                                            ::tracing::__macro_support::Option::Some(
+                                                                &format_args!("listening on {0}", addr) as &dyn Value,
+                                                            ),
+                                                        ),
+                                                    ],
+                                                )
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        {}
+                    }
+                } else {
+                    {}
+                };
+            }
         };
-        listener
-            .filter_map(|r| future::ready(r.ok()))
-            .map(BaseChannel::with_defaults)
-            .for_each(|channel| {
-                let server = server.clone();
-                async move {
-                    let _ = channel.execute(TokenGen::serve(server));
+        loop {
+            let (stream, _) = listener.accept().await?;
+            let transport = tarpc::serde_transport::tcp::new(stream, Json::default);
+            let server = server.clone();
+            tokio::spawn(async move {
+                if let Ok(transport) = transport.await {
+                    let _ = BaseChannel::with_defaults(transport)
+                        .execute(service::TokenGen::serve(server));
                 }
-            })
-            .await;
-        Ok(())
+            });
+        }
     };
     #[allow(clippy::expect_used, clippy::diverging_sub_expression)]
     {
