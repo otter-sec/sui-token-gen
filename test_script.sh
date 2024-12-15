@@ -46,17 +46,25 @@ if [ $? -ne 0 ]; then
 fi
 
 # Wait for server to start and verify it's running
-sleep 5
-if ! ps -p $SERVER_PID > /dev/null 2>&1; then
-    echo "Error: RPC server failed to start"
-    exit 1
-fi
+for i in {1..10}; do
+    if ! ps -p $SERVER_PID > /dev/null 2>&1; then
+        echo "Error: RPC server process died"
+        exit 1
+    fi
 
-# Additional verification that server is actually listening
-if ! (echo > /dev/tcp/127.0.0.1/5000) 2>/dev/null; then
-    echo "Error: RPC server is not listening on port 5000"
-    exit 1
-fi
+    if (echo > /dev/tcp/127.0.0.1/5000) 2>/dev/null; then
+        echo "RPC server is running and listening on port 5000"
+        break
+    fi
+
+    if [ $i -eq 10 ]; then
+        echo "Error: RPC server failed to bind to port 5000 after 10 attempts"
+        exit 1
+    fi
+
+    echo "Waiting for RPC server to start (attempt $i/10)..."
+    sleep 1
+done
 
 # Return to project root and set test environment variables
 cd "$SCRIPT_DIR"

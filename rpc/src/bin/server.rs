@@ -135,8 +135,9 @@ async fn main() -> anyhow::Result<()> {
 
     // Use IPv4 localhost instead of IPv6 for better compatibility
     let server_addr = (IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
+    tracing::info!("Attempting to bind to {}", server_addr);
     let mut listener = tarpc::serde_transport::tcp::listen(&server_addr, Json::default).await?;
-    tracing::info!("Listening on port {}", listener.local_addr().port());
+    tracing::info!("Successfully bound to {}", listener.local_addr());
     listener.config_mut().max_frame_length(usize::MAX);
     listener
         .filter_map(|r| future::ready(r.ok()))
