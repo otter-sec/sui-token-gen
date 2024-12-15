@@ -1,40 +1,386 @@
-warning: unused import: `Deserialize`
- --> src/lib.rs:5:13
-  |
-5 | use serde::{Deserialize, Serialize};
-  |             ^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
-warning: unused import: `Serialize`
- --> src/lib.rs:5:26
-  |
-5 | use serde::{Deserialize, Serialize};
-  |                          ^^^^^^^^^
-
-warning: `tarpc-example-service` (lib) generated 2 warnings
-warning: unused import: `RpcResponseErrors`
- --> src/bin/server.rs:9:31
-  |
-9 | use suitokengentest::errors::{RpcResponseErrors, TokenGenErrors};
-  |                               ^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
-warning: unused variable: `environment`
-  --> src/bin/server.rs:83:13
-   |
-83 |         let environment = if valid_environments.contains(&environment.as...
-   |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_environment`
-   |
-   = note: `#[warn(unused_variables)]` on by default
-
-warning: unused variable: `tx`
-   --> src/bin/server.rs:165:22
-    |
-165 |                 let (tx, rx) = tokio::sync::oneshot::channel::<()>();
-    |                      ^^ help: if this is intentional, prefix it with an underscore: `_tx`
-
-warning: `tarpc-example-service` (bin "server") generated 3 warnings (run `cargo fix --bin "server"` to apply 1 suggestion)
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.18s
      Running `target/debug/server --port 5000`
+thread 'tokio-runtime-worker' panicked at src/utils/generation.rs:73:71:
+called `Result::unwrap()` on an `Err` value: Error { kind: TemplateNotFound("token_template.move"), source: None }
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:662:5
+   1: core::panicking::panic_fmt
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panicking.rs:74:14
+   2: core::result::unwrap_failed
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/result.rs:1677:5
+   3: core::result::Result<T,E>::unwrap
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/result.rs:1102:23
+   4: service::utils::generation::generate_token
+             at ./src/utils/generation.rs:73:34
+   5: service::utils::verify_helper::compare_contract_content
+             at ./src/utils/verify_helper.rs:144:36
+   6: <server::TokenServer as service::TokenGen>::verify_content::{{closure}}
+             at ./src/bin/server.rs:127:9
+   7: <service::ServeTokenGen<S> as tarpc::server::Serve>::serve::{{closure}}
+             at ./src/lib.rs:8:1
+   8: tarpc::server::InFlightRequest<Req,Res>::execute::{{closure}}::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tarpc-0.35.0/src/server.rs:886:61
+   9: <futures_util::abortable::Abortable<Fut> as core::future::future::Future>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:170:37
+  10: futures_util::abortable::Abortable<T>::try_poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:144:33
+  11: <futures_util::abortable::Abortable<Fut> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:170:9
+  12: <tracing::instrument::Instrumented<T> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tracing-0.1.41/src/instrument.rs:321:9
+  13: tarpc::server::InFlightRequest<Req,Res>::execute::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tarpc-0.35.0/src/server.rs:898:10
+  14: tokio::runtime::task::core::Core<T,S>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:331:17
+  15: tokio::loom::std::unsafe_cell::UnsafeCell<T>::with_mut
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/loom/std/unsafe_cell.rs:16:9
+  16: tokio::runtime::task::core::Core<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:320:13
+  17: tokio::runtime::task::harness::poll_future::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:499:19
+  18: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panic/unwind_safe.rs:272:9
+  19: std::panicking::try::do_call
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:554:40
+  20: __rust_try
+  21: std::panicking::try
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:518:19
+  22: std::panic::catch_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panic.rs:345:14
+  23: tokio::runtime::task::harness::poll_future
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:487:18
+  24: tokio::runtime::task::harness::Harness<T,S>::poll_inner
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:209:27
+  25: tokio::runtime::task::harness::Harness<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:154:15
+  26: tokio::runtime::task::raw::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:271:5
+  27: tokio::runtime::task::raw::RawTask::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:201:18
+  28: tokio::runtime::task::LocalNotified<S>::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/mod.rs:435:9
+  29: tokio::runtime::scheduler::multi_thread::worker::Context::run_task::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:659:17
+  30: tokio::runtime::coop::with_budget
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/coop.rs:107:5
+  31: tokio::runtime::coop::budget
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/coop.rs:73:5
+  32: tokio::runtime::scheduler::multi_thread::worker::Context::run_task
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:595:9
+  33: tokio::runtime::scheduler::multi_thread::worker::Context::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:546:24
+  34: tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:511:21
+  35: tokio::runtime::context::scoped::Scoped<T>::set
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context/scoped.rs:40:9
+  36: tokio::runtime::context::set_scheduler::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context.rs:180:26
+  37: std::thread::local::LocalKey<T>::try_with
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/thread/local.rs:283:12
+  38: std::thread::local::LocalKey<T>::with
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/thread/local.rs:260:9
+  39: tokio::runtime::context::set_scheduler
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context.rs:180:9
+  40: tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:506:9
+  41: tokio::runtime::context::runtime::enter_runtime
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context/runtime.rs:65:16
+  42: tokio::runtime::scheduler::multi_thread::worker::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:498:5
+  43: tokio::runtime::scheduler::multi_thread::worker::Launch::launch::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:464:45
+  44: <tokio::runtime::blocking::task::BlockingTask<T> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/task.rs:42:21
+  45: tokio::runtime::task::core::Core<T,S>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:331:17
+  46: tokio::loom::std::unsafe_cell::UnsafeCell<T>::with_mut
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/loom/std/unsafe_cell.rs:16:9
+  47: tokio::runtime::task::core::Core<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:320:13
+  48: tokio::runtime::task::harness::poll_future::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:499:19
+  49: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panic/unwind_safe.rs:272:9
+  50: std::panicking::try::do_call
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:554:40
+  51: __rust_try
+  52: std::panicking::try
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:518:19
+  53: std::panic::catch_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panic.rs:345:14
+  54: tokio::runtime::task::harness::poll_future
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:487:18
+  55: tokio::runtime::task::harness::Harness<T,S>::poll_inner
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:209:27
+  56: tokio::runtime::task::harness::Harness<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:154:15
+  57: tokio::runtime::task::raw::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:271:5
+  58: tokio::runtime::task::raw::RawTask::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:201:18
+  59: tokio::runtime::task::UnownedTask<S>::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/mod.rs:472:9
+  60: tokio::runtime::blocking::pool::Task::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:161:9
+  61: tokio::runtime::blocking::pool::Inner::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:511:17
+  62: tokio::runtime::blocking::pool::Spawner::spawn_thread::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:469:13
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+thread 'tokio-runtime-worker' panicked at src/utils/generation.rs:73:71:
+called `Result::unwrap()` on an `Err` value: Error { kind: TemplateNotFound("token_template.move"), source: None }
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:662:5
+   1: core::panicking::panic_fmt
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panicking.rs:74:14
+   2: core::result::unwrap_failed
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/result.rs:1677:5
+   3: core::result::Result<T,E>::unwrap
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/result.rs:1102:23
+   4: service::utils::generation::generate_token
+             at ./src/utils/generation.rs:73:34
+   5: service::utils::verify_helper::compare_contract_content
+             at ./src/utils/verify_helper.rs:144:36
+   6: <server::TokenServer as service::TokenGen>::verify_content::{{closure}}
+             at ./src/bin/server.rs:127:9
+   7: <service::ServeTokenGen<S> as tarpc::server::Serve>::serve::{{closure}}
+             at ./src/lib.rs:8:1
+   8: tarpc::server::InFlightRequest<Req,Res>::execute::{{closure}}::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tarpc-0.35.0/src/server.rs:886:61
+   9: <futures_util::abortable::Abortable<Fut> as core::future::future::Future>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:170:37
+  10: futures_util::abortable::Abortable<T>::try_poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:144:33
+  11: <futures_util::abortable::Abortable<Fut> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:170:9
+  12: <tracing::instrument::Instrumented<T> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tracing-0.1.41/src/instrument.rs:321:9
+  13: tarpc::server::InFlightRequest<Req,Res>::execute::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tarpc-0.35.0/src/server.rs:898:10
+  14: tokio::runtime::task::core::Core<T,S>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:331:17
+  15: tokio::loom::std::unsafe_cell::UnsafeCell<T>::with_mut
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/loom/std/unsafe_cell.rs:16:9
+  16: tokio::runtime::task::core::Core<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:320:13
+  17: tokio::runtime::task::harness::poll_future::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:499:19
+  18: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panic/unwind_safe.rs:272:9
+  19: std::panicking::try::do_call
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:554:40
+  20: __rust_try
+  21: std::panicking::try
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:518:19
+  22: std::panic::catch_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panic.rs:345:14
+  23: tokio::runtime::task::harness::poll_future
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:487:18
+  24: tokio::runtime::task::harness::Harness<T,S>::poll_inner
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:209:27
+  25: tokio::runtime::task::harness::Harness<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:154:15
+  26: tokio::runtime::task::raw::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:271:5
+  27: tokio::runtime::task::raw::RawTask::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:201:18
+  28: tokio::runtime::task::LocalNotified<S>::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/mod.rs:435:9
+  29: tokio::runtime::scheduler::multi_thread::worker::Context::run_task::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:659:17
+  30: tokio::runtime::coop::with_budget
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/coop.rs:107:5
+  31: tokio::runtime::coop::budget
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/coop.rs:73:5
+  32: tokio::runtime::scheduler::multi_thread::worker::Context::run_task
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:595:9
+  33: tokio::runtime::scheduler::multi_thread::worker::Context::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:546:24
+  34: tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:511:21
+  35: tokio::runtime::context::scoped::Scoped<T>::set
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context/scoped.rs:40:9
+  36: tokio::runtime::context::set_scheduler::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context.rs:180:26
+  37: std::thread::local::LocalKey<T>::try_with
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/thread/local.rs:283:12
+  38: std::thread::local::LocalKey<T>::with
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/thread/local.rs:260:9
+  39: tokio::runtime::context::set_scheduler
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context.rs:180:9
+  40: tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:506:9
+  41: tokio::runtime::context::runtime::enter_runtime
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context/runtime.rs:65:16
+  42: tokio::runtime::scheduler::multi_thread::worker::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:498:5
+  43: tokio::runtime::scheduler::multi_thread::worker::Launch::launch::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:464:45
+  44: <tokio::runtime::blocking::task::BlockingTask<T> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/task.rs:42:21
+  45: tokio::runtime::task::core::Core<T,S>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:331:17
+  46: tokio::loom::std::unsafe_cell::UnsafeCell<T>::with_mut
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/loom/std/unsafe_cell.rs:16:9
+  47: tokio::runtime::task::core::Core<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:320:13
+  48: tokio::runtime::task::harness::poll_future::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:499:19
+  49: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panic/unwind_safe.rs:272:9
+  50: std::panicking::try::do_call
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:554:40
+  51: __rust_try
+  52: std::panicking::try
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:518:19
+  53: std::panic::catch_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panic.rs:345:14
+  54: tokio::runtime::task::harness::poll_future
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:487:18
+  55: tokio::runtime::task::harness::Harness<T,S>::poll_inner
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:209:27
+  56: tokio::runtime::task::harness::Harness<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:154:15
+  57: tokio::runtime::task::raw::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:271:5
+  58: tokio::runtime::task::raw::RawTask::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:201:18
+  59: tokio::runtime::task::UnownedTask<S>::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/mod.rs:472:9
+  60: tokio::runtime::blocking::pool::Task::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:161:9
+  61: tokio::runtime::blocking::pool::Inner::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:511:17
+  62: tokio::runtime::blocking::pool::Spawner::spawn_thread::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:469:13
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+thread 'tokio-runtime-worker' panicked at src/utils/generation.rs:73:71:
+called `Result::unwrap()` on an `Err` value: Error { kind: TemplateNotFound("token_template.move"), source: None }
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:662:5
+   1: core::panicking::panic_fmt
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panicking.rs:74:14
+   2: core::result::unwrap_failed
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/result.rs:1677:5
+   3: core::result::Result<T,E>::unwrap
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/result.rs:1102:23
+   4: service::utils::generation::generate_token
+             at ./src/utils/generation.rs:73:34
+   5: service::utils::verify_helper::compare_contract_content
+             at ./src/utils/verify_helper.rs:144:36
+   6: <server::TokenServer as service::TokenGen>::verify_content::{{closure}}
+             at ./src/bin/server.rs:127:9
+   7: <service::ServeTokenGen<S> as tarpc::server::Serve>::serve::{{closure}}
+             at ./src/lib.rs:8:1
+   8: tarpc::server::InFlightRequest<Req,Res>::execute::{{closure}}::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tarpc-0.35.0/src/server.rs:886:61
+   9: <futures_util::abortable::Abortable<Fut> as core::future::future::Future>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:170:37
+  10: futures_util::abortable::Abortable<T>::try_poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:144:33
+  11: <futures_util::abortable::Abortable<Fut> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-util-0.3.31/src/abortable.rs:170:9
+  12: <tracing::instrument::Instrumented<T> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tracing-0.1.41/src/instrument.rs:321:9
+  13: tarpc::server::InFlightRequest<Req,Res>::execute::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tarpc-0.35.0/src/server.rs:898:10
+  14: tokio::runtime::task::core::Core<T,S>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:331:17
+  15: tokio::loom::std::unsafe_cell::UnsafeCell<T>::with_mut
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/loom/std/unsafe_cell.rs:16:9
+  16: tokio::runtime::task::core::Core<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:320:13
+  17: tokio::runtime::task::harness::poll_future::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:499:19
+  18: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panic/unwind_safe.rs:272:9
+  19: std::panicking::try::do_call
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:554:40
+  20: __rust_try
+  21: std::panicking::try
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:518:19
+  22: std::panic::catch_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panic.rs:345:14
+  23: tokio::runtime::task::harness::poll_future
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:487:18
+  24: tokio::runtime::task::harness::Harness<T,S>::poll_inner
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:209:27
+  25: tokio::runtime::task::harness::Harness<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:154:15
+  26: tokio::runtime::task::raw::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:271:5
+  27: tokio::runtime::task::raw::RawTask::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:201:18
+  28: tokio::runtime::task::LocalNotified<S>::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/mod.rs:435:9
+  29: tokio::runtime::scheduler::multi_thread::worker::Context::run_task::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:659:17
+  30: tokio::runtime::coop::with_budget
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/coop.rs:107:5
+  31: tokio::runtime::coop::budget
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/coop.rs:73:5
+  32: tokio::runtime::scheduler::multi_thread::worker::Context::run_task
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:595:9
+  33: tokio::runtime::scheduler::multi_thread::worker::Context::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:546:24
+  34: tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:511:21
+  35: tokio::runtime::context::scoped::Scoped<T>::set
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context/scoped.rs:40:9
+  36: tokio::runtime::context::set_scheduler::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context.rs:180:26
+  37: std::thread::local::LocalKey<T>::try_with
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/thread/local.rs:283:12
+  38: std::thread::local::LocalKey<T>::with
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/thread/local.rs:260:9
+  39: tokio::runtime::context::set_scheduler
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context.rs:180:9
+  40: tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:506:9
+  41: tokio::runtime::context::runtime::enter_runtime
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/context/runtime.rs:65:16
+  42: tokio::runtime::scheduler::multi_thread::worker::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:498:5
+  43: tokio::runtime::scheduler::multi_thread::worker::Launch::launch::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/scheduler/multi_thread/worker.rs:464:45
+  44: <tokio::runtime::blocking::task::BlockingTask<T> as core::future::future::Future>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/task.rs:42:21
+  45: tokio::runtime::task::core::Core<T,S>::poll::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:331:17
+  46: tokio::loom::std::unsafe_cell::UnsafeCell<T>::with_mut
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/loom/std/unsafe_cell.rs:16:9
+  47: tokio::runtime::task::core::Core<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/core.rs:320:13
+  48: tokio::runtime::task::harness::poll_future::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:499:19
+  49: <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/core/src/panic/unwind_safe.rs:272:9
+  50: std::panicking::try::do_call
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:554:40
+  51: __rust_try
+  52: std::panicking::try
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panicking.rs:518:19
+  53: std::panic::catch_unwind
+             at /rustc/f6e511eec7342f59a25f7c0534f1dbea00d01b14/library/std/src/panic.rs:345:14
+  54: tokio::runtime::task::harness::poll_future
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:487:18
+  55: tokio::runtime::task::harness::Harness<T,S>::poll_inner
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:209:27
+  56: tokio::runtime::task::harness::Harness<T,S>::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/harness.rs:154:15
+  57: tokio::runtime::task::raw::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:271:5
+  58: tokio::runtime::task::raw::RawTask::poll
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/raw.rs:201:18
+  59: tokio::runtime::task::UnownedTask<S>::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/task/mod.rs:472:9
+  60: tokio::runtime::blocking::pool::Task::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:161:9
+  61: tokio::runtime::blocking::pool::Inner::run
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:511:17
+  62: tokio::runtime::blocking::pool::Spawner::spawn_thread::{{closure}}
+             at /home/ubuntu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tokio-1.42.0/src/runtime/blocking/pool.rs:469:13
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.

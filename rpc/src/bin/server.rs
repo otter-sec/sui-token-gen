@@ -89,24 +89,44 @@ impl TokenGen for TokenServer {
         // Use validated environment for further processing
         tracing::info!("Using environment: {}", validated_environment);
 
+        // Get project root directory (two levels up from rpc/src/bin)
+        let project_root = std::env::current_dir()
+            .map_err(|e| TokenGenErrors::FileError(format!("Failed to get current directory: {}", e)))?
+            .parent() // up from bin
+            .and_then(|p| p.parent()) // up from src
+            .and_then(|p| p.parent()) // up from rpc
+            .ok_or_else(|| TokenGenErrors::FileError("Failed to find project root".into()))?;
+
         // Read template files from project root
-        let template_dir = Path::new("../src/templates");
+        let template_dir = project_root.join("src").join("templates");
+        tracing::info!("Template directory: {:?}", template_dir);
+
         let token_template = fs::read_to_string(template_dir.join("move/token.move.template"))
-            .map_err(|e| TokenGenErrors::TemplateNotFound(format!("Failed to read token template: {}", e)))?;
+            .map_err(|e| TokenGenErrors::FileError(format!("Failed to read token template: {}", e)))?;
+
         let toml_template = fs::read_to_string(template_dir.join("toml/Move.toml.template"))
-            .map_err(|e| TokenGenErrors::TemplateNotFound(format!("Failed to read toml template: {}", e)))?;
+            .map_err(|e| TokenGenErrors::FileError(format!("Failed to read toml template: {}", e)))?;
 
-        // Process templates with token info
+        // Replace placeholders in token template
         let token_content = token_template
-            .replace("{{token_name}}", &name)
-            .replace("{{token_symbol}}", &symbol)
-            .replace("{{token_decimals}}", &decimals.to_string())
-            .replace("{{token_description}}", &description)
-            .replace("{{token_frozen}}", &is_frozen.to_string());
+            .replace("{{name}}", &name)
+            .replace("{{symbol}}", &symbol)
+            .replace("{{description}}", &description)
+            .replace("{{decimals}}", &decimals.to_string())
+            .replace("{{is_frozen}}", &is_frozen.to_string());
 
-        let move_toml_content = toml_template.replace("{{package_name}}", &sanitize_name(&name));
+        // Replace placeholders in toml template
+        let toml_content = toml_template
+            .replace("{{name}}", &name)
+            .replace("{{symbol}}", &symbol)
+            .replace("{{environment}}", &validated_environment);
 
-        Ok((token_content.clone(), move_toml_content, token_content))
+        // Create temporary directory for token files
+        let temp_dir = tempdir().map_err(|e| {
+            TokenGenErrors::FileError(format!("Failed to create temporary directory: {}", e))
+        })?;
+
+        Ok((token_content.clone(), toml_content, token_content))
     }
 
     async fn verify_url(

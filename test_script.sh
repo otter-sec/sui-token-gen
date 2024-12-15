@@ -128,6 +128,8 @@ if ! $(check_server_connection); then
 fi
 
 echo "RPC server connection verified, proceeding with token creation..."
+# Run cargo commands from project root
+cd "$SCRIPT_DIR"
 if ! cargo run -- create; then
     echo "Error: Token creation failed"
     echo "Server log:"
@@ -139,9 +141,11 @@ fi
 sleep 5
 
 echo "Testing token verification..."
+# Ensure we're in project root for verification
+cd "$SCRIPT_DIR"
 if ! cargo run -- verify --path "$SCRIPT_DIR/test_token"; then
     echo "Error: Token verification failed"
+    echo "Server log:"
+    cat "$LOG_FILE"
     exit 1
 fi
-
-# Cleanup is handled by the trap
