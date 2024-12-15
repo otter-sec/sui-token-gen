@@ -37,9 +37,9 @@ fn get_env_token_info() -> Option<TokenInfo> {
     let decimals = env::var("TOKEN_DECIMALS").ok()?.parse().ok()?;
     let symbol = env::var("TOKEN_SYMBOL").ok()?;
     let name = env::var("TOKEN_NAME").ok()?;
-    let description = env::var("TOKEN_DESCRIPTION").ok().unwrap_or_default();
-    let is_frozen = env::var("TOKEN_FROZEN").ok()?.parse().unwrap_or(false);
-    let environment = env::var("TOKEN_ENVIRONMENT").ok().unwrap_or_else(|_| "devnet".to_string());
+    let description = env::var("TOKEN_DESCRIPTION").unwrap_or_default();
+    let is_frozen = env::var("TOKEN_FROZEN").unwrap_or_default().parse().unwrap_or(false);
+    let environment = env::var("TOKEN_ENVIRONMENT").unwrap_or_else(|_| String::from("devnet"));
 
     Some(TokenInfo {
         decimals,
