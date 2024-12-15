@@ -5,7 +5,7 @@ use service::{
     init_tracing, utils::{generation, helpers::sanitize_name, verify_helper},
     TokenGen, TokenGenErrors,
 };
-use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use tarpc::{
     context,
     server::{self, Channel},
@@ -133,7 +133,8 @@ async fn main() -> anyhow::Result<()> {
     let flags = Flags::parse();
     init_tracing("Sui-token-get rpc")?;
 
-    let server_addr = (IpAddr::V6(Ipv6Addr::LOCALHOST), flags.port);
+    // Use IPv4 localhost instead of IPv6 for better compatibility
+    let server_addr = (IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let mut listener = tarpc::serde_transport::tcp::listen(&server_addr, Json::default).await?;
     tracing::info!("Listening on port {}", listener.local_addr().port());
     listener.config_mut().max_frame_length(usize::MAX);
