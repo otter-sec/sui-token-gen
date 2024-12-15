@@ -12,3 +12,5 @@ pub use errors::*;
 pub use success_handler::*;
 pub use utils::*;
 pub use variables::*;
+
+pub type Result<T> = std::result::Result<T, errors::TokenGenErrors>;

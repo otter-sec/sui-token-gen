@@ -10,22 +10,21 @@ use crate::{
         helpers::sanitize_name,
     },
     variables::{ADDRESS, SUB_FOLDER},
-    Result,
 };
 
 /// Helper function to set up a test client with consistent error handling
-pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
+pub async fn setup_test_client(address: &str) -> crate::Result<TokenGenClient> {
     initiate_client(address)
         .await
         .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))
 }
 
-async fn test_initiate_client() -> Result<TokenGenClient> {
+async fn test_initiate_client() -> crate::Result<TokenGenClient> {
     setup_test_client(ADDRESS).await
 }
 
 #[tokio::test]
-async fn create_command() -> Result<()> {
+async fn create_command() -> crate::Result<()> {
     // Test user inputs
     let decimals: u8 = 6;
     let symbol: String = "SAMPLE".to_string();
@@ -127,7 +126,7 @@ async fn create_command() -> Result<()> {
 }
 
 #[tokio::test]
-async fn verify_command_valid_file() -> Result<()> {
+async fn verify_command_valid_file() -> crate::Result<()> {
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let templates_path = format!("{}/src/test_tokens/valid_token.move", current_dir.display());
 
@@ -146,7 +145,7 @@ async fn verify_command_valid_file() -> Result<()> {
 }
 
 #[tokio::test]
-async fn verify_command_invalid_file() -> Result<()> {
+async fn verify_command_invalid_file() -> crate::Result<()> {
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let templates_path = format!(
         "{}/src/test_tokens/invalid_token.move",
@@ -170,7 +169,7 @@ async fn verify_command_invalid_file() -> Result<()> {
 }
 
 #[tokio::test]
-async fn verify_command_valid_git() -> Result<()> {
+async fn verify_command_valid_git() -> crate::Result<()> {
     // Testing repo
     let valid_url = "https://github.com/meumar-osec/test-sui-token";
 
@@ -184,7 +183,7 @@ async fn verify_command_valid_git() -> Result<()> {
 }
 
 #[tokio::test]
-async fn verify_command_invalid_git() -> Result<()> {
+async fn verify_command_invalid_git() -> crate::Result<()> {
     let valid_url = "https://github.com/meumar-osec/sui-token1";
 
     // Initialize the RPC client

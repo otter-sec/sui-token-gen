@@ -3,19 +3,18 @@ use crate::{
     errors::TokenGenErrors,
     rpc_client::{initiate_client, TokenGenClient},
     variables::ADDRESS,
-    Result,
 };
 use tarpc::context;
 
 /// Helper function to set up a test client with consistent error handling
-pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
+pub async fn setup_test_client(address: &str) -> crate::Result<TokenGenClient> {
     initiate_client(address)
         .await
         .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))
 }
 
 #[tokio::test]
-async fn environment_specific_token_creation() -> Result<()> {
+async fn environment_specific_token_creation() -> crate::Result<()> {
     let client = setup_test_client(ADDRESS).await?;
     for env in ["devnet", "testnet", "mainnet"] {
         let result = client
@@ -39,7 +38,7 @@ async fn environment_specific_token_creation() -> Result<()> {
 }
 
 #[tokio::test]
-async fn verify_token_rpc_error_mapping() -> Result<()> {
+async fn verify_token_rpc_error_mapping() -> crate::Result<()> {
     let client = setup_test_client(ADDRESS).await?;
 
     // Test invalid URL scenario
@@ -55,7 +54,7 @@ async fn verify_token_rpc_error_mapping() -> Result<()> {
 }
 
 #[tokio::test]
-async fn error_propagation_flow() -> Result<()> {
+async fn error_propagation_flow() -> crate::Result<()> {
     let client = setup_test_client(ADDRESS).await?;
 
     // Test invalid decimals
