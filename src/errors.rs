@@ -38,6 +38,18 @@ pub enum TokenGenErrors {
 
     #[error("Template not found: {0}")]
     TemplateNotFound(String),
+
+    #[error("Invalid decimals: {0}")]
+    InvalidDecimals(String),
+
+    #[error("Invalid symbol: {0}")]
+    InvalidSymbol(String),
+
+    #[error("Invalid name: {0}")]
+    InvalidName(String),
+
+    #[error("Invalid description: {0}")]
+    InvalidDescription(String),
 }
 
 // Implement From for io::Error separately since we can't use #[from]

@@ -43,7 +43,7 @@ impl TokenGen for TokenServer {
     async fn create(
         self,
         _: context::Context,
-        decimals: u8,
+        decimals: String,
         name: String,
         symbol: String,
         description: String,
@@ -54,28 +54,29 @@ impl TokenGen for TokenServer {
         self.log_address().await;
 
         // Validate decimals: must be a number greater than 0 and less than 100
+        let decimals: u8 = decimals.parse().map_err(|_| TokenGenErrors::InvalidDecimals("Decimals must be a valid number".to_string()))?;
         if decimals <= 0 || decimals >= 100 {
-            return Err(TokenGenErrors::InvalidDecimals);
+            return Err(TokenGenErrors::InvalidDecimals("Decimals must be between 1 and 99".to_string()));
         }
 
         // Validate symbol: must only contain alphanumeric characters and be no more than 5 characters long
         let symbol_regex = Regex::new(r"^[a-zA-Z0-9]+$").unwrap();
         if !symbol_regex.is_match(&symbol) {
-            return Err(TokenGenErrors::InvalidSymbol);
+            return Err(TokenGenErrors::InvalidSymbol("Symbol must contain only alphanumeric characters".to_string()));
         }
         if symbol.len() > 6 {
-            return Err(TokenGenErrors::InvalidSymbol);
+            return Err(TokenGenErrors::InvalidSymbol("Symbol must not be longer than 6 characters".to_string()));
         }
 
         // Validate name: must only contain alphanumeric characters, spaces, commas, and dots
         let name_regex = Regex::new(r"^[a-zA-Z0-9\s,\.]+$").unwrap();
         if !name_regex.is_match(&name) {
-            return Err(TokenGenErrors::InvalidName);
+            return Err(TokenGenErrors::InvalidName("Name must contain only alphanumeric characters, spaces, commas, and dots".to_string()));
         }
 
         // Validate description: optional but must only contain alphanumeric characters, spaces, commas, and dots
         if !description.is_empty() && !name_regex.is_match(&description) {
-            return Err(TokenGenErrors::InvalidDescription);
+            return Err(TokenGenErrors::InvalidDescription("Description must contain only alphanumeric characters, spaces, commas, and dots".to_string()));
         }
 
         // Validate environment: must be one of "mainnet", "devnet", or "testnet"
@@ -113,7 +114,7 @@ impl TokenGen for TokenServer {
     ) -> anyhow::Result<(), TokenGenErrors> {
         verify_helper::verify_token_using_url(&url)
             .await
-            .map_err(|e| TokenGenErrors::VerifyResultError(e.to_string()))
+            .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))
     }
 
     async fn verify_content(
@@ -122,7 +123,7 @@ impl TokenGen for TokenServer {
         content: String,
     ) -> anyhow::Result<(), TokenGenErrors> {
         verify_helper::compare_contract_content(content, None)
-            .map_err(|e| TokenGenErrors::VerifyResultError(e.to_string()))
+            .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))
     }
 }
 
