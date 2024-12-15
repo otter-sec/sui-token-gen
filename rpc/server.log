@@ -149,5 +149,5 @@ warning: unused variable: `environment`
    = note: `#[warn(unused_variables)]` on by default
 
 warning: `tarpc-example-service` (bin "server") generated 2 warnings (run `cargo fix --bin "server"` to apply 1 suggestion)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.18s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
      Running `target/debug/server --port 5000`
