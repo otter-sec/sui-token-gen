@@ -2341,6 +2341,7 @@ dependencies = [
  "serde_json",
  "suitokengentest",
  "tarpc",
+ "tempfile",
  "tera",
  "thiserror 2.0.4",
  "tokio",

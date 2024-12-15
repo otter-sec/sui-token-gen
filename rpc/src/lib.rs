@@ -1,7 +1,7 @@
 use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
-use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
 use suitokengentest::errors::TokenGenErrors;
+use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
 
 pub mod utils;
 

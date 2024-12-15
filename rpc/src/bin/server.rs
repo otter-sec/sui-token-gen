@@ -8,16 +8,15 @@ use clap::Parser;
 use futures::{future, prelude::*};
 use service::{
     init_tracing,
-    utils::{
-        verify_helper,
-        errors::TokenGenErrors,
-    },
+    utils::verify_helper,
     TokenGen,
 };
+use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
     context,
     server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
+    server,
 };
 use tempfile::tempdir;
 
@@ -31,7 +30,7 @@ struct Flags {
 #[derive(Clone)]
 struct TokenServer;
 
-#[tarpc::server]
+#[server]
 impl TokenGen for TokenServer {
     async fn create(
         self,
@@ -103,7 +102,7 @@ impl TokenGen for TokenServer {
     ) -> Result<(), TokenGenErrors> {
         match verify_helper::verify_token_using_url(&url).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
+            Err(e) => Err(TokenGenErrors::VerifyResultError(e.to_string())),
         }
     }
 
@@ -126,7 +125,7 @@ impl TokenGen for TokenServer {
         // Verify the contract
         match verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
+            Err(e) => Err(TokenGenErrors::VerifyResultError(e.to_string())),
         }
     }
 }

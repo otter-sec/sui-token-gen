@@ -6,10 +6,10 @@ use std::{
     io,
     path::Path,
 };
+use suitokengentest::errors::TokenGenErrors;
 use url::Url;
 
 use crate::utils::{
-    errors::TokenGenErrors,
     generation::generate_token,
     helpers::{filter_token_content, get_token_info, is_running_test, is_valid_github_url},
     variables::SUB_FOLDER,
