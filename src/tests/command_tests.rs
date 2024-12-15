@@ -1,15 +1,14 @@
-use std::{env, fs, path::Path};
-use tarpc::context;
+use std::fs;
+use std::path::Path;
 
 use crate::{
-    commands::verify::verify_token_using_url,
     errors::TokenGenErrors,
-    rpc_client::{initiate_client, TokenGenClient},
+    rpc_client::{create_timeout_context, initiate_client, TokenGenClient},
     utils::{
         generation::{create_base_folder, create_contract_file, create_move_toml},
         helpers::sanitize_name,
     },
-    variables::{ADDRESS, SUB_FOLDER},
+    variables::SUB_FOLDER,
 };
 
 /// Helper function to set up a test client with consistent error handling
@@ -20,7 +19,7 @@ pub async fn setup_test_client(address: &str) -> crate::Result<TokenGenClient> {
 }
 
 async fn test_initiate_client() -> crate::Result<TokenGenClient> {
-    setup_test_client(ADDRESS).await
+    setup_test_client("127.0.0.1:5000").await
 }
 
 #[tokio::test]
@@ -47,7 +46,7 @@ async fn create_command() -> crate::Result<()> {
     // Call the `create` method
     let (token_content, move_toml, _test_token_content) = client
         .create(
-            context::current(),
+            create_timeout_context(),
             decimals,
             name.to_owned(),
             symbol.to_owned(),
@@ -127,7 +126,7 @@ async fn create_command() -> crate::Result<()> {
 
 #[tokio::test]
 async fn verify_command_valid_file() -> crate::Result<()> {
-    let current_dir = env::current_dir().expect("Failed to get current directory");
+    let current_dir = std::env::current_dir().expect("Failed to get current directory");
     let templates_path = format!("{}/src/test_tokens/valid_token.move", current_dir.display());
 
     // Initialize the RPC client
@@ -138,7 +137,7 @@ async fn verify_command_valid_file() -> crate::Result<()> {
         fs::read_to_string(templates_path).expect("Failed to read valid token file");
 
     let response = client
-        .verify_content(context::current(), valid_content)
+        .verify_content(create_timeout_context(), valid_content)
         .await;
     assert!(response.is_ok(), "Verification failed");
     Ok(())
@@ -146,7 +145,7 @@ async fn verify_command_valid_file() -> crate::Result<()> {
 
 #[tokio::test]
 async fn verify_command_invalid_file() -> crate::Result<()> {
-    let current_dir = env::current_dir().expect("Failed to get current directory");
+    let current_dir = std::env::current_dir().expect("Failed to get current directory");
     let templates_path = format!(
         "{}/src/test_tokens/invalid_token.move",
         current_dir.display()
@@ -160,7 +159,7 @@ async fn verify_command_invalid_file() -> crate::Result<()> {
         fs::read_to_string(templates_path).expect("Failed to read valid token file");
 
     let response = client
-        .verify_content(context::current(), valid_content)
+        .verify_content(create_timeout_context(), valid_content)
         .await
         .map_err(|e| TokenGenErrors::RpcError(e))?;
     assert!(response.is_err(), "Verification failed");

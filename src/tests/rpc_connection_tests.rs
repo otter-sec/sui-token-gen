@@ -1,10 +1,8 @@
 use crate::{
     errors::TokenGenErrors,
-    rpc_client::{initiate_client, TokenGenClient},
-    variables::ADDRESS,
+    rpc_client::{create_timeout_context, initiate_client, TokenGenClient},
 };
 
-use tarpc::context;
 /// Helper function to set up a test client with consistent error handling
 pub async fn setup_test_client(address: &str) -> crate::Result<TokenGenClient> {
     initiate_client(address)
@@ -26,9 +24,9 @@ async fn rpc_client_connection_failure() -> crate::Result<()> {
 
 #[tokio::test]
 async fn setup_test_client_error_handling() -> crate::Result<()> {
-    let client = setup_test_client(ADDRESS).await?;
+    let client = setup_test_client("127.0.0.1:5000").await?;
     assert!(client
-        .verify_content(context::current(), "invalid content".to_string())
+        .verify_content(create_timeout_context(), "invalid content".to_string())
         .await
         .map_err(|e| TokenGenErrors::RpcError(e))?
         .is_err());

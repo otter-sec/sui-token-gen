@@ -1,10 +1,7 @@
 use crate::{
-    commands::verify::verify_token_using_url,
     errors::TokenGenErrors,
-    rpc_client::{initiate_client, TokenGenClient},
-    variables::ADDRESS,
+    rpc_client::{create_timeout_context, initiate_client, TokenGenClient},
 };
-use tarpc::context;
 
 /// Helper function to set up a test client with consistent error handling
 pub async fn setup_test_client(address: &str) -> crate::Result<TokenGenClient> {
@@ -19,7 +16,7 @@ async fn environment_specific_token_creation() -> crate::Result<()> {
     for env in ["devnet", "testnet", "mainnet"] {
         let result = client
             .create(
-                context::current(),
+                create_timeout_context(),
                 6,
                 "TestToken".to_string(),
                 "TEST".to_string(),
@@ -60,7 +57,7 @@ async fn error_propagation_flow() -> crate::Result<()> {
     // Test invalid decimals
     let result = client
         .create(
-            context::current(),
+            create_timeout_context(),
             255, // Invalid decimals
             "TestToken".to_string(),
             "TEST".to_string(),
@@ -74,7 +71,7 @@ async fn error_propagation_flow() -> crate::Result<()> {
     // Test empty name
     let result = client
         .create(
-            context::current(),
+            create_timeout_context(),
             6,
             "".to_string(), // Empty name
             "TEST".to_string(),
@@ -88,7 +85,7 @@ async fn error_propagation_flow() -> crate::Result<()> {
     // Test invalid environment should be succeed. i.e if environment invalid 'devnet' as default
     let result = client
         .create(
-            context::current(),
+            create_timeout_context(),
             6,
             "TestToken".to_string(),
             "TEST".to_string(),
