@@ -44,7 +44,7 @@ fn get_project_root() -> Result<PathBuf, TokenGenErrors> {
 
 impl TokenGen for TokenServer {
     async fn create(
-        &self,
+        self,
         _context: ::tarpc::context::Context,
         name: String,
         symbol: String,
@@ -86,7 +86,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
-        &self,
+        self,
         _context: ::tarpc::context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
@@ -94,7 +94,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
-        &self,
+        self,
         _context: ::tarpc::context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
