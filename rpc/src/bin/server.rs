@@ -141,9 +141,8 @@ async fn main() -> anyhow::Result<()> {
     let mut listener = tarpc::serde_transport::tcp::listen(&server_addr, Json::default).await?;
     tracing::info!("Successfully bound to {:?}", listener.local_addr());
 
-    // Configure server with longer timeouts and keep-alive
+    // Configure server with longer timeouts
     listener.config_mut().max_frame_length(usize::MAX);
-    listener.config_mut().max_channel_memory(usize::MAX);
 
     // Add more debug logging
     tracing::info!("Starting server with configuration: {:?}", listener.config());
@@ -157,12 +156,11 @@ async fn main() -> anyhow::Result<()> {
         })
         .map(|channel| {
             let channel = server::BaseChannel::with_defaults(channel);
-            channel.config_mut().max_channel_memory(usize::MAX);
+            tracing::info!("New client connected from: {:?}", channel.transport().peer_addr());
             channel
         })
         .map(|channel| {
             let server = TokenServer::new(channel.transport().peer_addr().unwrap());
-            tracing::info!("New client connected from: {:?}", server.addr);
             channel.execute(server.serve()).for_each(spawn)
         })
         .buffer_unordered(10)
