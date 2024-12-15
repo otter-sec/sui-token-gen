@@ -5,9 +5,8 @@ use service::{
     init_tracing,
     utils::{helpers::sanitize_name, verify_helper},
     TokenGen,
-    TokenGenErrors,
-    RpcResponseErrors,
 };
+use sui_token_gen_test::errors::RpcResponseErrors;
 use std::{
     fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
