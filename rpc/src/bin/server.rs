@@ -1,8 +1,6 @@
 use std::{
     fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::Path,
-    sync::Arc,
 };
 
 use anyhow::Result;
@@ -10,15 +8,15 @@ use clap::Parser;
 use futures::{future, prelude::*};
 use service::{
     init_tracing,
-    utils::verify_helper,
+    utils::{
+        verify_helper,
+        errors::TokenGenErrors,
+    },
     TokenGen,
-    TokenGenRequest,
-    TokenGenResponse,
 };
-use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
     context,
-    server::{self, BaseChannel, Channel},
+    server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
 };
 use tempfile::tempdir;
@@ -103,7 +101,10 @@ impl TokenGen for TokenServer {
         _: context::Context,
         url: String,
     ) -> Result<(), TokenGenErrors> {
-        verify_helper::verify_token_using_url(&url).await
+        match verify_helper::verify_token_using_url(&url).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
+        }
     }
 
     async fn verify_content(
@@ -118,13 +119,15 @@ impl TokenGen for TokenServer {
 
         // Write content to a temporary file
         let temp_file = temp_dir.path().join("temp.move");
-        fs::write(&temp_file, &content)
-            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
+        fs::write(&temp_file, &content).map_err(|e| {
+            TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e))
+        })?;
 
         // Verify the contract
-        verify_helper::verify_contract(temp_dir.path(), temp_dir.path())
-            .await
-            .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))
+        match verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
+        }
     }
 }
 
