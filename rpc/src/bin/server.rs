@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
+use async_trait::async_trait;
 use clap::Parser;
 use futures::{future, prelude::*};
 use service::{
@@ -14,9 +15,8 @@ use service::{
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
     context,
-    server::{BaseChannel, Channel},
+    server::Channel,
     tokio_serde::formats::Json,
-    server,
 };
 use tempfile::tempdir;
 
@@ -30,7 +30,8 @@ struct Flags {
 #[derive(Clone)]
 struct TokenServer;
 
-#[server]
+#[tarpc::server]
+#[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
         self,
@@ -39,7 +40,7 @@ impl TokenGen for TokenServer {
         symbol: String,
         decimals: u8,
         description: String,
-        is_frozen: bool,
+        frozen: bool,
         environment: String,
     ) -> Result<(String, String, String), TokenGenErrors> {
         // Validate environment: must be one of "mainnet", "devnet", or "testnet"
@@ -79,7 +80,7 @@ impl TokenGen for TokenServer {
             .replace("{{symbol}}", &symbol)
             .replace("{{description}}", &description)
             .replace("{{decimals}}", &decimals.to_string())
-            .replace("{{is_frozen}}", &is_frozen.to_string());
+            .replace("{{is_frozen}}", &frozen.to_string());
 
         // Replace placeholders in toml template
         let toml_content = toml_template
@@ -98,18 +99,18 @@ impl TokenGen for TokenServer {
     async fn verify_url(
         self,
         _: context::Context,
-        url: String,
+        url: String
     ) -> Result<(), TokenGenErrors> {
         match verify_helper::verify_token_using_url(&url).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(TokenGenErrors::VerifyResultError(e.to_string())),
+            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
         }
     }
 
     async fn verify_content(
         self,
         _: context::Context,
-        content: String,
+        content: String
     ) -> Result<(), TokenGenErrors> {
         // Create a temporary directory for verification
         let temp_dir = tempdir().map_err(|e| {
@@ -125,45 +126,29 @@ impl TokenGen for TokenServer {
         // Verify the contract
         match verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(TokenGenErrors::VerifyResultError(e.to_string())),
+            Err(e) => Err(TokenGenErrors::VerificationError(e.to_string())),
         }
-    }
-}
-
-impl TokenServer {
-    fn new() -> Self {
-        Self
-    }
-
-    fn log_address(&self, addr: SocketAddr) {
-        println!("Server running on {}", addr);
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Parse command line arguments.
     let flags = Flags::parse();
-    let server_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), flags.port);
+    init_tracing("server")?;
 
-    // Initialize logging
-    init_tracing("sui-token-gen-rpc")?;
-
-    // Start the server and print out its socket address.
-    let listener = tarpc::serde_transport::tcp::listen(server_addr, Json::default).await?;
-    let listener = listener.filter_map(|r| future::ready(r.ok()));
-    println!("Server running on {}", server_addr);
-
-    let server = TokenServer::new();
-    server.log_address(server_addr);
+    let server = TokenServer;
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
+    let listener = tarpc::serde_transport::tcp::listen(addr, Json::default).await?;
 
     listener
-        .map(BaseChannel::with_defaults)
-        .map(|channel| {
+        .filter_map(|r| future::ready(r.ok()))
+        .map(Channel::new)
+        .for_each(move |channel| {
             let server = server.clone();
-            channel.execute(server.serve())
+            async move {
+                channel.execute(server.serve()).await;
+            }
         })
-        .for_each(|_| async {})
         .await;
 
     Ok(())
@@ -173,9 +158,8 @@ async fn main() -> Result<()> {
 mod tests {
     use super::*;
 
-    fn test_server() -> TokenServer {
-        TokenServer::new()
+    #[tokio::test]
+    async fn test_server() {
+        // Test implementation will be added later
     }
-
-    // PLACEHOLDER: test implementation functions
 }
