@@ -36,17 +36,17 @@ pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
     }
 
     // Read the directory entries
-    let entries = read_dir(dir).map_err(|e| TokenGenErrors::FileIoError(e))?;
+    let entries = read_dir(dir).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
 
     // Find the first `.move` file
     let mut current_content = String::new();
     for entry in entries {
-        let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e))?;
+        let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
         let path = entry.path();
 
         if path.is_file() && path.extension().is_some_and(|e| e == "move") {
             // Read the `.move` file content
-            current_content = read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e))?;
+            current_content = read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
             break; // Exit the loop after finding the first .move file
         }
     }
