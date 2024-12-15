@@ -10,6 +10,7 @@ use std::{
 use service::{
     utils::verify_helper,
     TokenGen,
+    init_tracing,
 };
 use tarpc::{
     context,
@@ -106,6 +107,8 @@ impl TokenGen for TokenServer {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    init_tracing("token-gen-server")?;
+
     let flags = Flags::parse();
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
 
