@@ -39,7 +39,7 @@ fi
 
 echo "Starting RPC server..."
 cd "$SCRIPT_DIR/rpc"
-nohup cargo run --bin server -- --port 5000 > server.log 2>&1 & SERVER_PID=$!
+RUST_BACKTRACE=1 nohup cargo run --bin server -- --port 5000 > server.log 2>&1 & SERVER_PID=$!
 if [ $? -ne 0 ]; then
     echo "Error: Failed to start RPC server"
     exit 1

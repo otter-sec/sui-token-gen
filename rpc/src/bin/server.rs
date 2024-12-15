@@ -5,7 +5,11 @@ use service::{
     init_tracing, utils::{generation, helpers::sanitize_name, verify_helper},
     TokenGen, TokenGenErrors,
 };
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::{
+    fs,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::Path,
+};
 use tarpc::{
     context,
     server::{self, Channel},
@@ -80,28 +84,24 @@ impl TokenGen for TokenServer {
             "devnet".to_string() // Default to "devnet" if invalid
         };
 
-        // Proceed with the token generation logic
-        let base_folder: String = sanitize_name(&name);
-        let token_content: String = generation::generate_token(
-            decimals,
-            symbol.clone(),
-            &name,
-            description.clone(),
-            is_frozen,
-            false,
-        );
-        let test_token_content: String = generation::generate_token(
-            decimals,
-            symbol.clone(),
-            &name,
-            description.clone(),
-            is_frozen,
-            true,
-        );
+        // Read template files
+        let template_dir = Path::new("../src/templates");
+        let token_template = fs::read_to_string(template_dir.join("move/token.move.template"))
+            .map_err(|_| TokenGenErrors::TemplateNotFound("token.move.template"))?;
+        let toml_template = fs::read_to_string(template_dir.join("toml/Move.toml.template"))
+            .map_err(|_| TokenGenErrors::TemplateNotFound("Move.toml.template"))?;
 
-        let move_toml_content = generation::generate_move_toml(&base_folder, environment);
+        // Process templates with token info
+        let token_content = token_template
+            .replace("{{token_name}}", &name)
+            .replace("{{token_symbol}}", &symbol)
+            .replace("{{token_decimals}}", &decimals.to_string())
+            .replace("{{token_description}}", &description)
+            .replace("{{token_frozen}}", &is_frozen.to_string());
 
-        Ok((token_content, move_toml_content, test_token_content)) // Return both toml file and contract as strings
+        let move_toml_content = toml_template.replace("{{package_name}}", &sanitize_name(&name));
+
+        Ok((token_content, move_toml_content, token_content.clone())) // Return both toml file and contract as strings
     }
 
     async fn verify_url(
