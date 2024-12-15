@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::Result;
-use async_trait::async_trait;
 use clap::Parser;
 use futures::{future, StreamExt};
 use service::{
@@ -43,7 +42,6 @@ fn get_project_root() -> Result<PathBuf, TokenGenErrors> {
     Ok(project_root)
 }
 
-#[async_trait]
 impl TokenGen for TokenServer {
     async fn create(
         &self,
