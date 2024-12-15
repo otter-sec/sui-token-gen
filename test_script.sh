@@ -7,8 +7,15 @@ cd "$SCRIPT_DIR"
 
 # Function to cleanup RPC server
 cleanup() {
+    echo "Cleaning up RPC server..."
+    # Kill any process using port 5000
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -ti:5000 | xargs -r kill -9
+    else
+        fuser -k 5000/tcp >/dev/null 2>&1 || true
+    fi
+    # Kill our specific server process if it exists
     if [ ! -z "$SERVER_PID" ] && ps -p $SERVER_PID > /dev/null 2>&1; then
-        echo "Cleaning up RPC server..."
         kill $SERVER_PID
         wait $SERVER_PID 2>/dev/null || true
     fi
@@ -39,9 +46,15 @@ if [ $? -ne 0 ]; then
 fi
 
 # Wait for server to start and verify it's running
-sleep 2
+sleep 5
 if ! ps -p $SERVER_PID > /dev/null 2>&1; then
     echo "Error: RPC server failed to start"
+    exit 1
+fi
+
+# Additional verification that server is actually listening
+if ! (echo > /dev/tcp/127.0.0.1/5000) 2>/dev/null; then
+    echo "Error: RPC server is not listening on port 5000"
     exit 1
 fi
 
@@ -61,7 +74,7 @@ if ! cargo run -- create; then
 fi
 
 # Wait for token creation to complete
-sleep 2
+sleep 5
 
 echo "Testing token verification..."
 if ! cargo run -- verify --path "$SCRIPT_DIR/test_token"; then
