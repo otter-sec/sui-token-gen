@@ -105,25 +105,25 @@ impl TokenGen for TokenServer {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let flags = Flags::parse();
-    init_tracing()?;
+    init_tracing("token-gen-server")?;
 
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let server = TokenServer {};
 
     let listener = tarpc::serde_transport::tcp::listen(&addr, Json::default).await?;
-    let mut incoming = listener.incoming();
-
     tracing::info!("Starting server on {}", addr);
 
-    while let Some(transport) = incoming.next().await {
-        let transport = transport?;
-        let server = server.clone();
-
-        tokio::spawn(
-            BaseChannel::with_defaults(transport)
-                .execute(server.serve())
-        );
-    }
+    listener
+        .filter_map(|r| futures::future::ready(r.ok()))
+        .map(BaseChannel::with_defaults)
+        .for_each(|channel| {
+            let server = server.clone();
+            tokio::spawn(async move {
+                channel.execute(server.serve()).await;
+            });
+            futures::future::ready(())
+        })
+        .await;
 
     Ok(())
 }
