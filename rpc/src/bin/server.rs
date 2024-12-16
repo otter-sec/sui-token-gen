@@ -3,7 +3,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
 };
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt, FutureExt};
 use service::{
     TokenGen,
     init_tracing,
@@ -115,11 +115,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     listener
         .filter_map(|r| futures::future::ready(r.ok()))
-        .map(BaseChannel::with_defaults)
-        .for_each(|channel| {
+        .for_each(|transport| {
             let server = server.clone();
             tokio::spawn(async move {
-                channel.execute(server.serve()).await;
+                BaseChannel::with_defaults(transport).execute(server.serve());
             });
             futures::future::ready(())
         })
