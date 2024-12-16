@@ -9,7 +9,6 @@ use service::{
 };
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
-    context,
     server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
 };
@@ -39,7 +38,6 @@ fn get_project_root() -> Result<PathBuf, std::io::Error> {
 impl TokenGen for TokenServer {
     async fn create(
         &self,
-        ctx: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -81,7 +79,6 @@ impl TokenGen for TokenServer {
 
     async fn verify_url(
         &self,
-        ctx: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
         service::utils::verify_helper::verify_token_using_url(&url).await
@@ -89,7 +86,6 @@ impl TokenGen for TokenServer {
 
     async fn verify_content(
         &self,
-        ctx: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
         let temp_dir = tempfile::tempdir()

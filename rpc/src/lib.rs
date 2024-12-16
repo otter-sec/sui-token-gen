@@ -2,14 +2,12 @@ use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
 use suitokengentest::errors::TokenGenErrors;
 use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
-use tarpc::context;
 
 pub mod utils;
 
 #[tarpc::service]
 pub trait TokenGen {
     async fn create(
-        ctx: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -18,8 +16,8 @@ pub trait TokenGen {
         environment: String,
     ) -> Result<(String, String, String), TokenGenErrors>;
 
-    async fn verify_url(ctx: context::Context, url: String) -> Result<(), TokenGenErrors>;
-    async fn verify_content(ctx: context::Context, content: String) -> Result<(), TokenGenErrors>;
+    async fn verify_url(url: String) -> Result<(), TokenGenErrors>;
+    async fn verify_content(content: String) -> Result<(), TokenGenErrors>;
 }
 
 /// Initializes an OpenTelemetry tracing subscriber with a OTLP backend.
