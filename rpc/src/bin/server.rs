@@ -118,7 +118,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .for_each(|transport| {
             let server = server.clone();
             tokio::spawn(async move {
-                BaseChannel::with_defaults(transport).execute(server.serve());
+                BaseChannel::with_defaults(transport)
+                    .execute(server.serve())
+                    .for_each(|_| futures::future::ready(()))
+                    .await;
             });
             futures::future::ready(())
         })
