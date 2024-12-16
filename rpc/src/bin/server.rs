@@ -9,6 +9,7 @@ use service::{
 };
 use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
+    context,
     server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
 };
