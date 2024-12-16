@@ -37,7 +37,7 @@ fn get_project_root() -> Result<PathBuf, std::io::Error> {
 
 impl TokenGen for TokenServer {
     async fn create(
-        &self,
+        self,
         ctx: context::Context,
         name: String,
         symbol: String,
@@ -79,7 +79,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_url(
-        &self,
+        self,
         ctx: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
@@ -87,7 +87,7 @@ impl TokenGen for TokenServer {
     }
 
     async fn verify_content(
-        &self,
+        self,
         ctx: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
