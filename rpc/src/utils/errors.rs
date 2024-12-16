@@ -21,17 +21,29 @@ pub enum TokenGenErrors {
     #[error("An error occurred: {0}")]
     GeneralError(String),
 
-    #[error("Invalid path: {0}")]
-    InvalidPath(String),
+    #[error("Invalid path: directory not found")]
+    InvalidPathNotFound,
 
-    #[error("Invalid URL: {0}")]
-    InvalidUrl(String),
+    #[error("Invalid path: not a directory")]
+    InvalidPathNotDirectory,
+
+    #[error("Invalid path: no Move files in sources")]
+    InvalidPathNoMoveFiles,
+
+    #[error("Invalid URL: not a GitHub repository")]
+    InvalidUrlNotGithub,
+
+    #[error("Invalid URL: repository not found")]
+    InvalidUrlRepoNotFound,
+
+    #[error("Invalid URL: malformed URL")]
+    InvalidUrlMalformed,
 
     #[error("Git operation failed: {0}")]
-    GitError(String),
+    GitError(#[from] git2::Error),
 
     #[error("File I/O error: {0}")]
-    FileIoError(String),
+    FileIoError(#[from] std::io::Error),
 
     #[error("{0}")]
     VerifyResultError(String),

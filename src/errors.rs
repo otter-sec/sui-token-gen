@@ -11,11 +11,25 @@ pub enum TokenGenErrors {
     #[error("{0}")]
     InvalidInput(String),
 
-    #[error("Invalid path: {0}")]
-    InvalidPath(String),
+    // Path-related errors
+    #[error("Invalid path: directory not found")]
+    InvalidPathNotFound,
 
-    #[error("Invalid URL: {0}")]
-    InvalidUrl(String),
+    #[error("Invalid path: not a directory")]
+    InvalidPathNotDirectory,
+
+    #[error("Invalid path: no Move files in sources")]
+    InvalidPathNoMoveFiles,
+
+    // URL-related errors
+    #[error("Invalid URL: not a GitHub repository")]
+    InvalidUrlNotGithub,
+
+    #[error("Invalid URL: repository not found")]
+    InvalidUrlRepoNotFound,
+
+    #[error("Invalid URL: malformed URL")]
+    InvalidUrlMalformed,
 
     #[error("Git operation failed: {0}")]
     GitError(#[from] git2::Error),
