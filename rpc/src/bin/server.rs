@@ -11,6 +11,7 @@ use tarpc::{
     serde_transport,
     tokio_serde::formats::Json,
 };
+use tokio::time::timeout;
 use suitokengentest::errors::TokenGenErrors;
 
 use service::{TokenGen, init_tracing};
@@ -110,13 +111,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let server = TokenServer {};
 
-    let transport_config = serde_transport::tcp::listen(&addr, Json::default)
+    let mut config = tarpc::serde_transport::tcp::Config::default();
+    config.max_frame_length = Some(64 * 1024 * 1024);
+    config.max_response_time = Some(Duration::from_secs(60));
+
+    let listener = tarpc::serde_transport::tcp::listen_with_config(&addr, Json::default, config)
         .await?
         .filter_map(|r| future::ready(r.ok()));
 
     tracing::info!("Starting server on {}", addr);
 
-    transport_config
+    listener
         .for_each(|transport| {
             let server = server.clone();
             tokio::spawn(async move {
