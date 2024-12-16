@@ -57,7 +57,7 @@ pub enum TokenGenErrors {
     VerifyResultError(String),
 }
 
-/// Initializes an OpenTelemetry tracing subscriber with a OTLP backend.
+// Initializes an OpenTelemetry tracing subscriber with a OTLP backend.
 pub fn init_tracing(service_name: &'static str) -> anyhow::Result<()> {
     let tracer_provider = opentelemetry_otlp::new_pipeline()
         .tracing()

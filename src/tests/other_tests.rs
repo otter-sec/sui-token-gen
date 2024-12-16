@@ -8,7 +8,7 @@ use crate::{
     Result,
 };
 
-/// Helper function to set up a test client with consistent error handling
+// Helper function to set up a test client with consistent error handling
 pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
     initiate_client(address)
         .await

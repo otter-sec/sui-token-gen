@@ -2,9 +2,9 @@ use colored::*;
 
 use crate::errors::TokenGenErrors;
 
-/// Centralized error handler that handles both logging and process termination.
-/// This eliminates the need for manual .log() and std::process::exit(1) calls
-/// throughout the codebase while maintaining colored error output.
+// Centralized error handler that handles both logging and process termination.
+// This eliminates the need for manual .log() and std::process::exit(1) calls
+// throughout the codebase while maintaining colored error output.
 pub fn handle_error<T>(result: Result<T, TokenGenErrors>) -> T {
     match result {
         Ok(value) => value,

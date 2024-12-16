@@ -33,11 +33,11 @@ enum Commands {
     Create,
     #[command(about = "Verifies an existing contract from repo or local.")]
     Verify {
-        /// Path to the file
+        // Path to the file
         #[arg(short, long)]
         path: Option<String>,
 
-        /// URL to fuzz
+        // URL to fuzz
         #[arg(short, long)]
         url: Option<String>,
     },
