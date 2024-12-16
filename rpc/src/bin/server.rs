@@ -48,25 +48,29 @@ impl TokenGen for TokenServer {
         environment: String,
     ) -> Result<(String, String, String), TokenGenErrors> {
         tracing::info!("Starting token creation with name: {}, symbol: {}", name, symbol);
+        tracing::debug!("Token details - decimals: {}, description: {}, frozen: {}, environment: {}",
+            decimals, description, frozen, environment);
 
         let project_root = get_project_root()?;
         tracing::debug!("Project root path: {:?}", project_root);
 
         tracing::info!("Reading token template...");
-        let token_template = std::fs::read_to_string(
-            project_root.join("src/templates/move/token.move.template")
-        ).map_err(|e| {
-            tracing::error!("Failed to read token template: {}", e);
-            TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e))
-        })?;
+        let token_template_path = project_root.join("src/templates/move/token.move.template");
+        tracing::debug!("Token template path: {:?}", token_template_path);
+        let token_template = std::fs::read_to_string(&token_template_path)
+            .map_err(|e| {
+                tracing::error!("Failed to read token template at {:?}: {}", token_template_path, e);
+                TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e))
+            })?;
 
         tracing::info!("Reading TOML template...");
-        let toml_template = std::fs::read_to_string(
-            project_root.join("src/templates/toml/Move.toml.template")
-        ).map_err(|e| {
-            tracing::error!("Failed to read toml template: {}", e);
-            TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e))
-        })?;
+        let toml_template_path = project_root.join("src/templates/toml/Move.toml.template");
+        tracing::debug!("TOML template path: {:?}", toml_template_path);
+        let toml_template = std::fs::read_to_string(&toml_template_path)
+            .map_err(|e| {
+                tracing::error!("Failed to read toml template at {:?}: {}", toml_template_path, e);
+                TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e))
+            })?;
 
         tracing::info!("Generating token content...");
         let token_content = token_template
@@ -75,12 +79,14 @@ impl TokenGen for TokenServer {
             .replace("{{description}}", &description)
             .replace("{{decimals}}", &decimals.to_string())
             .replace("{{is_frozen}}", &frozen.to_string());
+        tracing::debug!("Token content generated successfully");
 
         tracing::info!("Generating TOML content...");
         let toml_content = toml_template
             .replace("{{name}}", &name)
             .replace("{{symbol}}", &symbol)
             .replace("{{environment}}", &environment);
+        tracing::debug!("TOML content generated successfully");
 
         tracing::info!("Creating temporary directory...");
         let temp_dir = tempfile::tempdir()
@@ -88,6 +94,7 @@ impl TokenGen for TokenServer {
                 tracing::error!("Failed to create temporary directory: {}", e);
                 TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e))
             })?;
+        tracing::debug!("Temporary directory created at: {:?}", temp_dir.path());
 
         tracing::info!("Token creation completed successfully");
         Ok((
