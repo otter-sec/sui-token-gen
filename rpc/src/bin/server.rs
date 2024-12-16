@@ -3,12 +3,10 @@ use futures::{future, StreamExt};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
-    time::Duration,
 };
 use tarpc::{
     context,
-    server::{BaseChannel, Channel},
-    serde_transport,
+    server::{BaseChannel, Config},
     tokio_serde::formats::Json,
 };
 use suitokengentest::errors::TokenGenErrors;
@@ -159,12 +157,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let server = server.clone();
             tokio::spawn(async move {
                 tracing::info!("New client connection established");
-                let channel_config = BaseChannel::Config::default()
+                let config = Config::default()
                     .max_frame_length(16 * 1024 * 1024)  // 16MB max frame size
                     .max_in_buffer_size(16 * 1024 * 1024)  // 16MB max buffer
                     .max_out_buffer_size(16 * 1024 * 1024); // 16MB max buffer
 
-                BaseChannel::with_config(transport, channel_config)
+                BaseChannel::new(config, transport)
                     .execute(server.serve())
                     .for_each(|result| {
                         match result {
