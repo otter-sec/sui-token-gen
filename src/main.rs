@@ -1,5 +1,9 @@
 use clap::{Parser, Subcommand};
+
+use error_handler::handle_error;
 use errors::TokenGenErrors;
+use rpc_client::initiate_client;
+use variables::ADDRESS;
 
 mod commands;
 mod error_handler;
@@ -8,9 +12,6 @@ mod rpc_client;
 mod success_handler;
 mod utils;
 mod variables;
-use error_handler::handle_error;
-use rpc_client::initiate_client;
-use variables::ADDRESS;
 
 #[cfg(test)]
 pub mod tests;

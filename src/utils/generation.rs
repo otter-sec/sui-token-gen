@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path};
 
 use crate::{
     utils::helpers::sanitize_name,
@@ -40,5 +40,12 @@ pub fn create_move_toml(package_name: &str, toml_content: &str) -> Result<()> {
 pub fn create_dir(base_folder: &str, sub_folder: &str) -> Result<()> {
     let dir: String = format!("{}/{}", base_folder, sub_folder);
     fs::create_dir_all(&dir)?;
+    Ok(())
+}
+
+pub fn remove_dir(base_folder: &str) -> Result<()> {
+    if path::Path::new(&base_folder).exists() {
+        fs::remove_dir_all(&base_folder)?;
+    }
     Ok(())
 }

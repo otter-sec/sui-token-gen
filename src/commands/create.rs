@@ -6,7 +6,7 @@ use crate::{
     rpc_client::TokenGenClient,
     success_handler::{handle_success, SuccessType},
     utils::{
-        generation::{create_base_folder, create_contract_file, create_move_toml},
+        generation::{create_base_folder, create_contract_file, create_move_toml, remove_dir},
         helpers::sanitize_name,
         prompts::get_user_prompt,
     },
@@ -45,18 +45,28 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     create_base_folder(&base_folder)?;
 
     // Creating .toml and contract files
-    create_move_toml(&base_folder, &move_toml)?;
+    if let Err(e) = create_move_toml(&base_folder, &move_toml) {
+        remove_dir(&base_folder)?;
+        return Err(e);
+    };
 
     // Creating contract file
-    create_contract_file(&token_data.name, &base_folder, &token_content, SUB_FOLDER)?;
+    if let Err(e) = create_contract_file(&token_data.name, &base_folder, &token_content, SUB_FOLDER)
+    {
+        remove_dir(&base_folder)?;
+        return Err(e);
+    };
 
     // Creating tests file
-    create_contract_file(
+    if let Err(e) = create_contract_file(
         &token_data.name,
         &base_folder,
         &test_token_content,
         TEST_FOLDER,
-    )?;
+    ) {
+        remove_dir(&base_folder)?;
+        return Err(e);
+    };
 
     handle_success(SuccessType::TokenCreated(token_data));
     Ok(())
