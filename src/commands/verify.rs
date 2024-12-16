@@ -4,7 +4,7 @@ use crate::{
     errors::TokenGenErrors,
     rpc_client::TokenGenClient,
     success_handler::{handle_success, SuccessType},
-    utils::verify_helper::verify_path,
+    utils::{helpers::is_valid_repository_url, verify_helper::verify_path},
     Result,
 };
 
@@ -49,6 +49,12 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
    - `Ok(())` on success or a `TokenGenErrors` on failure.
 */
 pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<()> {
+    if !is_valid_repository_url(url) {
+        return Err(TokenGenErrors::InvalidUrl(
+            "The provided URL is not a valid GitHub URL.".to_string(),
+        ));
+    }
+
     client
         .verify_url(context::current(), url.to_string())
         .await

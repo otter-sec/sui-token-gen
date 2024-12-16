@@ -1,9 +1,12 @@
 use regex::Regex;
+use std::{fs, path::Path};
+
+use crate::utils::{errors::TokenGenErrors, variables::TokenDetails};
 
 // URL is github url or not
-pub fn is_valid_github_url(url: &str) -> bool {
-    let github_url_pattern = r"^https?://(www\.)?github\.com/[\w\-]+/[\w\-]+(/)?$";
-    let re = Regex::new(github_url_pattern).expect("Invalid pattern");
+pub fn is_valid_repository_url(url: &str) -> bool {
+    let repository_url_pattern = r"^https?://(www\.)?(github)\.com/[\w\-]+/[\w\-]+/?$";
+    let re = Regex::new(repository_url_pattern).expect("Invalid pattern");
     re.is_match(url)
 }
 
@@ -16,19 +19,30 @@ pub fn sanitize_name(name: &String) -> String {
 
 // Removing: comments, empty lines, whitespaces
 pub fn filter_token_content(content: &str) -> String {
-    let re = Regex::new(r"///.*|//.*").unwrap();
-    let cleaned_content: std::borrow::Cow<'_, str> = re.replace_all(content, "");
-    let non_empty_lines: Vec<&str> = cleaned_content
+    content
         .lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(|line| line.trim())
-        .collect();
-    non_empty_lines.join("")
+        .filter_map(|line| {
+            // Trim whitespace from the line
+            let trimmed = line.trim();
+
+            // Skip empty lines and lines starting and ending with comments (/// or //)
+            if trimmed.is_empty()
+                || trimmed.starts_with("///")
+                || trimmed.starts_with("//")
+                || trimmed.ends_with("///")
+                || trimmed.ends_with("//")
+            {
+                None
+            } else {
+                Some(trimmed) // Keep non-empty, non-comment lines
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join("")
 }
 
 // Extracting decimals, symbol, name, description, is_frozen from contract (String)
-pub fn get_token_info(content: &str) -> (u8, String, String, String, bool) {
-    // Default values
+pub fn get_token_info(content: &str) -> TokenDetails {
     let mut decimals = 0;
     let mut symbol = String::new();
     let mut name = String::new();
@@ -83,5 +97,53 @@ pub fn get_token_info(content: &str) -> (u8, String, String, String, bool) {
         }
     }
 
-    (decimals, symbol, name, description, is_frozen)
+    TokenDetails {
+        decimals,
+        symbol,
+        name,
+        description,
+        is_frozen,
+    }
+}
+
+// Checks if the provided path contains path traversal sequences like ".."
+// that might lead to directories outside the expected root.
+pub fn is_safe_path(repo_name: &str) -> Result<bool, TokenGenErrors> {
+    // Check for path traversal patterns (e.g., '..', '/../', '..\\')
+    if repo_name.contains("..") || repo_name.contains("\\") || repo_name.contains("/") {
+        return Err(TokenGenErrors::GeneralError(
+            "Path traversal detected in the clone path.".to_string(),
+        ));
+    }
+    Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn test_safe_path_valid() {
+        let valid_target = "sui-token";
+        // Check if the valid target path is inside the base path
+        assert_eq!(is_safe_path(&valid_target).unwrap(), true);
+    }
+
+    #[test]
+    fn test_safe_path_invalid() {
+        let invalid_target = "../etc/psswd";
+
+        // Check if the invalid target path is outside the base path
+        match is_safe_path(&invalid_target) {
+            Err(TokenGenErrors::GeneralError(msg)) => {
+                assert_eq!(
+                    msg,
+                    "Path traversal detected in the clone path.".to_string()
+                )
+            }
+            _ => panic!("Expected path traversal error, but got a valid path."),
+        }
+    }
 }

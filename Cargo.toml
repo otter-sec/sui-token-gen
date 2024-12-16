@@ -1,5 +1,5 @@
 [package]
-name = "suitokengentest"
+name = "sui-token-get-test"
 version = "0.1.0"
 edition = "2021"
 

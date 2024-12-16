@@ -39,7 +39,7 @@ struct MoveToml {
 pub fn generate_token(
     decimals: u8,
     symbol: String,
-    name: &str,
+    name: String,
     description: String,
     is_frozen: bool,
     is_test: bool,

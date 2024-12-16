@@ -85,7 +85,7 @@ impl TokenGen for TokenServer {
         let token_content: String = generation::generate_token(
             decimals,
             symbol.clone(),
-            &name,
+            name.clone(),
             description.clone(),
             is_frozen,
             false,
@@ -93,7 +93,7 @@ impl TokenGen for TokenServer {
         let test_token_content: String = generation::generate_token(
             decimals,
             symbol.clone(),
-            &name,
+            name.clone(),
             description.clone(),
             is_frozen,
             true,

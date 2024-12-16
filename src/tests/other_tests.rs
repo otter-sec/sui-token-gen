@@ -46,12 +46,12 @@ async fn verify_token_rpc_error_mapping() -> Result<()> {
     // Test invalid URL scenario
     let invalid_url = "https://invalid-url-that-does-not-exist";
     let result = verify_token_using_url(invalid_url, client.to_owned()).await;
-    assert!(matches!(result, Err(TokenGenErrors::VerificationError(_))));
+    assert!(matches!(result, Err(TokenGenErrors::InvalidUrl(_))));
 
     // Test malformed URL scenario
     let malformed_url = "not-a-url";
     let result = verify_token_using_url(malformed_url, client).await;
-    assert!(matches!(result, Err(TokenGenErrors::VerificationError(_))));
+    assert!(matches!(result, Err(TokenGenErrors::InvalidUrl(_))));
     Ok(())
 }
 

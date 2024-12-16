@@ -1,4 +1,8 @@
-use std::{fs, io, path::Path};
+use std::{
+    fs::{self, ReadDir},
+    io,
+    path::Path,
+};
 
 use crate::{errors::TokenGenErrors, variables::SUB_FOLDER, Result};
 
@@ -16,7 +20,7 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
 /*
    This function verifies the provided path and ensures it meets the following criteria:
    1. The path exists and contains a `sources` folder.
-   2. A `.move` file with the same name as the project exists inside the `sources` folder.
+   2. Only one `.move` file will be inside the `sources` folder.
    3. The `.move` file is not empty.
 
    If all conditions are satisfied, the function reads and returns the content of the `.move` file.
@@ -34,35 +38,33 @@ pub fn verify_path(path: &str) -> Result<String> {
         ));
     }
 
-    // Extract the project name from the provided path.
-    let project_name = path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| TokenGenErrors::InvalidPath("Invalid project name.".to_string()))?;
+    // Read the directory entries
+    let entries = read_dir(&sources_folder).map_err(|e| TokenGenErrors::FileIoError(e))?;
 
-    // Construct the expected file name for the `.move` file based on the project name.
-    let contract_file_name = format!("{}.move", project_name);
-    let contract_path = sources_folder.join(&contract_file_name);
+    // Find the first `.move` file
+    let mut current_content = String::new();
+    for entry in entries {
+        let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e))?;
+        let path = entry.path();
 
-    // Check if the `.move` file exists and is a valid file.
-    if !contract_path.exists() || !contract_path.is_file() {
-        return Err(TokenGenErrors::InvalidPath(format!(
-            "The provided path doesn't have a `.move` file named '{}'.",
-            contract_file_name
-        )));
+        if path.is_file() && path.extension().is_some_and(|e| e == "move") {
+            // Read the `.move` file content
+            current_content = read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e))?;
+            break; // Exit the loop after finding the first .move file
+        }
     }
 
-    // Read the content of the `.move` file.
-    let current_content: String =
-        read_file(&contract_path).map_err(|e| TokenGenErrors::FileIoError(e))?;
-
-    // Ensure the `.move` file is not empty.
+    // Return an error if no `.move` file was found
     if current_content.is_empty() {
         return Err(TokenGenErrors::InvalidPath(
-            "The contract file is empty.".to_string(),
+            "No `.move` file found in the directory.".to_string(),
         ));
     }
 
     // Return the content of the `.move` file.
     Ok(current_content)
+}
+
+pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
+    Ok(fs::read_dir(dir)?)
 }
