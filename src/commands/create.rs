@@ -6,7 +6,8 @@ use crate::{
     rpc_client::TokenGenClient,
     success_handler::{handle_success, SuccessType},
     utils::{
-        generation::{create_base_folder, create_contract_file, create_move_toml, remove_dir},
+        atomic::AtomicFileOperation,
+        generation::{create_base_folder, create_contract_file, create_move_toml},
         helpers::sanitize_name,
         prompts::get_user_prompt,
     },
@@ -41,32 +42,17 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
 
     let base_folder: String = sanitize_name(&token_data.name).to_lowercase();
 
-    // Creating base contract folder
+    // Use atomic operation wrapper for automatic rollback
+    let mut atomic_op = AtomicFileOperation::new(&base_folder);
+
+    // All operations protected by atomic wrapper - rollback happens automatically on error
     create_base_folder(&base_folder)?;
+    create_move_toml(&base_folder, &move_toml)?;
+    create_contract_file(&token_data.name, &base_folder, &token_content, SUB_FOLDER)?;
+    create_contract_file(&token_data.name, &base_folder, &test_token_content, TEST_FOLDER)?;
 
-    // Creating .toml and contract files
-    if let Err(e) = create_move_toml(&base_folder, &move_toml) {
-        remove_dir(&base_folder)?;
-        return Err(e);
-    };
-
-    // Creating contract file
-    if let Err(e) = create_contract_file(&token_data.name, &base_folder, &token_content, SUB_FOLDER)
-    {
-        remove_dir(&base_folder)?;
-        return Err(e);
-    };
-
-    // Creating tests file
-    if let Err(e) = create_contract_file(
-        &token_data.name,
-        &base_folder,
-        &test_token_content,
-        TEST_FOLDER,
-    ) {
-        remove_dir(&base_folder)?;
-        return Err(e);
-    };
+    // Only commit if all operations succeed
+    atomic_op.commit();
 
     handle_success(SuccessType::TokenCreated(token_data));
     Ok(())

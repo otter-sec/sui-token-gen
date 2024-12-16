@@ -5,6 +5,15 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum TokenGenErrors {
+    #[error("System error: insufficient disk space")]
+    InsufficientDiskSpace,
+
+    #[error("System error: permission denied")]
+    PermissionDenied,
+
+    #[error("System error: concurrent access detected")]
+    ConcurrentAccess,
+
     #[error("Failed to create token contract: {0}")]
     FailedToCreateTokenContract(String),
 
