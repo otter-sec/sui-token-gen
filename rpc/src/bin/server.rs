@@ -3,6 +3,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
 };
+use futures::StreamExt;
 use service::{
     TokenGen,
     init_tracing,
@@ -103,29 +104,28 @@ impl TokenGen for TokenServer {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    init_tracing("token-gen-server")?;
-
     let flags = Flags::parse();
+    init_tracing()?;
+
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
+    let server = TokenServer {};
 
-    let server = TokenServer;
+    let listener = tarpc::serde_transport::tcp::listen(&addr, Json::default).await?;
+    let mut incoming = listener.incoming();
 
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    tracing::info!("listening on {}", addr);
+    tracing::info!("Starting server on {}", addr);
 
-    loop {
-        let (stream, _) = listener.accept().await?;
-        let transport = tarpc::serde_transport::new(
-            tarpc::tokio_util::codec::Framed::new(stream, tarpc::tokio_util::codec::LengthDelimitedCodec::new()),
-            Json::default(),
-        );
+    while let Some(transport) = incoming.next().await {
+        let transport = transport?;
         let server = server.clone();
 
-        tokio::spawn(async move {
-            let _ = BaseChannel::with_defaults(transport)
-                .execute(service::TokenGen::serve(server));
-        });
+        tokio::spawn(
+            BaseChannel::with_defaults(transport)
+                .execute(server.serve())
+        );
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
