@@ -1,19 +1,15 @@
 use clap::Parser;
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
-};
-use futures::StreamExt;
-use service::{
-    TokenGen,
-    init_tracing,
-};
-use suitokengentest::errors::TokenGenErrors;
+use futures::{future, StreamExt};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use tarpc::{
     context,
     server::{BaseChannel, Channel},
+    serde_transport::tcp,
     tokio_serde::formats::Json,
 };
+use suitokengentest::errors::TokenGenErrors;
+
+use service::{TokenGen, init_tracing};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -110,27 +106,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let server = TokenServer {};
 
-    let mut channel_config = tarpc::server::BaseChannel::default_config();
+    let mut channel_config = Channel::default();
     channel_config.max_frame_length = Some(64 * 1024 * 1024);
     channel_config.max_response_time = Some(std::time::Duration::from_secs(60));
 
-    let listener = tarpc::serde_transport::tcp::listen(&addr, Json::default).await?;
+    let listener = tcp::listen(&addr, Json::default).await?;
     tracing::info!("Starting server on {}", addr);
 
     listener
-        .filter_map(|r| futures::future::ready(r.ok()))
+        .filter_map(|r| future::ready(r.ok()))
         .for_each(|transport| {
             let server = server.clone();
+            let config = channel_config.clone();
             tokio::spawn(async move {
-                tarpc::server::BaseChannel::with_config(transport, channel_config.clone())
+                BaseChannel::new(config, transport)
                     .execute(server.serve())
                     .for_each(|_| {
                         tracing::debug!("Handling RPC request");
-                        futures::future::ready(())
+                        future::ready(())
                     })
                     .await;
             });
-            futures::future::ready(())
+            future::ready(())
         })
         .await;
 
