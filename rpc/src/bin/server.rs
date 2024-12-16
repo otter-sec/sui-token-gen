@@ -4,8 +4,10 @@ use std::{
     path::PathBuf,
 };
 use service::{
+    TokenGen,
     init_tracing,
 };
+use suitokengentest::errors::TokenGenErrors;
 use tarpc::{
     context,
     server::{BaseChannel, Channel},
@@ -33,31 +35,27 @@ fn get_project_root() -> Result<PathBuf, std::io::Error> {
     Ok(project_root)
 }
 
-#[async_trait::async_trait]
-impl service::TokenGen for TokenServer {
-    async fn create<'life0, 'async_trait>(
-        &'life0 self,
-        _ctx: context::Context,
+#[tarpc::server]
+impl TokenGen for TokenServer {
+    async fn create(
+        &self,
+        ctx: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
         description: String,
         frozen: bool,
         environment: String,
-    ) -> Result<(String, String, String), suitokengentest::errors::TokenGenErrors>
-    where
-        'life0: 'async_trait,
-        Self: 'async_trait,
-    {
+    ) -> Result<(String, String, String), TokenGenErrors> {
         let project_root = get_project_root()?;
 
         let token_template = std::fs::read_to_string(
             project_root.join("src/templates/move/token.move.template")
-        ).map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
+        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
 
         let toml_template = std::fs::read_to_string(
             project_root.join("src/templates/toml/Move.toml.template")
-        ).map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
+        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
 
         let token_content = token_template
             .replace("{{name}}", &name)
@@ -72,7 +70,7 @@ impl service::TokenGen for TokenServer {
             .replace("{{environment}}", &environment);
 
         let temp_dir = tempfile::tempdir()
-            .map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
 
         Ok((
             temp_dir.path().to_string_lossy().to_string(),
@@ -81,32 +79,24 @@ impl service::TokenGen for TokenServer {
         ))
     }
 
-    async fn verify_url<'life0, 'async_trait>(
-        &'life0 self,
-        _ctx: context::Context,
+    async fn verify_url(
+        &self,
+        ctx: context::Context,
         url: String
-    ) -> Result<(), suitokengentest::errors::TokenGenErrors>
-    where
-        'life0: 'async_trait,
-        Self: 'async_trait,
-    {
+    ) -> Result<(), TokenGenErrors> {
         service::utils::verify_helper::verify_token_using_url(&url).await
     }
 
-    async fn verify_content<'life0, 'async_trait>(
-        &'life0 self,
-        _ctx: context::Context,
+    async fn verify_content(
+        &self,
+        ctx: context::Context,
         content: String
-    ) -> Result<(), suitokengentest::errors::TokenGenErrors>
-    where
-        'life0: 'async_trait,
-        Self: 'async_trait,
-    {
+    ) -> Result<(), TokenGenErrors> {
         let temp_dir = tempfile::tempdir()
-            .map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
         let temp_file = temp_dir.path().join("temp.move");
         std::fs::write(&temp_file, &content)
-            .map_err(|e| suitokengentest::errors::TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
+            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to write temporary file: {}", e)))?;
 
         service::utils::verify_helper::verify_contract(temp_dir.path(), temp_dir.path()).await
     }
@@ -126,14 +116,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         let (stream, _) = listener.accept().await?;
-        let transport = tarpc::serde_transport::tcp::new(stream, Json::default);
+        let transport = tarpc::serde_transport::new(
+            tarpc::tokio_util::codec::Framed::new(stream, tarpc::tokio_util::codec::LengthDelimitedCodec::new()),
+            Json::default(),
+        );
         let server = server.clone();
 
         tokio::spawn(async move {
-            if let Ok(transport) = transport.await {
-                let _ = BaseChannel::with_defaults(transport)
-                    .execute(service::TokenGen::serve(server));
-            }
+            let _ = BaseChannel::with_defaults(transport)
+                .execute(service::TokenGen::serve(server));
         });
     }
 }
