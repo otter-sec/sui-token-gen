@@ -27,9 +27,9 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     let (token_content, move_toml, test_token_content) = client
         .create(
             crate::rpc_client::create_timeout_context(),
-            token_data.decimals,
             token_data.name.clone(),
             token_data.symbol.clone(),
+            token_data.decimals,
             token_data.description.clone(),
             token_data.is_frozen,
             token_data.environment.clone(),
