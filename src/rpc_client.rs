@@ -50,11 +50,7 @@ pub async fn initiate_client(server_addr: &str) -> Result<TokenGenClient, TokenG
 }
 
 async fn try_connect(server_addr: &str) -> Result<TokenGenClient, TokenGenErrors> {
-    let mut config = tarpc::serde_transport::tcp::Config::default();
-    config.max_frame_length = Some(64 * 1024 * 1024);
-    config.max_response_time = Some(Duration::from_secs(60));
-
-    let transport = tarpc::serde_transport::tcp::connect_with_config(server_addr, Json::default, config)
+    let transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default)
         .await
         .map_err(|e| TokenGenErrors::RpcError(format!("Failed to connect to RPC server: {}", e)))?;
 
