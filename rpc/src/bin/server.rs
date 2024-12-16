@@ -162,15 +162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 BaseChannel::with_defaults(transport)
                     .execute(server)
                     .for_each(|response| {
-                        match response {
-                            Ok(resp) => {
-                                tracing::debug!("Successfully processed request");
-                                tokio::spawn(resp);
-                            }
-                            Err(e) => {
-                                tracing::error!("Error processing request: {}", e);
-                            }
-                        }
+                        tokio::spawn(response);
                         future::ready(())
                     })
                     .await;
