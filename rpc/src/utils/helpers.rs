@@ -4,10 +4,10 @@ use std::{fs, path::Path};
 use crate::utils::{errors::TokenGenErrors, variables::TokenDetails};
 
 // URL is github url or not
-pub fn is_valid_repository_url(url: &str) -> bool {
+pub fn is_valid_repository_url(url: &str) -> Result<bool, TokenGenErrors> {
     let repository_url_pattern = r"^https?://(www\.)?(github)\.com/[\w\-]+/[\w\-]+/?$";
     let re = Regex::new(repository_url_pattern).expect("Invalid pattern");
-    re.is_match(url)
+    re.is_match(url).then_some(true).ok_or(TokenGenErrors::InvalidUrlNotGithub)
 }
 
 // Returing filtered alphanumeric characters string
@@ -111,9 +111,7 @@ pub fn get_token_info(content: &str) -> TokenDetails {
 pub fn is_safe_path(repo_name: &str) -> Result<bool, TokenGenErrors> {
     // Check for path traversal patterns (e.g., '..', '/../', '..\\')
     if repo_name.contains("..") || repo_name.contains("\\") || repo_name.contains("/") {
-        return Err(TokenGenErrors::GeneralError(
-            "Path traversal detected in the clone path.".to_string(),
-        ));
+        return Err(TokenGenErrors::InvalidPathNotFound);
     }
     Ok(true)
 }
@@ -137,10 +135,10 @@ mod tests {
 
         // Check if the invalid target path is outside the base path
         match is_safe_path(&invalid_target) {
-            Err(TokenGenErrors::GeneralError(msg)) => {
+            Err(TokenGenErrors::InvalidPathNotFound) => {
                 assert_eq!(
-                    msg,
-                    "Path traversal detected in the clone path.".to_string()
+                    "Path traversal detected in the clone path.",
+                    "Path traversal detected in the clone path."
                 )
             }
             _ => panic!("Expected path traversal error, but got a valid path."),

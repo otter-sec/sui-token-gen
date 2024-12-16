@@ -27,7 +27,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
         .verify_content(context::current(), current_content)
         .await
         .map_err(TokenGenErrors::RpcError)?
-        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
+        .map_err(TokenGenErrors::from)?;
 
     handle_success(SuccessType::TokenVerified {
         path: Some(path.to_string()),
@@ -49,17 +49,14 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
    - `Ok(())` on success or a `TokenGenErrors` on failure.
 */
 pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<()> {
-    if !is_valid_repository_url(url) {
-        return Err(TokenGenErrors::InvalidUrl(
-            "The provided URL is not a valid GitHub URL.".to_string(),
-        ));
-    }
+    // Verify it's a valid GitHub repository URL
+    is_valid_repository_url(url)?;
 
     client
         .verify_url(context::current(), url.to_string())
         .await
         .map_err(TokenGenErrors::RpcError)?
-        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
+        .map_err(TokenGenErrors::from)?;
 
     handle_success(SuccessType::TokenVerified {
         path: None,
