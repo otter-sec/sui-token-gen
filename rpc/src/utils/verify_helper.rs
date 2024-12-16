@@ -1,6 +1,6 @@
 use anyhow::Result;
 use git2::Repository;
-use std::{env, fs, path::Path};
+use std::{env, fs, io, path::Path};
 use url::Url;
 
 use crate::utils::{
@@ -26,8 +26,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
     check_cloned_contract(clone_path)?;
 
     // Get the current directory
-    let current_dir = env::current_dir()
-        .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read current dir: {}", e)))?;
+    let current_dir = env::current_dir().map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
 
     // Clone the repository
     Repository::clone(url, clone_path).map_err(|e| TokenGenErrors::GitError(e.to_string()))?;
@@ -39,9 +38,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
 
     // Ensure the cloned repository contains the required folder
     if !sources_path_ref.exists() || !sources_path_ref.is_dir() {
-        return Err(TokenGenErrors::InvalidPath(
-            "Cloned repo not found".to_string(),
-        ));
+        return Err(TokenGenErrors::ClonedRepoNotFound);
     }
 
     // Read the directory entries
@@ -109,9 +106,7 @@ pub fn compare_contract_content(
             check_cloned_contract(path)?;
         }
 
-        return Err(TokenGenErrors::VerifyResultError(
-            "Content mismatch detected".to_string(),
-        ));
+        return Err(TokenGenErrors::ContractModified);
     }
 
     Ok(()) // Return success if the contract is not modified
@@ -128,9 +123,7 @@ fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
         .trim_end_matches(".git")
         .rsplit('/')
         .next()
-        .ok_or_else(|| {
-            TokenGenErrors::InvalidRepo
-        })?;
+        .ok_or_else(|| TokenGenErrors::InvalidRepo)?;
 
     Ok(sanitize_repo_name(name))
 }

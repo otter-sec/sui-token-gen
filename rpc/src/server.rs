@@ -101,7 +101,7 @@ impl TokenGen for TokenServer {
 
         let move_toml_content = generation::generate_move_toml(base_folder, environment);
 
-        Ok((token_content, move_toml_content, test_token_content)) // Return both toml file and contract as strings
+        Ok((token_content, move_toml_content, test_token_content)) // Return contract, toml file and tests as strings
     }
 
     async fn verify_url(

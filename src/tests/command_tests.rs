@@ -165,7 +165,7 @@ async fn verify_command_invalid_file() -> Result<()> {
 }
 
 #[tokio::test]
-async fn verify_command_valid_git() -> Result<()> {
+async fn verify_command_valid_github() -> Result<()> {
     // Testing repo
     let valid_url = "https://github.com/meumar-osec/test-sui-token";
 
@@ -179,7 +179,7 @@ async fn verify_command_valid_git() -> Result<()> {
 }
 
 #[tokio::test]
-async fn verify_command_invalid_git() -> Result<()> {
+async fn verify_command_invalid_github() -> Result<()> {
     let valid_url = "https://github.com/meumar-osec/sui-token1";
 
     // Initialize the RPC client
@@ -188,5 +188,19 @@ async fn verify_command_invalid_git() -> Result<()> {
     // Call verify_token
     let response = verify_token_using_url(valid_url, client).await;
     assert!(response.is_err(), "Failed to verify URL");
+    Ok(())
+}
+
+#[tokio::test]
+async fn verify_command_valid_gitlab() -> Result<()> {
+    // Testing repo
+    let valid_url = "https://gitlab.com/osec/test-sui-token-gitlab";
+
+    // Initialize the RPC client
+    let client: TokenGenClient = test_initiate_client().await?;
+
+    // Call verify_token
+    let response = verify_token_using_url(valid_url, client).await;
+    assert!(response.is_ok(), "Failed to verify URL");
     Ok(())
 }

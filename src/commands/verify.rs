@@ -49,7 +49,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
    - `Ok(())` on success or a `TokenGenErrors` on failure.
 */
 pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<()> {
-    // Verify it's a valid GitHub repository URL
+    // Verify it's a valid Git repository URL
     is_valid_repository_url(url)?;
 
     client

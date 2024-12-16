@@ -9,7 +9,7 @@ pub fn sanitize_name(name: &String) -> String {
         .collect::<String>()
 }
 
-// URL is github url or not
+// URL is github/gitlab url or not
 pub fn is_valid_repository_url(url: &str) -> Result<()> {
     let repository_url_pattern = r"^https?://(www\.)?(github|gitlab)\.com/[\w\-]+/[\w\-]+/?$";
     let re = Regex::new(repository_url_pattern).expect("Invalid pattern");

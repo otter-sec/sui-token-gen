@@ -5,7 +5,7 @@ use thiserror::Error;
 pub enum TokenGenErrors {
     #[error("Invalid path: No .move file found")]
     InvalidPathNoMoveFiles,
-    
+
     #[error("Given contract is modified")]
     ProgramModified,
 
@@ -44,4 +44,10 @@ pub enum TokenGenErrors {
 
     #[error("Failed to extract repository name.")]
     InvalidRepo,
+
+    #[error("Content mismatch detected")]
+    ContractModified,
+
+    #[error("Cloned repo not found")]
+    ClonedRepoNotFound,
 }
