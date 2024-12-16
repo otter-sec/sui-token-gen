@@ -110,8 +110,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let server = TokenServer {};
 
-    let mut server_config = tarpc::server::Config::default();
-    server_config.max_frame_length(64 * 1024 * 1024);
+    let mut channel_config = tarpc::server::BaseChannel::default_config();
+    channel_config.max_frame_length = Some(64 * 1024 * 1024);
+    channel_config.max_response_time = Some(std::time::Duration::from_secs(60));
 
     let listener = tarpc::serde_transport::tcp::listen(&addr, Json::default).await?;
     tracing::info!("Starting server on {}", addr);
@@ -121,7 +122,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .for_each(|transport| {
             let server = server.clone();
             tokio::spawn(async move {
-                BaseChannel::with_defaults(transport)
+                tarpc::server::BaseChannel::with_config(transport, channel_config.clone())
                     .execute(server.serve())
                     .for_each(|_| {
                         tracing::debug!("Handling RPC request");
