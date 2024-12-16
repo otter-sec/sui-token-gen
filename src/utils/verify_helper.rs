@@ -1,11 +1,6 @@
-use std::{
-    fs::{self, ReadDir},
-    io,
-    path::Path,
-};
-use tarpc::context;
+use std::{fs, io, path::Path};
 
-use crate::{errors::TokenGenErrors, rpc_client::TokenGenClient, Result};
+use crate::{errors::TokenGenErrors, variables::SUB_FOLDER, Result};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
     if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {
@@ -18,51 +13,56 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
     Ok(fs::read_to_string(file_path)?)
 }
 
-pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
-    Ok(fs::read_dir(dir)?)
-}
-
 /*
-   Check dir is directory or not
-   Take all .move files in that folder
-   Call verify_content function from RPC
+   This function verifies the provided path and ensures it meets the following criteria:
+   1. The path exists and contains a `sources` folder.
+   2. A `.move` file with the same name as the project exists inside the `sources` folder.
+   3. The `.move` file is not empty.
+
+   If all conditions are satisfied, the function reads and returns the content of the `.move` file.
+   Otherwise, it returns an appropriate error.
 */
-pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
-    // Ensure the path is a directory
-    if !dir.is_dir() {
+pub fn verify_path(path: &str) -> Result<String> {
+    let path = Path::new(path);
+
+    let sources_folder = path.join(SUB_FOLDER);
+
+    // Ensure the provided path exists and contains a `sources` folder.
+    if !path.exists() || !path.is_dir() || !sources_folder.exists() || !sources_folder.is_dir() {
         return Err(TokenGenErrors::InvalidPath(
-            "Provided path is not a directory.".to_string(),
+            "The provided path for the contract is invalid.".to_string(),
         ));
     }
 
-    // Read the directory entries
-    let entries = read_dir(dir).map_err(|e| TokenGenErrors::FileIoError(e))?;
+    // Extract the project name from the provided path.
+    let project_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| TokenGenErrors::InvalidPath("Invalid project name.".to_string()))?;
 
-    // Find the first `.move` file
-    let mut current_content = String::new();
-    for entry in entries {
-        let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e))?;
-        let path = entry.path();
+    // Construct the expected file name for the `.move` file based on the project name.
+    let contract_file_name = format!("{}.move", project_name);
+    let contract_path = sources_folder.join(&contract_file_name);
 
-        if path.is_file() && path.extension().is_some_and(|e| e == "move") {
-            // Read the `.move` file content
-            current_content = read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e))?;
-            break; // Exit the loop after finding the first .move file
-        }
+    // Check if the `.move` file exists and is a valid file.
+    if !contract_path.exists() || !contract_path.is_file() {
+        return Err(TokenGenErrors::InvalidPath(format!(
+            "The provided path doesn't have a `.move` file named '{}'.",
+            contract_file_name
+        )));
     }
 
-    // Return an error if no `.move` file was found
+    // Read the content of the `.move` file.
+    let current_content: String =
+        read_file(&contract_path).map_err(|e| TokenGenErrors::FileIoError(e))?;
+
+    // Ensure the `.move` file is not empty.
     if current_content.is_empty() {
         return Err(TokenGenErrors::InvalidPath(
-            "No `.move` file found in the directory.".to_string(),
+            "The contract file is empty.".to_string(),
         ));
     }
 
-    // Verify the content using the client
-    client
-        .verify_content(context::current(), current_content)
-        .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?
-        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
-    Ok(())
+    // Return the content of the `.move` file.
+    Ok(current_content)
 }

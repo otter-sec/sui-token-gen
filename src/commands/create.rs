@@ -39,7 +39,7 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
         .map_err(TokenGenErrors::RpcError)?
         .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
 
-    let base_folder: String = sanitize_name(&token_data.name);
+    let base_folder: String = sanitize_name(&token_data.name).to_lowercase();
 
     // Creating base contract folder
     create_base_folder(&base_folder)?;

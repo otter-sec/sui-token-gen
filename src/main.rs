@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 use error_handler::handle_error;
 use errors::TokenGenErrors;
-use rpc_client::initiate_client;
+use rpc_client::{initiate_client, TokenGenClient};
 use variables::ADDRESS;
 
 mod commands;
@@ -54,11 +54,12 @@ async fn main() {
 }
 
 async fn run_cli(cli: Cli) -> Result<()> {
+    let client: TokenGenClient = initiate_client(ADDRESS)
+        .await
+        .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
+
     match &cli.command {
         Commands::Create => {
-            let client = initiate_client(ADDRESS).await.map_err(|e| {
-                TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e))
-            })?;
             commands::create::create_token(client).await?;
         }
         Commands::Verify { path, url } => {
@@ -67,10 +68,6 @@ async fn run_cli(cli: Cli) -> Result<()> {
                     "Error: Either --path or --url must be provided.".to_string(),
                 ));
             }
-
-            let client = initiate_client(ADDRESS).await.map_err(|e| {
-                TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e))
-            })?;
 
             if let Some(path) = path {
                 commands::verify::verify_token_from_path(path, client.clone()).await?;
