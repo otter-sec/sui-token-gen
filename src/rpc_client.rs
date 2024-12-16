@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use tarpc::{
-    client::{self, Channel},
+    client::Channel,
     context,
     serde_transport::tcp::connect,
     tokio_serde::formats::Json,
@@ -39,10 +39,7 @@ pub async fn initiate_client(server_addr: &str) -> Result<TokenGenClient, TokenG
         .await
         .map_err(|e| TokenGenErrors::RpcError(format!("Failed to connect to RPC server: {}", e)))?;
 
-    let client_config = client::Config::default()
-        .request_timeout(Some(Duration::from_secs(30)));
-
-    let client = TokenGenClient::new(client_config, transport).spawn();
+    let client = TokenGenClient::new(client::Config::default(), transport).spawn();
     tracing::info!("RPC client initialized successfully");
 
     Ok(client)
