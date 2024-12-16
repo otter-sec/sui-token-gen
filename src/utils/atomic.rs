@@ -1,5 +1,4 @@
 use std::{fs, path::Path};
-use crate::Result;
 
 pub struct AtomicFileOperation {
     base_path: String,

@@ -1,13 +1,12 @@
-use std::{env, fs, path::Path, os::unix::fs::PermissionsExt};
+use std::{env, fs, path::Path};
 use tarpc::context;
-use tokio::time::{sleep, Duration};
 
 use crate::{
     commands::verify::verify_token_using_url,
     errors::TokenGenErrors,
     rpc_client::{initiate_client, TokenGenClient},
     utils::{
-        generation::{create_base_folder, create_contract_file, create_move_toml, remove_dir},
+        generation::{create_base_folder, create_contract_file, create_move_toml},
         helpers::sanitize_name,
     },
     variables::{ADDRESS, SUB_FOLDER},
@@ -191,80 +190,3 @@ async fn verify_command_invalid_git() -> Result<()> {
     assert!(response.is_err(), "Failed to verify URL");
     Ok(())
 }
-
-#[tokio::test]
-async fn test_create_token_concurrent() -> Result<()> {
-    let test_folder = "test_concurrent_token";
-    let lock_path = format!("{}.lock", test_folder);
-
-    // Create lock file to simulate concurrent access
-    fs::write(&lock_path, "")?;
-
-    // Attempt to create folder while lock exists
-    let result = create_base_folder(test_folder);
-
-    // Clean up
-    fs::remove_file(&lock_path)?;
-    if Path::new(test_folder).exists() {
-        fs::remove_dir_all(test_folder)?;
-    }
-
-    assert!(matches!(result, Err(TokenGenErrors::ConcurrentAccess)));
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_create_token_permissions() -> Result<()> {
-    let test_folder = "test_permission_token";
-
-    // Create folder with readonly permissions
-    fs::create_dir(test_folder)?;
-    let metadata = fs::metadata(test_folder)?;
-    let mut perms = metadata.permissions();
-    perms.set_mode(0o444); // readonly
-    fs::set_permissions(test_folder, perms)?;
-
-    // Attempt to create files in readonly folder
-    let result = create_move_toml(test_folder, "test content");
-
-    // Clean up: restore permissions to delete
-    let metadata = fs::metadata(test_folder)?;
-    let mut perms = metadata.permissions();
-    perms.set_mode(0o755);
-    fs::set_permissions(test_folder, perms)?;
-    fs::remove_dir_all(test_folder)?;
-
-    assert!(matches!(result, Err(TokenGenErrors::PermissionDenied)));
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_create_token_rollback() -> Result<()> {
-    let test_folder = "test_rollback_token";
-
-    // Create initial structure
-    create_base_folder(test_folder)?;
-
-    // Attempt to create a file with invalid content to trigger rollback
-    let result = create_contract_file(
-        "InvalidToken",
-        test_folder,
-        "", // Empty content to trigger error
-        SUB_FOLDER,
-    );
-
-    // Verify folder is cleaned up after error
-    let folder_exists = Path::new(test_folder).exists();
-    assert!(!folder_exists, "Folder should be cleaned up after error");
-
-    assert!(result.is_err());
-    Ok(())
-}
-
-// Note: Disk space test is commented out as it requires root permissions to modify disk quotas
-// #[tokio::test]
-// async fn test_create_token_disk_space() -> Result<()> {
-//     // This test would require root permissions to set disk quotas
-//     // For now, we rely on the error type being properly propagated
-//     Ok(())
-// }

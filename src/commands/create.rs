@@ -49,7 +49,12 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     create_base_folder(&base_folder)?;
     create_move_toml(&base_folder, &move_toml)?;
     create_contract_file(&token_data.name, &base_folder, &token_content, SUB_FOLDER)?;
-    create_contract_file(&token_data.name, &base_folder, &test_token_content, TEST_FOLDER)?;
+    create_contract_file(
+        &token_data.name,
+        &base_folder,
+        &test_token_content,
+        TEST_FOLDER,
+    )?;
 
     // Only commit if all operations succeed
     atomic_op.commit();
