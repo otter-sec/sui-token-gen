@@ -39,7 +39,11 @@ pub async fn initiate_client(server_addr: &str) -> Result<TokenGenClient, TokenG
         .await
         .map_err(|e| TokenGenErrors::RpcError(format!("Failed to connect to RPC server: {}", e)))?;
 
-    let client = TokenGenClient::new(Config::default(), transport).spawn();
+    let mut client_config = Config::default();
+    client_config.max_in_flight_requests = Some(1);
+    client_config.request_timeout = Some(Duration::from_secs(30));
+
+    let client = TokenGenClient::new(client_config, transport).spawn();
     tracing::info!("RPC client initialized successfully");
 
     Ok(client)
