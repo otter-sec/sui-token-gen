@@ -159,10 +159,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let server = server.clone();
             tokio::spawn(async move {
                 tracing::info!("New client connection established");
-                BaseChannel::with_defaults(transport)
+                let channel_config = BaseChannel::Config::default()
+                    .max_frame_length(16 * 1024 * 1024)  // 16MB max frame size
+                    .max_in_buffer_size(16 * 1024 * 1024)  // 16MB max buffer
+                    .max_out_buffer_size(16 * 1024 * 1024); // 16MB max buffer
+
+                BaseChannel::with_config(transport, channel_config)
                     .execute(server.serve())
-                    .for_each(|_| {
-                        tracing::debug!("Handling RPC request");
+                    .for_each(|result| {
+                        match result {
+                            Ok(_) => tracing::debug!("Successfully handled RPC request"),
+                            Err(e) => tracing::error!("Error handling RPC request: {}", e),
+                        }
                         future::ready(())
                     })
                     .await;
