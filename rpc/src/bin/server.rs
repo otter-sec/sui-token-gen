@@ -92,6 +92,13 @@ impl TokenGen for TokenServer {
         _ctx: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
+        // For empty content, treat it as a ping and return success immediately
+        if content.is_empty() {
+            tracing::debug!("Received ping request, responding with success");
+            return Ok(());
+        }
+
+        // For non-empty content, proceed with contract verification
         let temp_dir = tempfile::tempdir()
             .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
         let temp_file = temp_dir.path().join("temp.move");
@@ -112,7 +119,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = tarpc::serde_transport::tcp::listen(&addr, Json::default)
         .await?
-        .filter_map(|r| future::ready(r.ok()));
+        .filter_map(|r| {
+            let result = r.map_err(|e| {
+                tracing::error!("Transport error: {}", e);
+                e
+            });
+            future::ready(result.ok())
+        });
 
     tracing::info!("Starting server on {}", addr);
 
@@ -120,6 +133,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .for_each(|transport| {
             let server = server.clone();
             tokio::spawn(async move {
+                tracing::info!("New client connection established");
                 BaseChannel::with_defaults(transport)
                     .execute(server.serve())
                     .for_each(|_| {
@@ -127,6 +141,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         future::ready(())
                     })
                     .await;
+                tracing::info!("Client connection closed");
             });
             future::ready(())
         })
