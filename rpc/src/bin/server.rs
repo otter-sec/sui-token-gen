@@ -47,16 +47,28 @@ impl TokenGen for TokenServer {
         frozen: bool,
         environment: String,
     ) -> Result<(String, String, String), TokenGenErrors> {
-        let project_root = get_project_root()?;
+        tracing::info!("Starting token creation with name: {}, symbol: {}", name, symbol);
 
+        let project_root = get_project_root()?;
+        tracing::debug!("Project root path: {:?}", project_root);
+
+        tracing::info!("Reading token template...");
         let token_template = std::fs::read_to_string(
             project_root.join("src/templates/move/token.move.template")
-        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e)))?;
+        ).map_err(|e| {
+            tracing::error!("Failed to read token template: {}", e);
+            TokenGenErrors::FileIoError(format!("Failed to read token template: {}", e))
+        })?;
 
+        tracing::info!("Reading TOML template...");
         let toml_template = std::fs::read_to_string(
             project_root.join("src/templates/toml/Move.toml.template")
-        ).map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e)))?;
+        ).map_err(|e| {
+            tracing::error!("Failed to read toml template: {}", e);
+            TokenGenErrors::FileIoError(format!("Failed to read toml template: {}", e))
+        })?;
 
+        tracing::info!("Generating token content...");
         let token_content = token_template
             .replace("{{name}}", &name)
             .replace("{{symbol}}", &symbol)
@@ -64,14 +76,20 @@ impl TokenGen for TokenServer {
             .replace("{{decimals}}", &decimals.to_string())
             .replace("{{is_frozen}}", &frozen.to_string());
 
+        tracing::info!("Generating TOML content...");
         let toml_content = toml_template
             .replace("{{name}}", &name)
             .replace("{{symbol}}", &symbol)
             .replace("{{environment}}", &environment);
 
+        tracing::info!("Creating temporary directory...");
         let temp_dir = tempfile::tempdir()
-            .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e)))?;
+            .map_err(|e| {
+                tracing::error!("Failed to create temporary directory: {}", e);
+                TokenGenErrors::FileIoError(format!("Failed to create temporary directory: {}", e))
+            })?;
 
+        tracing::info!("Token creation completed successfully");
         Ok((
             temp_dir.path().to_string_lossy().to_string(),
             token_content,
