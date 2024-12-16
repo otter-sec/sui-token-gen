@@ -13,9 +13,9 @@ use crate::errors::TokenGenErrors;
 #[tarpc::service]
 pub trait TokenGen {
     async fn create(
-        decimals: u8,
         name: String,
         symbol: String,
+        decimals: u8,
         description: String,
         is_frozen: bool,
         environment: String,
