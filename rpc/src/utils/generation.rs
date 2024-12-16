@@ -75,12 +75,12 @@ pub fn generate_token(
 }
 
 // Generating move.toml file with basic requirements
-pub fn generate_move_toml(package_name: &str, environment: String) -> String {
+pub fn generate_move_toml(package_name: String, environment: String) -> String {
     let current_year: u32 = Utc::now().year_ce().1;
 
     let move_toml = MoveToml {
         package: Package {
-            name: package_name.to_string(),
+            name: package_name.to_lowercase(),
             edition: format!("{}.beta", current_year),
             version: "0.0.1".to_string(),
         },

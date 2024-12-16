@@ -106,16 +106,16 @@ pub fn get_token_info(content: &str) -> TokenDetails {
     }
 }
 
-// Checks if the provided path contains path traversal sequences like ".."
-// that might lead to directories outside the expected root.
-pub fn is_safe_path(repo_name: &str) -> Result<bool, TokenGenErrors> {
-    // Check for path traversal patterns (e.g., '..', '/../', '..\\')
-    if repo_name.contains("..") || repo_name.contains("\\") || repo_name.contains("/") {
-        return Err(TokenGenErrors::GeneralError(
-            "Path traversal detected in the clone path.".to_string(),
-        ));
-    }
-    Ok(true)
+// Sanitizes the provided repository name by removing path traversal sequences
+// like "..". Ensures the resulting name is safe for use as a directory name.
+pub fn sanitize_repo_name(repo_name: &str) -> String {
+    // Replace ".." with an empty string to remove path traversal components
+    let sanitized_name = repo_name
+        .replace("..", "")
+        .replace("/", "")
+        .replace("\\", "");
+
+    sanitized_name
 }
 
 #[cfg(test)]
@@ -128,7 +128,7 @@ mod tests {
     fn test_safe_path_valid() {
         let valid_target = "sui-token";
         // Check if the valid target path is inside the base path
-        assert_eq!(is_safe_path(&valid_target).unwrap(), true);
+        assert_eq!(sanitize_repo_name(&valid_target), valid_target);
     }
 
     #[test]
@@ -136,14 +136,6 @@ mod tests {
         let invalid_target = "../etc/psswd";
 
         // Check if the invalid target path is outside the base path
-        match is_safe_path(&invalid_target) {
-            Err(TokenGenErrors::GeneralError(msg)) => {
-                assert_eq!(
-                    msg,
-                    "Path traversal detected in the clone path.".to_string()
-                )
-            }
-            _ => panic!("Expected path traversal error, but got a valid path."),
-        }
+        assert_eq!(sanitize_repo_name(&invalid_target), "etcpsswd");
     }
 }

@@ -6,7 +6,7 @@ use url::Url;
 use crate::utils::{
     errors::TokenGenErrors,
     generation::generate_token,
-    helpers::{filter_token_content, get_token_info, is_safe_path, is_valid_repository_url},
+    helpers::{filter_token_content, get_token_info, is_valid_repository_url, sanitize_repo_name},
     variables::{TokenDetails, SUB_FOLDER},
 };
 
@@ -140,7 +140,7 @@ fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
     }
 
     // Extract the repository name from the URL
-    let repo_name = url
+    let name = url
         .trim_end_matches(".git")
         .rsplit('/')
         .next()
@@ -148,8 +148,7 @@ fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
             TokenGenErrors::InvalidUrl("Failed to extract repository name.".to_string())
         })?;
 
-    is_safe_path(repo_name)?;
-    Ok(repo_name.to_string())
+    Ok(sanitize_repo_name(name))
 }
 
 fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
