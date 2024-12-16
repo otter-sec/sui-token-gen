@@ -45,10 +45,29 @@ pub fn create_contract_file(
 
 // Creating contract base folder and sources folder
 pub fn create_base_folder(base_folder: &str) -> Result<()> {
-    check_system_constraints(base_folder)?;
-    create_dir(base_folder, SUB_FOLDER)?;
-    create_dir(base_folder, TEST_FOLDER)?;
-    Ok(())
+    let lock_path = format!("{}.lock", base_folder);
+
+    // Check for concurrent access
+    if path::Path::new(&lock_path).exists() {
+        return Err(TokenGenErrors::ConcurrentAccess);
+    }
+
+    // Create lock file
+    check_system_constraints(&lock_path)?;
+    fs::write(&lock_path, "")?;
+
+    // Perform directory creation
+    let result = (|| -> Result<()> {
+        check_system_constraints(base_folder)?;
+        create_dir(base_folder, SUB_FOLDER)?;
+        create_dir(base_folder, TEST_FOLDER)?;
+        Ok(())
+    })();
+
+    // Clean up lock file
+    let _ = fs::remove_file(&lock_path);
+
+    result
 }
 
 // Creating move.toml file from RPC response
