@@ -6,7 +6,7 @@ use std::{
 };
 use tarpc::{
     context,
-    server::{BaseChannel, Config},
+    server::Channel,
     tokio_serde::formats::Json,
 };
 use suitokengentest::errors::TokenGenErrors;
@@ -157,13 +157,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let server = server.clone();
             tokio::spawn(async move {
                 tracing::info!("New client connection established");
-                let config = Config::default()
-                    .max_frame_length(16 * 1024 * 1024)  // 16MB max frame size
-                    .max_in_buffer_size(16 * 1024 * 1024)  // 16MB max buffer
-                    .max_out_buffer_size(16 * 1024 * 1024); // 16MB max buffer
-
-                BaseChannel::new(config, transport)
-                    .execute(server.serve())
+                let server = server.serve();
+                Channel::serve(transport, server)
                     .for_each(|result| {
                         match result {
                             Ok(_) => tracing::debug!("Successfully handled RPC request"),
