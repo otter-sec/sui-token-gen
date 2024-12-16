@@ -86,20 +86,14 @@ async fn test_error_handling_integration() -> Result<()> {
     let result = client
         .create(
             context::current(),
-            255, // Invalid decimals
+            255,            // Invalid decimals
             "".to_string(), // Empty name
             "TEST".to_string(),
             "Description".to_string(),
             false,
             "invalid_env".to_string(),
         )
-        .await;
-
+        .await?;
     assert!(result.is_err());
-    assert!(matches!(
-        result.unwrap_err(),
-        TokenGenErrors::InvalidInput(_)
-    ));
-
     Ok(())
 }

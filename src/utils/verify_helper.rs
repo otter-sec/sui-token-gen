@@ -7,13 +7,6 @@ use std::{
 use crate::{errors::TokenGenErrors, variables::SUB_FOLDER, Result};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
-    if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "File is not a .move file",
-        ));
-    }
-
     Ok(fs::read_to_string(file_path)?)
 }
 

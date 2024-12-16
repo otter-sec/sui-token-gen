@@ -1,5 +1,4 @@
 use regex::Regex;
-use std::{fs, path::Path};
 
 use crate::utils::{errors::TokenGenErrors, variables::TokenDetails};
 
@@ -7,7 +6,9 @@ use crate::utils::{errors::TokenGenErrors, variables::TokenDetails};
 pub fn is_valid_repository_url(url: &str) -> Result<bool, TokenGenErrors> {
     let repository_url_pattern = r"^https?://(www\.)?(github)\.com/[\w\-]+/[\w\-]+/?$";
     let re = Regex::new(repository_url_pattern).expect("Invalid pattern");
-    re.is_match(url).then_some(true).ok_or(TokenGenErrors::InvalidUrlNotGithub)
+    re.is_match(url)
+        .then_some(true)
+        .ok_or(TokenGenErrors::InvalidGitUrl)
 }
 
 // Returing filtered alphanumeric characters string

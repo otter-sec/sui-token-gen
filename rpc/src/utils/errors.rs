@@ -3,6 +3,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Deserialize, Serialize)]
 pub enum TokenGenErrors {
+    #[error("Invalid path: No .move file found")]
+    InvalidPathNoMoveFiles,
+    
     #[error("Given contract is modified")]
     ProgramModified,
 
@@ -21,30 +24,24 @@ pub enum TokenGenErrors {
     #[error("An error occurred: {0}")]
     GeneralError(String),
 
-    #[error("Invalid path: directory not found")]
-    InvalidPathNotFound,
+    #[error("Invalid path: {0}")]
+    InvalidPath(String),
 
-    #[error("Invalid path: not a directory")]
-    InvalidPathNotDirectory,
-
-    #[error("Invalid path: no Move files in sources")]
-    InvalidPathNoMoveFiles,
-
-    #[error("Invalid URL: not a GitHub repository")]
-    InvalidUrlNotGithub,
-
-    #[error("Invalid URL: repository not found")]
-    InvalidUrlRepoNotFound,
-
-    #[error("Invalid URL: malformed URL")]
-    InvalidUrlMalformed,
+    #[error("The provided URL is not a valid URL.")]
+    InvalidUrl,
 
     #[error("Git operation failed: {0}")]
-    GitError(#[from] git2::Error),
+    GitError(String),
 
     #[error("File I/O error: {0}")]
-    FileIoError(#[from] std::io::Error),
+    FileIoError(String),
 
     #[error("{0}")]
     VerifyResultError(String),
+
+    #[error("The provided URL is not a valid Git URL.")]
+    InvalidGitUrl,
+
+    #[error("Failed to extract repository name.")]
+    InvalidRepo,
 }

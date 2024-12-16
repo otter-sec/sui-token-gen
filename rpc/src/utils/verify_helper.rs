@@ -26,10 +26,11 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
     check_cloned_contract(clone_path)?;
 
     // Get the current directory
-    let current_dir = env::current_dir()?;
+    let current_dir = env::current_dir()
+        .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read current dir: {}", e)))?;
 
     // Clone the repository
-    Repository::clone(url, clone_path)?;
+    Repository::clone(url, clone_path).map_err(|e| TokenGenErrors::GitError(e.to_string()))?;
 
     let sources_path: String = format!("{}/{}/{}", current_dir.display(), repo_name, SUB_FOLDER);
 
@@ -38,21 +39,25 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
 
     // Ensure the cloned repository contains the required folder
     if !sources_path_ref.exists() || !sources_path_ref.is_dir() {
-        return Err(TokenGenErrors::InvalidPathNotFound);
+        return Err(TokenGenErrors::InvalidPath(
+            "Cloned repo not found".to_string(),
+        ));
     }
 
     // Read the directory entries
-    let entries = fs::read_dir(sources_path_ref)?;
+    let entries =
+        fs::read_dir(sources_path_ref).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
 
     // Find the first `.move` file
     let mut current_content = String::new();
     for entry in entries {
-        let entry = entry?;
+        let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
         let path = entry.path();
 
         if path.is_file() && path.extension().is_some_and(|e| e == "move") {
             // Read the `.move` file content
-            current_content = read_file(&path)?;
+            current_content =
+                read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
             break; // Exit the loop after finding the first .move file
         }
     }
@@ -69,13 +74,8 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
     Ok(())
 }
 
-pub fn read_file(file_path: &Path) -> Result<String, TokenGenErrors> {
-    if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {
-        return Err(TokenGenErrors::InvalidPathNotDirectory);
-    }
-
-    let content = fs::read_to_string(file_path)?;
-    Ok(content)
+pub fn read_file(file_path: &Path) -> io::Result<String> {
+    Ok(fs::read_to_string(file_path)?)
 }
 
 pub fn compare_contract_content(
@@ -109,7 +109,9 @@ pub fn compare_contract_content(
             check_cloned_contract(path)?;
         }
 
-        return Err(TokenGenErrors::VerifyResultError("Content mismatch detected"));
+        return Err(TokenGenErrors::VerifyResultError(
+            "Content mismatch detected".to_string(),
+        ));
     }
 
     Ok(()) // Return success if the contract is not modified
@@ -117,9 +119,8 @@ pub fn compare_contract_content(
 
 fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
     // Parse the URL to check if it is valid
-    Url::parse(url).map_err(|_| TokenGenErrors::InvalidUrlMalformed)?;
+    Url::parse(url).map_err(|_| TokenGenErrors::InvalidUrl)?;
 
-    // Verify it's a valid GitHub repository URL
     is_valid_repository_url(url)?;
 
     // Extract the repository name from the URL
@@ -127,14 +128,16 @@ fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
         .trim_end_matches(".git")
         .rsplit('/')
         .next()
-        .ok_or(TokenGenErrors::InvalidUrlRepoNotFound)?;
+        .ok_or_else(|| {
+            TokenGenErrors::InvalidRepo
+        })?;
 
     Ok(sanitize_repo_name(name))
 }
 
 fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
     if path.exists() && path.is_dir() {
-        fs::remove_dir_all(path)?;
+        fs::remove_dir_all(path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
     }
     Ok(())
 }

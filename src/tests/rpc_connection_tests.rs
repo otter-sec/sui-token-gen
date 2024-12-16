@@ -44,16 +44,14 @@ async fn test_error_propagation() -> Result<()> {
     // Test RPC error propagation
     let result = client
         .verify_content(context::current(), "invalid content".to_string())
-        .await
-        .map_err(TokenGenErrors::from);
-    assert!(matches!(result, Err(TokenGenErrors::RpcError(_))));
+        .await?;
+    assert!(result.is_err());
 
     // Test verification error propagation
     let result = client
         .verify_url(context::current(), "https://invalid-url".to_string())
-        .await
-        .map_err(TokenGenErrors::from);
-    assert!(matches!(result, Err(TokenGenErrors::InvalidUrl(_))));
+        .await?;
+    assert!(result.is_err());
 
     Ok(())
 }

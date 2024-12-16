@@ -27,7 +27,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
         .verify_content(context::current(), current_content)
         .await
         .map_err(TokenGenErrors::RpcError)?
-        .map_err(TokenGenErrors::from)?;
+        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
 
     handle_success(SuccessType::TokenVerified {
         path: Some(path.to_string()),
@@ -56,7 +56,7 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
         .verify_url(context::current(), url.to_string())
         .await
         .map_err(TokenGenErrors::RpcError)?
-        .map_err(TokenGenErrors::from)?;
+        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
 
     handle_success(SuccessType::TokenVerified {
         path: None,
