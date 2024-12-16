@@ -8,6 +8,7 @@ use tarpc::{
     context,
     server::{BaseChannel, Channel},
     tokio_serde::formats::Json,
+    serde_transport,
 };
 use suitokengentest::errors::TokenGenErrors;
 
@@ -139,8 +140,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let server = TokenServer {};
+    tracing::info!("Starting server on {}", addr);
 
-    let listener = tarpc::serde_transport::tcp::listen(&addr, Json::default)
+    // Create TCP listener with proper serialization and configuration
+    let listener = serde_transport::tcp::listen(&addr, Json::default)
         .await?
         .filter_map(|r| {
             let result = r.map_err(|e| {
@@ -150,17 +153,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             future::ready(result.ok())
         });
 
-    tracing::info!("Starting server on {}", addr);
-
     listener
         .for_each(|transport| {
             let server = server.clone();
             tokio::spawn(async move {
                 tracing::info!("New client connection established");
-                let channel = BaseChannel::with_defaults(transport);
-                channel.execute(server.serve())
-                    .for_each(|response| async move {
-                        tokio::spawn(response);
+                let server = server.serve();
+                BaseChannel::with_defaults(transport)
+                    .execute(server)
+                    .for_each(|response| {
+                        match response {
+                            Ok(resp) => {
+                                tracing::debug!("Successfully processed request");
+                                tokio::spawn(resp);
+                            }
+                            Err(e) => {
+                                tracing::error!("Error processing request: {}", e);
+                            }
+                        }
+                        future::ready(())
                     })
                     .await;
                 tracing::info!("Client connection closed");
