@@ -3,7 +3,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
 };
-use futures::{StreamExt, TryStreamExt, FutureExt};
+use futures::StreamExt;
 use service::{
     TokenGen,
     init_tracing,
