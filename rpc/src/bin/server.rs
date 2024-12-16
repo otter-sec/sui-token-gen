@@ -1,6 +1,9 @@
 use clap::Parser;
 use futures::{future, StreamExt};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+};
 use tarpc::{
     context,
     server::{BaseChannel, Channel},
@@ -106,10 +109,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), flags.port);
     let server = TokenServer {};
 
-    let mut channel_config = Channel::default();
-    channel_config.max_frame_length = Some(64 * 1024 * 1024);
-    channel_config.max_response_time = Some(std::time::Duration::from_secs(60));
-
     let listener = tcp::listen(&addr, Json::default).await?;
     tracing::info!("Starting server on {}", addr);
 
@@ -117,9 +116,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter_map(|r| future::ready(r.ok()))
         .for_each(|transport| {
             let server = server.clone();
-            let config = channel_config.clone();
             tokio::spawn(async move {
-                BaseChannel::new(config, transport)
+                let mut channel = BaseChannel::with_defaults(transport);
+                channel.config().max_frame_length = Some(64 * 1024 * 1024);
+                channel.config().max_response_time = Some(std::time::Duration::from_secs(60));
+
+                channel
                     .execute(server.serve())
                     .for_each(|_| {
                         tracing::debug!("Handling RPC request");
