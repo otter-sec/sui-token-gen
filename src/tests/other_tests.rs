@@ -103,3 +103,46 @@ async fn error_propagation_flow() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_url_validation_errors() -> Result<()> {
+    let client = setup_test_client(ADDRESS).await?;
+
+    // Test non-GitHub URL
+    let non_github_url = "https://gitlab.com/some/repo";
+    let result = verify_token_using_url(non_github_url, client.to_owned()).await;
+    assert!(matches!(result, Err(TokenGenErrors::InvalidUrlNotGithub(_))));
+
+    // Test malformed URL
+    let malformed_url = "not-a-url";
+    let result = verify_token_using_url(malformed_url, client.to_owned()).await;
+    assert!(matches!(result, Err(TokenGenErrors::InvalidUrlMalformed(_))));
+
+    // Test non-existent GitHub URL
+    let invalid_url = "https://github.com/invalid/repo";
+    let result = verify_token_using_url(invalid_url, client).await;
+    assert!(matches!(result, Err(TokenGenErrors::InvalidUrlNotFound(_))));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_path_validation_errors() -> Result<()> {
+    let client = setup_test_client(ADDRESS).await?;
+
+    // Test non-existent path
+    let non_existent_path = "/path/does/not/exist";
+    let result = client
+        .verify_content(context::current(), non_existent_path.to_string())
+        .await;
+    assert!(matches!(result, Err(TokenGenErrors::InvalidPathNotFound(_))));
+
+    // Test path that's not a directory
+    let not_dir_path = "/etc/hosts";
+    let result = client
+        .verify_content(context::current(), not_dir_path.to_string())
+        .await;
+    assert!(matches!(result, Err(TokenGenErrors::InvalidPathNotDirectory(_))));
+
+    Ok(())
+}

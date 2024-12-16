@@ -77,3 +77,29 @@ async fn test_full_token_creation_flow() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_error_handling_integration() -> Result<()> {
+    let client: TokenGenClient = setup_test_client("[::1]:5000").await?;
+
+    // Test error handling in full workflow
+    let result = client
+        .create(
+            context::current(),
+            255, // Invalid decimals
+            "".to_string(), // Empty name
+            "TEST".to_string(),
+            "Description".to_string(),
+            false,
+            "invalid_env".to_string(),
+        )
+        .await;
+
+    assert!(result.is_err());
+    assert!(matches!(
+        result.unwrap_err(),
+        TokenGenErrors::InvalidInput(_)
+    ));
+
+    Ok(())
+}

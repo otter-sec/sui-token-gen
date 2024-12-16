@@ -36,3 +36,24 @@ async fn setup_test_client_error_handling() -> Result<()> {
         .is_err());
     Ok(())
 }
+
+#[tokio::test]
+async fn test_error_propagation() -> Result<()> {
+    let client = setup_test_client(ADDRESS).await?;
+
+    // Test RPC error propagation
+    let result = client
+        .verify_content(context::current(), "invalid content".to_string())
+        .await
+        .map_err(TokenGenErrors::from);
+    assert!(matches!(result, Err(TokenGenErrors::RpcError(_))));
+
+    // Test verification error propagation
+    let result = client
+        .verify_url(context::current(), "https://invalid-url".to_string())
+        .await
+        .map_err(TokenGenErrors::from);
+    assert!(matches!(result, Err(TokenGenErrors::InvalidUrl(_))));
+
+    Ok(())
+}

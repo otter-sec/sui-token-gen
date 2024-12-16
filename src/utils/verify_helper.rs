@@ -33,32 +33,28 @@ pub fn verify_path(path: &str) -> Result<String> {
 
     // Ensure the provided path exists and contains a `sources` folder.
     if !path.exists() || !path.is_dir() || !sources_folder.exists() || !sources_folder.is_dir() {
-        return Err(TokenGenErrors::InvalidPath(
-            "The provided path for the contract is invalid.".to_string(),
-        ));
+        return Err(TokenGenErrors::InvalidPathNotDirectory);
     }
 
     // Read the directory entries
-    let entries = read_dir(&sources_folder).map_err(|e| TokenGenErrors::FileIoError(e))?;
+    let entries = read_dir(&sources_folder)?;
 
     // Find the first `.move` file
     let mut current_content = String::new();
     for entry in entries {
-        let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e))?;
+        let entry = entry?;
         let path = entry.path();
 
         if path.is_file() && path.extension().is_some_and(|e| e == "move") {
             // Read the `.move` file content
-            current_content = read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e))?;
+            current_content = read_file(&path)?;
             break; // Exit the loop after finding the first .move file
         }
     }
 
     // Return an error if no `.move` file was found
     if current_content.is_empty() {
-        return Err(TokenGenErrors::InvalidPath(
-            "No `.move` file found in the directory.".to_string(),
-        ));
+        return Err(TokenGenErrors::InvalidPathNoMoveFiles);
     }
 
     // Return the content of the `.move` file.
