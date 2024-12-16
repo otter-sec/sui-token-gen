@@ -39,7 +39,7 @@ fn get_project_root() -> Result<PathBuf, std::io::Error> {
 impl TokenGen for TokenServer {
     async fn create(
         self,
-        ctx: context::Context,
+        _ctx: context::Context,
         name: String,
         symbol: String,
         decimals: u8,
@@ -81,7 +81,7 @@ impl TokenGen for TokenServer {
 
     async fn verify_url(
         self,
-        ctx: context::Context,
+        _ctx: context::Context,
         url: String
     ) -> Result<(), TokenGenErrors> {
         service::utils::verify_helper::verify_token_using_url(&url).await
@@ -89,7 +89,7 @@ impl TokenGen for TokenServer {
 
     async fn verify_content(
         self,
-        ctx: context::Context,
+        _ctx: context::Context,
         content: String
     ) -> Result<(), TokenGenErrors> {
         let temp_dir = tempfile::tempdir()
@@ -118,9 +118,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .for_each(|transport| {
             let server = server.clone();
             tokio::spawn(async move {
-                BaseChannel::with_defaults(transport)
+                let channel = BaseChannel::with_defaults(transport);
+                channel
+                    .config_mut()
+                    .max_frame_length(64 * 1024 * 1024)
+                    .max_response_timeout(std::time::Duration::from_secs(60));
+
+                channel
                     .execute(server.serve())
-                    .for_each(|_| futures::future::ready(()))
+                    .for_each(|_| {
+                        tracing::debug!("Handling RPC request");
+                        futures::future::ready(())
+                    })
                     .await;
             });
             futures::future::ready(())
