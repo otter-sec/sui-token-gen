@@ -119,7 +119,7 @@ impl TokenGen for TokenServer {
         _: context::Context,
         content: String,
     ) -> anyhow::Result<(), TokenGenErrors> {
-        verify_helper::compare_contract_content(content, None)
+        verify_helper::compare_contract_content(content)
             .map_err(|e| TokenGenErrors::VerifyResultError(e.to_string()))
     }
 }
@@ -244,12 +244,28 @@ mod tests {
 
         // Test valid input
         let result = server
+            .clone()
             .create(
                 ctx,
                 8,
                 "Test Token".into(),
                 "TST".into(),
                 "Test Description".into(),
+                false,
+                "devnet".into(),
+            )
+            .await;
+        assert!(result.is_ok());
+
+        // Test name with (.)
+        let result = server
+            .clone()
+            .create(
+                ctx.clone(),
+                8,
+                ".sh".into(),
+                "TST".into(),
+                "Description".into(),
                 false,
                 "devnet".into(),
             )

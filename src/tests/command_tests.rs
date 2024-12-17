@@ -194,7 +194,7 @@ async fn verify_command_invalid_github() -> Result<()> {
 #[tokio::test]
 async fn verify_command_valid_gitlab() -> Result<()> {
     // Testing repo
-    let valid_url = "https://gitlab.com/osec/test-sui-token-gitlab";
+    let valid_url = "https://gitlab.com/osec/test-sui-token";
 
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;

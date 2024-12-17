@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::{fs, path::Path};
 
 use crate::utils::{errors::TokenGenErrors, variables::TokenDetails};
 
@@ -117,6 +118,26 @@ pub fn sanitize_repo_name(repo_name: &str) -> String {
         .replace("\\", "");
 
     sanitized_name
+}
+
+pub fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
+    if path.exists() && path.is_dir() {
+        fs::remove_dir_all(path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
+    }
+    Ok(())
+}
+
+// Need to clean the cloned contract on every error
+pub struct CleanupGuard<'a> {
+    pub path: &'a Path,
+}
+
+impl<'a> Drop for CleanupGuard<'a> {
+    fn drop(&mut self) {
+        if let Err(e) = check_cloned_contract(self.path) {
+            eprintln!("Failed to clean cloned contract: {:?}", e);
+        }
+    }
 }
 
 #[cfg(test)]

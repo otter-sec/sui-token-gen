@@ -6,7 +6,10 @@ use url::Url;
 use crate::utils::{
     errors::TokenGenErrors,
     generation::generate_token,
-    helpers::{filter_token_content, get_token_info, is_valid_repository_url, sanitize_repo_name},
+    helpers::{
+        check_cloned_contract, filter_token_content, get_token_info, is_valid_repository_url,
+        sanitize_repo_name, CleanupGuard,
+    },
     variables::{TokenDetails, SUB_FOLDER},
 };
 
@@ -24,6 +27,9 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
 
     // Ensure the cloned contract is in a good state
     check_cloned_contract(clone_path)?;
+
+    // Initialize the cleanup guard
+    let _cleanup_guard = CleanupGuard { path: clone_path };
 
     // Get the current directory
     let current_dir = env::current_dir().map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
@@ -51,7 +57,14 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
         let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
         let path = entry.path();
 
-        if path.is_file() && path.extension().is_some_and(|e| e == "move") {
+        // Take only .move files and check for invalid malformed file extensions
+        if path.is_file()
+            && path.extension().is_some_and(|e| e == "move")
+            && path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map_or(true, |s| !s.contains('.'))
+        {
             // Read the `.move` file content
             current_content =
                 read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
@@ -64,7 +77,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
         return Err(TokenGenErrors::InvalidPathNoMoveFiles);
     }
 
-    compare_contract_content(current_content, Some(clone_path))?;
+    compare_contract_content(current_content)?;
 
     // Clean the repo
     check_cloned_contract(clone_path)?;
@@ -75,10 +88,7 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
     Ok(fs::read_to_string(file_path)?)
 }
 
-pub fn compare_contract_content(
-    current_content: String,
-    clone_path: Option<&Path>,
-) -> Result<(), TokenGenErrors> {
+pub fn compare_contract_content(current_content: String) -> Result<(), TokenGenErrors> {
     // Filtering file content
     let cleaned_current_content: String = filter_token_content(&current_content);
 
@@ -100,12 +110,6 @@ pub fn compare_contract_content(
 
     // Comparing both expected contract and user contract
     if cleaned_current_content != cleaned_expected_content {
-        // Ensure the cloned contract is clean after verification
-        // only if clone_path exists
-        if let Some(path) = clone_path {
-            check_cloned_contract(path)?;
-        }
-
         return Err(TokenGenErrors::ContractModified);
     }
 
@@ -126,11 +130,4 @@ fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
         .ok_or_else(|| TokenGenErrors::InvalidRepo)?;
 
     Ok(sanitize_repo_name(name))
-}
-
-fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
-    if path.exists() && path.is_dir() {
-        fs::remove_dir_all(path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
-    }
-    Ok(())
 }
