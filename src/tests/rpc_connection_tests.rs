@@ -32,7 +32,7 @@ async fn setup_test_client_error_handling() -> Result<()> {
     assert!(client
         .verify_content(context::current(), "invalid content".to_string())
         .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?
+        .map_err(TokenGenErrors::RpcError)?
         .is_err());
     Ok(())
 }

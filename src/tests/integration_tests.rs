@@ -53,11 +53,7 @@ async fn test_full_token_creation_flow() -> Result<()> {
 
     // Verify created files
     let sources_path = format!("{}/{}", test_folder, SUB_FOLDER);
-    let contract_path = format!(
-        "{}/{}.move",
-        sources_path,
-        sanitize_name(&token_name.to_string())
-    );
+    let contract_path = format!("{}/{}.move", sources_path, sanitize_name(token_name));
     let toml_path = format!("{}/Move.toml", test_folder);
 
     assert!(
