@@ -1,5 +1,6 @@
 use anyhow::Result;
 use git2::Repository;
+use rand::{distributions::Alphanumeric, Rng};
 use std::{env, fs, io, path::Path};
 use url::Url;
 
@@ -129,5 +130,21 @@ fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
         .next()
         .ok_or_else(|| TokenGenErrors::InvalidRepo)?;
 
-    Ok(sanitize_repo_name(name))
+    Ok(sanitize_repo_name_with_random(name))
+}
+
+// Function to sanitize the repository name and append a random string
+fn sanitize_repo_name_with_random(repo_name: &str) -> String {
+    // Replace "..", "/", and "\\" to remove path traversal and invalid characters
+    let sanitized_name = sanitize_repo_name(repo_name);
+
+    // Generate a random 8-character alphanumeric string
+    let random_suffix: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(8)
+        .map(char::from)
+        .collect();
+
+    // Append the random string to the sanitized name
+    format!("{}_{}", sanitized_name, random_suffix)
 }
