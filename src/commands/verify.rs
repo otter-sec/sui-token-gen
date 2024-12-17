@@ -22,7 +22,7 @@ use crate::{
    - `Ok(())` on success or a `TokenGenErrors` on failure.
 */
 pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Result<()> {
-    let current_content = verify_path(&path)?;
+    let current_content = verify_path(path)?;
     client
         .verify_content(context::current(), current_content)
         .await

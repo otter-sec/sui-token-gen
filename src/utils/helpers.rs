@@ -3,7 +3,7 @@ use regex::Regex;
 use crate::{errors::TokenGenErrors, Result};
 
 // Returing filtered alphanumeric characters string
-pub fn sanitize_name(name: &String) -> String {
+pub fn sanitize_name(name: &str) -> String {
     name.chars()
         .filter(|c| c.is_alphanumeric())
         .collect::<String>()

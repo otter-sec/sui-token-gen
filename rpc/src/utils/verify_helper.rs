@@ -86,7 +86,7 @@ pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
 }
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
-    Ok(fs::read_to_string(file_path)?)
+    fs::read_to_string(file_path)
 }
 
 pub fn compare_contract_content(current_content: String) -> Result<(), TokenGenErrors> {
@@ -128,7 +128,7 @@ fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
         .trim_end_matches(".git")
         .rsplit('/')
         .next()
-        .ok_or_else(|| TokenGenErrors::InvalidRepo)?;
+        .ok_or(TokenGenErrors::InvalidRepo)?;
 
     Ok(sanitize_repo_name_with_random(name))
 }

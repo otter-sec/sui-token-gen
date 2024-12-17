@@ -13,7 +13,7 @@ pub fn is_valid_repository_url(url: &str) -> Result<bool, TokenGenErrors> {
 }
 
 // Returing filtered alphanumeric characters string
-pub fn sanitize_name(name: &String) -> String {
+pub fn sanitize_name(name: &str) -> String {
     name.chars()
         .filter(|c| c.is_alphanumeric())
         .collect::<String>()
@@ -112,12 +112,10 @@ pub fn get_token_info(content: &str) -> TokenDetails {
 // like "..". Ensures the resulting name is safe for use as a directory name.
 pub fn sanitize_repo_name(repo_name: &str) -> String {
     // Replace ".." with an empty string to remove path traversal components
-    let sanitized_name = repo_name
+    repo_name
         .replace("..", "")
         .replace("/", "")
-        .replace("\\", "");
-
-    sanitized_name
+        .replace("\\", "")
 }
 
 pub fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
@@ -132,7 +130,7 @@ pub struct CleanupGuard<'a> {
     pub path: &'a Path,
 }
 
-impl<'a> Drop for CleanupGuard<'a> {
+impl Drop for CleanupGuard<'_> {
     fn drop(&mut self) {
         if let Err(e) = check_cloned_contract(self.path) {
             eprintln!("Failed to clean cloned contract: {:?}", e);

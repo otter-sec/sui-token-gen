@@ -1,14 +1,17 @@
 use anyhow::Result;
 use clap::Parser;
 use std::net::SocketAddr;
-use tarpc::{client, context, tokio_serde::formats::Json};
+use tarpc::{client, context, service, tokio_serde::formats::Json};
 use thiserror::Error;
-
+// Allow dead_code warning for the utils module as some of the utils code
+// might not be used in client and client is only for quick testing purposes.
+#[allow(dead_code)]
 mod utils;
 use utils::errors::TokenGenErrors;
 
-#[tarpc::service]
+#[service]
 pub trait TokenGen {
+    #[allow(clippy::too_many_arguments)]
     async fn create(
         decimals: u8,
         name: String,
@@ -120,7 +123,7 @@ async fn handle_command(flags: Flags, client: TokenGenClient) -> Result<(), Clie
                     environment,
                 )
                 .await
-                .map_err(|e| ClientError::ServerError(e))?;
+                .map_err(ClientError::ServerError)?;
 
             let (token_content, move_toml_content, test_token_content) = result?;
             println!("Token Content: {}", token_content);

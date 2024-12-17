@@ -9,7 +9,7 @@ use crate::{
         atomic::AtomicFileOperation,
         generation::{create_base_folder, create_contract_file, create_move_toml},
         helpers::sanitize_name,
-        prompts::get_user_prompt,
+        prompts::{get_user_prompt, TokenInfo},
     },
     variables::{SUB_FOLDER, TEST_FOLDER},
     Result,
@@ -22,7 +22,7 @@ impl From<TokenGenErrors> for io::Error {
 }
 
 pub async fn create_token(client: TokenGenClient) -> Result<()> {
-    let token_data = get_user_prompt()?;
+    let token_data: TokenInfo = get_user_prompt()?;
     println!("Creating contract...");
 
     // Calling RPC create function with owned Strings

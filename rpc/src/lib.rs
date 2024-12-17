@@ -1,13 +1,13 @@
 use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
 use serde::{Deserialize, Serialize};
+use tarpc::service;
 use thiserror::Error;
 use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
 
-pub mod utils;
-
-#[tarpc::service]
+#[service]
 pub trait TokenGen {
+    #[allow(clippy::too_many_arguments)]
     async fn create(
         decimals: u8,
         name: String,

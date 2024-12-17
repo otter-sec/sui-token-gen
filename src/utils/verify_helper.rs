@@ -7,7 +7,7 @@ use std::{
 use crate::{errors::TokenGenErrors, variables::SUB_FOLDER, Result};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
-    Ok(fs::read_to_string(file_path)?)
+    fs::read_to_string(file_path)
 }
 
 /*
@@ -55,5 +55,5 @@ pub fn verify_path(path: &str) -> Result<String> {
 }
 
 pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
-    Ok(fs::read_dir(dir)?)
+    fs::read_dir(dir)
 }

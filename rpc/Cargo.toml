@@ -1,7 +1,7 @@
 [package]
 name = "sui-token-get-test"
 version = "0.16.0"
-rust-version = "1.65.0"
+rust-version = "1.70.0"
 authors = ["Tim Kuehn <tikue@google.com>"]
 edition = "2021"
 license = "MIT"

@@ -8,7 +8,7 @@ use crate::{
 };
 
 // Define struct for user prompt
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TokenInfo {
     pub decimals: u8,
     pub symbol: String,

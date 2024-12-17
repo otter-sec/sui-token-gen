@@ -1,11 +1,12 @@
 use anyhow::Result;
 use std::{io::Error, net::SocketAddr};
-use tarpc::{client, tokio_serde::formats::Json};
+use tarpc::{client, tokio_serde::formats::Json, service};
 
 use crate::errors::RpcResponseErrors;
 
-#[tarpc::service]
+#[service]
 pub trait TokenGen {
+    #[allow(clippy::too_many_arguments)]
     async fn create(
         decimals: u8,
         name: String,

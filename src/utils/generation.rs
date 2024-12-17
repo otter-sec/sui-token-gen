@@ -11,7 +11,7 @@ pub fn create_contract_file(
     sub_folder: &str,
 ) -> Result<()> {
     // Filtering alphanumeric characters only
-    let slug: String = sanitize_name(&name.to_string());
+    let slug: String = sanitize_name(name);
 
     // Create move contract file in base_folder/sources folder
     let sources_folder: String = format!("{}/{}", base_folder, sub_folder);

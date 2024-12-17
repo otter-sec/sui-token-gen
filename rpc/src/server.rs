@@ -48,7 +48,7 @@ impl TokenGen for TokenServer {
         self.log_address().await;
 
         // Validate decimals: must be a number greater than 0 and less than 100
-        if decimals <= 0 || decimals >= 100 {
+        if decimals == 0 || decimals >= 100 {
             return Err(TokenGenErrors::InvalidDecimals);
         }
 
