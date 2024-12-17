@@ -3,12 +3,16 @@
 A **Rust-based RPC service** for generating and verifying Sui token smart contracts effortlessly.
 
 ---
-
 ## Features
 
 - **Create Function**: Generates a Sui token smart contract with customizable parameters.
 - **Verify URL Function**: Validates Sui token smart contracts from a remote repository URL.
 - **Verify Content Function**: Validates Sui token smart contracts directly from the provided content.
+
+#### Command to start the RPC
+```
+cargo run --bin server -- --port 5000
+```
 
 ---
 
