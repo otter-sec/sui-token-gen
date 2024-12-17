@@ -1,3 +1,4 @@
+use rand::{distributions::Alphanumeric, Rng};
 use regex::Regex;
 use std::{fs, path::Path};
 
@@ -17,6 +18,22 @@ pub fn sanitize_name(name: &str) -> String {
     name.chars()
         .filter(|c| c.is_alphanumeric())
         .collect::<String>()
+}
+
+// Function to sanitize the repository name and append a random string
+pub fn sanitize_repo_name_with_random(repo_name: &str) -> String {
+    // Replace "..", "/", and "\\" to remove path traversal and invalid characters
+    let sanitized_name = sanitize_repo_name(repo_name);
+
+    // Generate a random 8-character alphanumeric string
+    let random_suffix: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(8)
+        .map(char::from)
+        .collect();
+
+    // Append the random string to the sanitized name
+    format!("{}_{}", sanitized_name, random_suffix)
 }
 
 // Removing: comments, empty lines, whitespaces
@@ -64,8 +81,7 @@ pub fn get_token_info(content: &str) -> TokenDetails {
                 }
 
                 if arg.starts_with("b\"") {
-                    let trimmed = char
-                        .trim_end_matches(',')
+                    let trimmed = char.trim_end_matches(',')
                         .trim_start_matches(" b\"")
                         .to_string();
                     args.push(trimmed);
@@ -73,26 +89,19 @@ pub fn get_token_info(content: &str) -> TokenDetails {
                 }
 
                 if char.is_empty() {
-                    char = "".to_string() + arg.trim_end_matches("\",");
+                    char = arg.trim_end_matches("\",").to_string();
                 } else {
-                    char += " ";
-                    char += arg.trim_end_matches("\",");
+                    char.push(' ');
+                    char.push_str(arg.trim_end_matches("\","));
                 }
             }
+
+            // Handle args carefully
             if args.len() >= 4 {
                 decimals = args[0].trim().parse().unwrap_or(0);
-                symbol = args[1]
-                    .trim_start_matches("b\"")
-                    .trim_end_matches("\"")
-                    .to_string();
-                name = args[2]
-                    .trim_start_matches("b\"")
-                    .trim_end_matches("\"")
-                    .to_string();
-                description = args[3]
-                    .trim_start_matches("b\"")
-                    .trim_end_matches("\"")
-                    .to_string();
+                symbol = args[1].trim_start_matches("b\"").trim_end_matches("\"").to_string();
+                name = args[2].trim_start_matches("b\"").trim_end_matches("\"").to_string();
+                description = args[3].trim_start_matches("b\"").trim_end_matches("\"").to_string();
             }
         } else if token.contains("transfer::public_freeze_object") {
             is_frozen = true;
@@ -141,8 +150,6 @@ impl Drop for CleanupGuard<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
-    use std::path::{Path, PathBuf};
 
     #[test]
     fn test_safe_path_valid() {
