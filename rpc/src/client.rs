@@ -1,3 +1,12 @@
+//! RPC Client Implementation for Sui Token Generator
+//!
+//! This module implements the client-side functionality:
+//! - Command-line interface for token operations
+//! - Client configuration and connection setup
+//! - Error handling and validation
+//! - RPC request handling and response processing
+//! - Parameter validation and sanitization
+
 use anyhow::Result;
 use clap::Parser;
 use std::net::SocketAddr;

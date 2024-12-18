@@ -1,3 +1,11 @@
+//! RPC Service Implementation for Sui Token Generator
+//!
+//! This module provides the core RPC functionality including:
+//! - Token generation service trait definition
+//! - Error type definitions and handling
+//! - OpenTelemetry tracing configuration
+//! - Service-wide type definitions and constants
+
 use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
 use serde::{Deserialize, Serialize};

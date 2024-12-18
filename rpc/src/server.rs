@@ -1,3 +1,13 @@
+//! RPC Server Implementation for Sui Token Generator
+//!
+//! This module implements the server-side functionality:
+//! - Token generation and validation service
+//! - Server configuration and startup
+//! - Request handling and response processing
+//! - Concurrent request processing
+//! - Test suite with comprehensive test cases
+//! - Helper functions for token generation and validation
+
 use clap::Parser;
 use futures::{future, prelude::*};
 use regex::Regex;
@@ -164,6 +174,13 @@ async fn main() -> anyhow::Result<()> {
 }
 
 // Unit tests for the TokenServer
+//
+// # Test Setup Requirements
+// - No running RPC server on the test port (50051)
+// - Clean filesystem state (no leftover test files)
+// - Available network connection for Git operations
+// - Sufficient permissions for file operations
+//
 #[cfg(test)]
 mod tests {
     use super::*;

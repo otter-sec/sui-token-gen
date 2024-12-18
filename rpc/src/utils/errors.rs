@@ -1,3 +1,15 @@
+//! Error Types for RPC Service
+//!
+//! This module defines error types used throughout the RPC service:
+//! - Input validation errors (InvalidDecimals, InvalidSymbol, etc.)
+//! - Network communication errors (InvalidUrl, InvalidGitUrl)
+//! - Token generation errors (ProgramModified, ContractModified)
+//! - File system operation errors (FileIoError, InvalidPath)
+//! - Git operation errors (GitError, ClonedRepoNotFound)
+//!
+//! Each error type includes context about what went wrong and how to
+//! potentially fix the issue.
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
