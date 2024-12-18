@@ -1,11 +1,11 @@
 [package]
-name = "tarpc-example-service"
+name = "sui-token-get-test"
 version = "0.16.0"
-rust-version = "1.65.0"
+rust-version = "1.70.0"
 authors = ["Tim Kuehn <tikue@google.com>"]
 edition = "2021"
 license = "MIT"
-documentation = "https://docs.rs/tarpc-example-service"
+documentation = "https://docs.rs/sui-token-get-test"
 homepage = "https://github.com/google/tarpc"
 repository = "https://github.com/google/tarpc"
 keywords = ["rpc", "network", "server", "microservices", "example"]
@@ -20,7 +20,7 @@ log = "0.4"
 futures = "0.3"
 opentelemetry = { version = "0.26.0" }
 opentelemetry-otlp = "0.26.0"
-rand = "0.8"
+rand = "0.8.5"
 tarpc = { version = "0.35", features = ["full"] }
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
 tracing = { version = "0.1" }
@@ -40,6 +40,7 @@ reqwest = "0.12.9"
 git2 = "0.17"
 thiserror = "2.0.4"
 async-trait = "0.1.83"
+openssl = { version = "0.10", features = ["vendored"] }
 
 [lib]
 name = "service"

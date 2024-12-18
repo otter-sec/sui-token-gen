@@ -5,6 +5,15 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum TokenGenErrors {
+    #[error("Invalid path: No .move file found")]
+    InvalidPathNoMoveFiles,
+
+    #[error("Invalid path: Directory not found")]
+    InvalidPathNotDirectory,
+
+    #[error("The provided URL is not a valid Git URL.")]
+    InvalidGitUrl,
+
     #[error("Failed to create token contract: {0}")]
     FailedToCreateTokenContract(String),
 

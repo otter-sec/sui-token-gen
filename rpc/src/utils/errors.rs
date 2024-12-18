@@ -3,6 +3,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Deserialize, Serialize)]
 pub enum TokenGenErrors {
+    #[error("Invalid path: No .move file found")]
+    InvalidPathNoMoveFiles,
+
     #[error("Given contract is modified")]
     ProgramModified,
 
@@ -24,8 +27,8 @@ pub enum TokenGenErrors {
     #[error("Invalid path: {0}")]
     InvalidPath(String),
 
-    #[error("Invalid URL: {0}")]
-    InvalidUrl(String),
+    #[error("The provided URL is not a valid URL.")]
+    InvalidUrl,
 
     #[error("Git operation failed: {0}")]
     GitError(String),
@@ -35,4 +38,16 @@ pub enum TokenGenErrors {
 
     #[error("{0}")]
     VerifyResultError(String),
+
+    #[error("The provided URL is not a valid Git URL.")]
+    InvalidGitUrl,
+
+    #[error("Failed to extract repository name.")]
+    InvalidRepo,
+
+    #[error("Content mismatch detected")]
+    ContractModified,
+
+    #[error("Cloned repo not found")]
+    ClonedRepoNotFound,
 }

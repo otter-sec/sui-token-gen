@@ -48,7 +48,7 @@ impl TokenGen for TokenServer {
         self.log_address().await;
 
         // Validate decimals: must be a number greater than 0 and less than 100
-        if decimals <= 0 || decimals >= 100 {
+        if decimals == 0 || decimals >= 100 {
             return Err(TokenGenErrors::InvalidDecimals);
         }
 
@@ -85,7 +85,7 @@ impl TokenGen for TokenServer {
         let token_content: String = generation::generate_token(
             decimals,
             symbol.clone(),
-            &name,
+            name.clone(),
             description.clone(),
             is_frozen,
             false,
@@ -93,15 +93,15 @@ impl TokenGen for TokenServer {
         let test_token_content: String = generation::generate_token(
             decimals,
             symbol.clone(),
-            &name,
+            name.clone(),
             description.clone(),
             is_frozen,
             true,
         );
 
-        let move_toml_content = generation::generate_move_toml(&base_folder, environment);
+        let move_toml_content = generation::generate_move_toml(base_folder, environment);
 
-        Ok((token_content, move_toml_content, test_token_content)) // Return both toml file and contract as strings
+        Ok((token_content, move_toml_content, test_token_content)) // Return contract, toml file and tests as strings
     }
 
     async fn verify_url(
@@ -119,7 +119,7 @@ impl TokenGen for TokenServer {
         _: context::Context,
         content: String,
     ) -> anyhow::Result<(), TokenGenErrors> {
-        verify_helper::compare_contract_content(content, None)
+        verify_helper::compare_contract_content(content)
             .map_err(|e| TokenGenErrors::VerifyResultError(e.to_string()))
     }
 }
@@ -132,11 +132,10 @@ async fn spawn(fut: impl Future<Output = ()> + Send + 'static) {
 async fn main() -> anyhow::Result<()> {
     let flags = Flags::parse();
     init_tracing("Sui-token-get rpc")?;
-
     let server_addr = (IpAddr::V6(Ipv6Addr::LOCALHOST), flags.port);
     let mut listener = tarpc::serde_transport::tcp::listen(&server_addr, Json::default).await?;
     tracing::info!("Listening on port {}", listener.local_addr().port());
-    listener.config_mut().max_frame_length(usize::MAX);
+    listener.config_mut().max_frame_length(10 * 1024 * 1024);
     listener
         .filter_map(|r| future::ready(r.ok()))
         .map(server::BaseChannel::with_defaults)
@@ -144,7 +143,7 @@ async fn main() -> anyhow::Result<()> {
             let server = TokenServer::new(channel.transport().peer_addr().unwrap());
             channel.execute(server.serve()).for_each(spawn)
         })
-        .buffer_unordered(10)
+        .buffer_unordered(1000)
         .for_each(|_| async {})
         .await;
 
@@ -154,6 +153,7 @@ async fn main() -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{distributions::Alphanumeric, thread_rng, Rng};
     use std::net::SocketAddr;
     use tarpc::context;
 
@@ -244,12 +244,28 @@ mod tests {
 
         // Test valid input
         let result = server
+            .clone()
             .create(
                 ctx,
                 8,
                 "Test Token".into(),
                 "TST".into(),
                 "Test Description".into(),
+                false,
+                "devnet".into(),
+            )
+            .await;
+        assert!(result.is_ok());
+
+        // Test name with (.)
+        let result = server
+            .clone()
+            .create(
+                ctx.clone(),
+                8,
+                ".sh".into(),
+                "TST".into(),
+                "Description".into(),
                 false,
                 "devnet".into(),
             )
@@ -304,5 +320,100 @@ mod tests {
             .verify_content(ctx, "module test { public fun main() { } }".into())
             .await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn test_concurrent_operations() {
+        let server = test_server();
+        let ctx = context::current();
+        const SAMPLE_DATA_SIZE: u32 = 10; // Total SAMPLE_DATA_SIZE * 2 rpc calls will be sent
+
+        let create_requests = generate_create_requests(SAMPLE_DATA_SIZE);
+        let verify_requests = generate_verify_requests(SAMPLE_DATA_SIZE);
+
+        let create_tasks: Vec<_> = create_requests
+            .into_iter()
+            .enumerate()
+            .map(
+                |(_i, (decimals, name, symbol, description, is_frozen, environment))| {
+                    let server = server.clone();
+                    let ctx = ctx.clone();
+                    tokio::spawn(async move {
+                        (
+                            name.clone(),
+                            server
+                                .create(
+                                    ctx,
+                                    decimals,
+                                    name,
+                                    symbol,
+                                    description,
+                                    is_frozen,
+                                    environment,
+                                )
+                                .await,
+                        )
+                    })
+                },
+            )
+            .collect();
+
+        let verify_tasks: Vec<_> = verify_requests
+            .into_iter()
+            .enumerate()
+            .map(|(_i, content)| {
+                let server = server.clone();
+                let ctx = ctx.clone();
+                tokio::spawn(
+                    async move { (content.clone(), server.verify_url(ctx, content).await) },
+                )
+            })
+            .collect();
+
+        // Collect results
+        let create_results = future::join_all(create_tasks).await;
+        assert!(
+            create_results
+                .iter()
+                .all(|res| matches!(res, Ok((_, Ok((_, _, _)))))),
+            "Some create tasks failed"
+        );
+
+        let verify_results = future::join_all(verify_tasks).await;
+        assert!(
+            verify_results.iter().all(|res| { matches!(res, Ok(_)) }),
+            "Some verify tasks failed"
+        );
+    }
+
+    fn generate_create_requests(limit: u32) -> Vec<(u8, String, String, String, bool, String)> {
+        let mut rng = thread_rng();
+        let environments = ["mainnet", "testnet", "devnet"];
+
+        (0..limit)
+            .map(|_| {
+                let decimals = rng.gen_range(1..100); // Random decimals (1 to 99)
+                let name: String = (0..10).map(|_| rng.sample(Alphanumeric) as char).collect();
+                let symbol: String = (0..3).map(|_| rng.sample(Alphanumeric) as char).collect();
+                let description: String = if rng.gen_bool(0.5) {
+                    // 50% chance to have an empty description
+                    "".to_string()
+                } else {
+                    (0..20).map(|_| rng.sample(Alphanumeric) as char).collect()
+                };
+                let is_frozen = rng.gen_bool(0.5); // Random boolean
+                let environment = environments[rng.gen_range(0..environments.len())].to_string();
+
+                (decimals, name, symbol, description, is_frozen, environment)
+            })
+            .collect()
+    }
+
+    fn generate_verify_requests(limit: u32) -> Vec<String> {
+        let base_url = "https://github.com/meumar-osec/test-sui-token";
+
+        (0..limit)
+            .map(|i| format!("{}{}", base_url, i + 1)) // Append a number to base URL
+            .collect()
     }
 }

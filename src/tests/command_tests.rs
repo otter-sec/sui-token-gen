@@ -35,7 +35,7 @@ async fn create_command() -> Result<()> {
     let environment: String = "devnet".to_string();
 
     // Testing contract folder
-    let base_folder = sanitize_name(&name.to_string());
+    let base_folder = sanitize_name(name);
 
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
@@ -57,7 +57,7 @@ async fn create_command() -> Result<()> {
             environment,
         )
         .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?
+        .map_err(TokenGenErrors::RpcError)?
         .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
 
     // Create base folder
@@ -67,17 +67,13 @@ async fn create_command() -> Result<()> {
     create_move_toml(&base_folder, &move_toml).expect("Failed to create Move.toml");
 
     // Generate token contract file
-    create_contract_file(&name, &base_folder, &token_content, SUB_FOLDER)
+    create_contract_file(name, &base_folder, &token_content, SUB_FOLDER)
         .expect("Failed to create contract file");
 
     // Validate folder and file creation
     let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);
     let toml_file: String = format!("{}/Move.toml", base_folder);
-    let move_file: String = format!(
-        "{}/{}.move",
-        sources_folder,
-        sanitize_name(&name.to_string())
-    );
+    let move_file: String = format!("{}/{}.move", sources_folder, sanitize_name(name).to_lowercase());
 
     assert!(
         Path::new(&sources_folder).exists(),
@@ -158,14 +154,14 @@ async fn verify_command_invalid_file() -> Result<()> {
     let response = client
         .verify_content(context::current(), valid_content)
         .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?;
+        .map_err(TokenGenErrors::RpcError)?;
     assert!(response.is_err(), "Verification failed");
 
     Ok(())
 }
 
 #[tokio::test]
-async fn verify_command_valid_git() -> Result<()> {
+async fn verify_command_valid_github() -> Result<()> {
     // Testing repo
     let valid_url = "https://github.com/meumar-osec/test-sui-token";
 
@@ -179,7 +175,7 @@ async fn verify_command_valid_git() -> Result<()> {
 }
 
 #[tokio::test]
-async fn verify_command_invalid_git() -> Result<()> {
+async fn verify_command_invalid_github() -> Result<()> {
     let valid_url = "https://github.com/meumar-osec/sui-token1";
 
     // Initialize the RPC client
@@ -188,5 +184,19 @@ async fn verify_command_invalid_git() -> Result<()> {
     // Call verify_token
     let response = verify_token_using_url(valid_url, client).await;
     assert!(response.is_err(), "Failed to verify URL");
+    Ok(())
+}
+
+#[tokio::test]
+async fn verify_command_valid_gitlab() -> Result<()> {
+    // Testing repo
+    let valid_url = "https://gitlab.com/osec/test-sui-token";
+
+    // Initialize the RPC client
+    let client: TokenGenClient = test_initiate_client().await?;
+
+    // Call verify_token
+    let response = verify_token_using_url(valid_url, client).await;
+    assert!(response.is_ok(), "Failed to verify URL");
     Ok(())
 }

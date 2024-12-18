@@ -16,10 +16,10 @@ module {{module_name}}::{{ module_name }} {
     }
 
     public fun mint(
-		treasury_cap: &mut TreasuryCap<{{ token_type }}>,
-		amount: u64,
-		recipient: address,
-		ctx: &mut TxContext,
+	    treasury_cap: &mut TreasuryCap<{{ token_type }}>,
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext,
     ) {
         let coin = coin::mint(treasury_cap, amount, ctx);
         transfer::public_transfer(coin, recipient)

@@ -3,66 +3,57 @@ use std::{
     io,
     path::Path,
 };
-use tarpc::context;
 
-use crate::{errors::TokenGenErrors, rpc_client::TokenGenClient, Result};
+use crate::{errors::TokenGenErrors, variables::SUB_FOLDER, Result};
 
 pub fn read_file(file_path: &Path) -> io::Result<String> {
-    if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "File is not a .move file",
-        ));
-    }
-
-    Ok(fs::read_to_string(file_path)?)
-}
-
-pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
-    Ok(fs::read_dir(dir)?)
+    fs::read_to_string(file_path)
 }
 
 /*
-   Check dir is directory or not
-   Take all .move files in that folder
-   Call verify_content function from RPC
+   This function verifies the provided path and ensures it meets the following criteria:
+   1. The path exists and contains a `sources` folder.
+   2. Only one `.move` file will be inside the `sources` folder.
+   3. The `.move` file is not empty.
+
+   If all conditions are satisfied, the function reads and returns the content of the `.move` file.
+   Otherwise, it returns an appropriate error.
 */
-pub async fn verify_contract(dir: &Path, client: TokenGenClient) -> Result<()> {
-    // Ensure the path is a directory
-    if !dir.is_dir() {
-        return Err(TokenGenErrors::InvalidPath(
-            "Provided path is not a directory.".to_string(),
-        ));
+pub fn verify_path(path: &str) -> Result<String> {
+    let path = Path::new(path);
+
+    let sources_folder = path.join(SUB_FOLDER);
+
+    // Ensure the provided path exists and contains a `sources` folder.
+    if !path.exists() || !path.is_dir() || !sources_folder.exists() || !sources_folder.is_dir() {
+        return Err(TokenGenErrors::InvalidPathNotDirectory);
     }
 
     // Read the directory entries
-    let entries = read_dir(dir).map_err(|e| TokenGenErrors::FileIoError(e))?;
+    let entries = read_dir(&sources_folder)?;
 
     // Find the first `.move` file
     let mut current_content = String::new();
     for entry in entries {
-        let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e))?;
+        let entry = entry?;
         let path = entry.path();
 
         if path.is_file() && path.extension().is_some_and(|e| e == "move") {
             // Read the `.move` file content
-            current_content = read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e))?;
+            current_content = read_file(&path)?;
             break; // Exit the loop after finding the first .move file
         }
     }
 
     // Return an error if no `.move` file was found
     if current_content.is_empty() {
-        return Err(TokenGenErrors::InvalidPath(
-            "No `.move` file found in the directory.".to_string(),
-        ));
+        return Err(TokenGenErrors::InvalidPathNoMoveFiles);
     }
 
-    // Verify the content using the client
-    client
-        .verify_content(context::current(), current_content)
-        .await
-        .map_err(|e| TokenGenErrors::RpcError(e))?
-        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
-    Ok(())
+    // Return the content of the `.move` file.
+    Ok(current_content)
+}
+
+pub fn read_dir(dir: &Path) -> io::Result<ReadDir> {
+    fs::read_dir(dir)
 }

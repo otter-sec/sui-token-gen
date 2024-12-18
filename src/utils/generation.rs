@@ -1,11 +1,9 @@
-use std::fs;
-
 use crate::{
     utils::helpers::sanitize_name,
     variables::{SUB_FOLDER, TEST_FOLDER},
     Result,
 };
-
+use std::fs;
 pub fn create_contract_file(
     name: &str,
     base_folder: &str,
@@ -13,7 +11,7 @@ pub fn create_contract_file(
     sub_folder: &str,
 ) -> Result<()> {
     // Filtering alphanumeric characters only
-    let slug: String = sanitize_name(&name.to_string());
+    let slug: String = sanitize_name(name);
 
     // Create move contract file in base_folder/sources folder
     let sources_folder: String = format!("{}/{}", base_folder, sub_folder);

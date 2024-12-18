@@ -1,3 +1,4 @@
+pub mod atomic;
 pub mod generation;
 pub mod helpers;
 pub mod prompts;

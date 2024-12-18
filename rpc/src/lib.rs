@@ -1,13 +1,13 @@
 use anyhow::Result;
 use opentelemetry::trace::TracerProvider as _;
 use serde::{Deserialize, Serialize};
+use tarpc::service;
 use thiserror::Error;
 use tracing_subscriber::{fmt::format::FmtSpan, prelude::*};
 
-pub mod utils;
-
-#[tarpc::service]
+#[service]
 pub trait TokenGen {
+    #[allow(clippy::too_many_arguments)]
     async fn create(
         decimals: u8,
         name: String,
@@ -55,6 +55,12 @@ pub enum TokenGenErrors {
 
     #[error("{0}")]
     VerifyResultError(String),
+
+    #[error("Content mismatch detected")]
+    ContractModified,
+
+    #[error("Cloned repo not found")]
+    ClonedRepoNotFound,
 }
 
 // Initializes an OpenTelemetry tracing subscriber with a OTLP backend.

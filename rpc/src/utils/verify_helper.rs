@@ -1,142 +1,107 @@
 use anyhow::Result;
 use git2::Repository;
-use std::{env, fs, path::Path};
+use std::{env, fs, io, path::Path};
 use url::Url;
 
 use crate::utils::{
     errors::TokenGenErrors,
     generation::generate_token,
-    helpers::{filter_token_content, get_token_info, is_valid_github_url},
-    variables::SUB_FOLDER,
+    helpers::{
+        check_cloned_contract, filter_token_content, get_token_info, is_valid_repository_url,
+        sanitize_repo_name_with_random, CleanupGuard,
+    },
+    variables::{TokenDetails, SUB_FOLDER},
 };
 
-pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
-    // Parse the URL to check if it is valid
-    Url::parse(url).map_err(|_| {
-        TokenGenErrors::InvalidUrl("The provided URL is not a valid URL.".to_string())
-    })?;
-
-    if !is_valid_github_url(url) {
-        return Err(TokenGenErrors::InvalidUrl(
-            "The provided URL is not a valid GitHub URL.".to_string(),
-        ));
-    }
-
-    // Extract the repository name from the URL
-    let repo_name = url
-        .trim_end_matches(".git")
-        .rsplit('/')
-        .next()
-        .ok_or_else(|| {
-            TokenGenErrors::InvalidUrl("Failed to extract repository name.".to_string())
-        })?;
-
-    let clone_path = Path::new(repo_name);
-
-    // Ensure the cloned contract is in a good state
-    check_cloned_contract(clone_path)?;
-
-    // Clone the repository
-    Repository::clone(url, clone_path).map_err(|e| TokenGenErrors::GitError(e.to_string()))?;
-
-    // Get the current directory
-    let current_dir = env::current_dir()
-        .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read current dir: {}", e)))?;
-
-    let templates_path: String = format!("{}/{}/{}", current_dir.display(), repo_name, SUB_FOLDER);
-
-    // Convert to a Path reference
-    let templates_path_ref: &Path = Path::new(&templates_path);
-
-    // Ensure the cloned repository contains the required folder
-    if templates_path_ref.exists() && templates_path_ref.is_dir() {
-        // Call verify function
-        verify_contract(templates_path_ref, clone_path).await?;
-
-        // Ensure the cloned contract is clean after verification
-        check_cloned_contract(clone_path)?;
-    } else {
-        return Err(TokenGenErrors::InvalidPath(
-            "Cloned repo not found".to_string(),
-        ));
-    }
-
-    Ok(())
-}
-
-fn check_cloned_contract(path: &Path) -> Result<(), TokenGenErrors> {
-    if path.exists() && path.is_dir() {
-        fs::remove_dir_all(path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
-    }
-    Ok(())
-}
-
-pub fn read_file(file_path: &Path) -> Result<String, TokenGenErrors> {
-    if file_path.extension().and_then(|ext| ext.to_str()) != Some("move") {
-        return Err(TokenGenErrors::FileIoError(
-            "File is not a .move file".to_string(),
-        ));
-    }
-
-    let content =
-        fs::read_to_string(file_path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
-    Ok(content)
-}
-
 /*
-   Check dir is directory or not
+   Check url is valid and clone into local folder
    Take all .move files in that folder
    Read the file content and extract token details
    Genarate new token with that data
    Compare that newly created contract with user given contract
 */
-pub async fn verify_contract(dir: &Path, clone_path: &Path) -> Result<(), TokenGenErrors> {
-    // Ensure the given path is a directory
-    if !dir.is_dir() {
-        return Err(TokenGenErrors::InvalidPath(
-            "Path is not a directory".to_string(),
-        ));
+pub async fn verify_token_using_url(url: &str) -> Result<(), TokenGenErrors> {
+    let repo_name = validate_url(url)?;
+
+    let clone_path = Path::new(&repo_name);
+
+    // Ensure the cloned contract is in a good state
+    check_cloned_contract(clone_path)?;
+
+    // Initialize the cleanup guard
+    let _cleanup_guard = CleanupGuard { path: clone_path };
+
+    // Get the current directory
+    let current_dir = env::current_dir().map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
+
+    // Clone the repository
+    Repository::clone(url, clone_path).map_err(|e| TokenGenErrors::GitError(e.to_string()))?;
+
+    let sources_path: String = format!("{}/{}/{}", current_dir.display(), repo_name, SUB_FOLDER);
+
+    // Convert to a Path reference
+    let sources_path_ref: &Path = Path::new(&sources_path);
+
+    // Ensure the cloned repository contains the required folder
+    if !sources_path_ref.exists() || !sources_path_ref.is_dir() {
+        return Err(TokenGenErrors::ClonedRepoNotFound);
     }
 
-    // Read all entries in the directory
-    let entries = fs::read_dir(dir)
-        .map_err(|e| TokenGenErrors::FileIoError(format!("Failed to read directory: {}", e)))?;
+    // Read the directory entries
+    let entries =
+        fs::read_dir(sources_path_ref).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
 
-    // Iterate over the entries
+    // Find the first `.move` file
+    let mut current_content = String::new();
     for entry in entries {
         let entry = entry.map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
         let path = entry.path();
 
-        // Check if the entry is a file with a `.move` extension
-        if path.is_file() && path.extension().is_some_and(|e| e == "move") {
-            // Read the contract file content
-            let current_content = read_file(&path)?;
-
-            // Compare contract content, propagate errors if any
-            compare_contract_content(current_content, Some(clone_path))?;
+        // Take only .move files and check for invalid malformed file extensions
+        if path.is_file()
+            && path.extension().is_some_and(|e| e == "move")
+            && path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map_or(true, |s| !s.contains('.'))
+        {
+            // Read the `.move` file content
+            current_content =
+                read_file(&path).map_err(|e| TokenGenErrors::FileIoError(e.to_string()))?;
+            break; // Exit the loop after finding the first .move file
         }
     }
 
-    Ok(()) // Success: No modifications detected
+    // Return an error if no `.move` file was found
+    if current_content.is_empty() {
+        return Err(TokenGenErrors::InvalidPathNoMoveFiles);
+    }
+
+    compare_contract_content(current_content)?;
+
+    // Clean the repo
+    check_cloned_contract(clone_path)?;
+    Ok(())
 }
 
-pub fn compare_contract_content(
-    current_content: String,
-    clone_path: Option<&Path>,
-) -> Result<(), TokenGenErrors> {
+pub fn read_file(file_path: &Path) -> io::Result<String> {
+    fs::read_to_string(file_path)
+}
+
+pub fn compare_contract_content(current_content: String) -> Result<(), TokenGenErrors> {
     // Filtering file content
     let cleaned_current_content: String = filter_token_content(&current_content);
 
     // Extracting token details from that file
-    let details: (u8, String, String, String, bool) = get_token_info(&current_content);
+    let details: TokenDetails = get_token_info(&cleaned_current_content);
 
     // Generating new token with these extracted details
     let expected_content: String = generate_token(
-        details.0,
-        details.1,
-        &details.2,
-        details.3.to_owned(),
-        details.4,
+        details.decimals,
+        details.symbol.clone(),
+        details.name.to_string(),
+        details.description.clone(),
+        details.is_frozen,
         false,
     );
 
@@ -145,16 +110,24 @@ pub fn compare_contract_content(
 
     // Comparing both expected contract and user contract
     if cleaned_current_content != cleaned_expected_content {
-        // Ensure the cloned contract is clean after verification
-        // only if clone_path exists
-        if let Some(path) = clone_path {
-            check_cloned_contract(path)?;
-        }
-
-        return Err(TokenGenErrors::VerifyResultError(
-            "Content mismatch detected".to_string(),
-        ));
+        return Err(TokenGenErrors::ContractModified);
     }
 
     Ok(()) // Return success if the contract is not modified
+}
+
+fn validate_url(url: &str) -> Result<String, TokenGenErrors> {
+    // Parse the URL to check if it is valid
+    Url::parse(url).map_err(|_| TokenGenErrors::InvalidUrl)?;
+
+    is_valid_repository_url(url)?;
+
+    // Extract the repository name from the URL
+    let name = url
+        .trim_end_matches(".git")
+        .rsplit('/')
+        .next()
+        .ok_or(TokenGenErrors::InvalidRepo)?;
+
+    Ok(sanitize_repo_name_with_random(name))
 }

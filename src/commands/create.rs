@@ -6,9 +6,10 @@ use crate::{
     rpc_client::TokenGenClient,
     success_handler::{handle_success, SuccessType},
     utils::{
+        atomic::AtomicFileOperation,
         generation::{create_base_folder, create_contract_file, create_move_toml},
         helpers::sanitize_name,
-        prompts::get_user_prompt,
+        prompts::{get_user_prompt, TokenInfo},
     },
     variables::{SUB_FOLDER, TEST_FOLDER},
     Result,
@@ -21,7 +22,7 @@ impl From<TokenGenErrors> for io::Error {
 }
 
 pub async fn create_token(client: TokenGenClient) -> Result<()> {
-    let token_data = get_user_prompt()?;
+    let token_data: TokenInfo = get_user_prompt()?;
     println!("Creating contract...");
 
     // Calling RPC create function with owned Strings
@@ -39,24 +40,24 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
         .map_err(TokenGenErrors::RpcError)?
         .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
 
-    let base_folder: String = sanitize_name(&token_data.name);
+    let base_folder: String = sanitize_name(&token_data.name).to_lowercase();
 
-    // Creating base contract folder
+    // Use atomic operation wrapper for automatic rollback
+    let mut atomic_op = AtomicFileOperation::new(&base_folder);
+
+    // All operations protected by atomic wrapper - rollback happens automatically on error
     create_base_folder(&base_folder)?;
-
-    // Creating .toml and contract files
     create_move_toml(&base_folder, &move_toml)?;
-
-    // Creating contract file
     create_contract_file(&token_data.name, &base_folder, &token_content, SUB_FOLDER)?;
-
-    // Creating tests file
     create_contract_file(
         &token_data.name,
         &base_folder,
         &test_token_content,
         TEST_FOLDER,
     )?;
+
+    // Only commit if all operations succeed
+    atomic_op.commit();
 
     handle_success(SuccessType::TokenCreated(token_data));
     Ok(())
