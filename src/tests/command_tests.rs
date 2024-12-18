@@ -73,7 +73,11 @@ async fn create_command() -> Result<()> {
     // Validate folder and file creation
     let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);
     let toml_file: String = format!("{}/Move.toml", base_folder);
-    let move_file: String = format!("{}/{}.move", sources_folder, sanitize_name(name).to_lowercase());
+    let move_file: String = format!(
+        "{}/{}.move",
+        sources_folder,
+        sanitize_name(name).to_lowercase()
+    );
 
     assert!(
         Path::new(&sources_folder).exists(),

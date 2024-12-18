@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{io::Error, net::SocketAddr};
-use tarpc::{client, tokio_serde::formats::Json, service};
+use tarpc::{client, service, tokio_serde::formats::Json};
 
 use crate::errors::RpcResponseErrors;
 

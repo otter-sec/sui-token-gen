@@ -38,6 +38,12 @@ pub enum TokenGenErrors {
     #[error("Invalid description provided")]
     InvalidDescription,
 
+    #[error("Content mismatch detected")]
+    ContractModified,
+
+    #[error("Cloned repo not found")]
+    ClonedRepoNotFound,
+
     #[error("An error occurred: {0}")]
     GeneralError(String),
 
@@ -55,12 +61,6 @@ pub enum TokenGenErrors {
 
     #[error("{0}")]
     VerifyResultError(String),
-
-    #[error("Content mismatch detected")]
-    ContractModified,
-
-    #[error("Cloned repo not found")]
-    ClonedRepoNotFound,
 }
 
 // Initializes an OpenTelemetry tracing subscriber with a OTLP backend.

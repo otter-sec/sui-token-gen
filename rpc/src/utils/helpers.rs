@@ -81,7 +81,8 @@ pub fn get_token_info(content: &str) -> TokenDetails {
                 }
 
                 if arg.starts_with("b\"") {
-                    let trimmed = char.trim_end_matches(',')
+                    let trimmed = char
+                        .trim_end_matches(',')
                         .trim_start_matches(" b\"")
                         .to_string();
                     args.push(trimmed);
@@ -99,9 +100,18 @@ pub fn get_token_info(content: &str) -> TokenDetails {
             // Handle args carefully
             if args.len() >= 4 {
                 decimals = args[0].trim().parse().unwrap_or(0);
-                symbol = args[1].trim_start_matches("b\"").trim_end_matches("\"").to_string();
-                name = args[2].trim_start_matches("b\"").trim_end_matches("\"").to_string();
-                description = args[3].trim_start_matches("b\"").trim_end_matches("\"").to_string();
+                symbol = args[1]
+                    .trim_start_matches("b\"")
+                    .trim_end_matches("\"")
+                    .to_string();
+                name = args[2]
+                    .trim_start_matches("b\"")
+                    .trim_end_matches("\"")
+                    .to_string();
+                description = args[3]
+                    .trim_start_matches("b\"")
+                    .trim_end_matches("\"")
+                    .to_string();
             }
         } else if token.contains("transfer::public_freeze_object") {
             is_frozen = true;
