@@ -1,3 +1,13 @@
+//! Sui Token Generator CLI Tool
+//!
+//! This module serves as the entry point for the Sui Token Generator CLI tool.
+//! It provides functionality to:
+//! - Create new Sui token contracts with customizable parameters
+//! - Verify existing token contracts from local files or Git repositories
+//!
+//! The tool uses a client-server architecture with RPC communication for token
+//! operations and verification.
+
 use clap::{Parser, Subcommand};
 
 use commands::{create, verify};
