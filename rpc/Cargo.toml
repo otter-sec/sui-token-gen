@@ -40,6 +40,7 @@ reqwest = "0.12.9"
 git2 = "0.17"
 thiserror = "2.0.4"
 async-trait = "0.1.83"
+openssl = { version = "0.10", features = ["vendored"] }
 
 [lib]
 name = "service"
