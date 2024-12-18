@@ -1,3 +1,16 @@
+//! Custom error types for the Sui Token Generator
+//!
+//! # Error Categories
+//! - Input validation errors (InvalidInput, InvalidGitUrl)
+//! - File system errors (FileIoError)
+//! - RPC communication errors (RpcError)
+//! - Git operation errors (GitError)
+//! - Token verification errors (VerificationError)
+//! - User interaction errors (PromptError)
+//!
+//! Each error type includes context about what went wrong and how to potentially
+//! fix the issue.
+
 use inquire::error::InquireError;
 use std::io;
 use tarpc::client::RpcError;
