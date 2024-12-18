@@ -7,17 +7,18 @@ use crate::{
     Result,
 };
 
-// Define struct for user prompt
+// Define struct to hold token information from user input.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TokenInfo {
-    pub decimals: u8,
-    pub symbol: String,
-    pub name: String,
-    pub description: String,
-    pub is_frozen: bool,
-    pub environment: String,
+    pub decimals: u8,        // Number of decimal places for the token.
+    pub symbol: String,      // Symbol for the token (e.g., "ETH").
+    pub name: String,        // Name of the token (e.g., "Ethereum").
+    pub description: String, // Optional description of the token.
+    pub is_frozen: bool,     // Indicates if metadata is frozen.
+    pub environment: String, // Blockchain environment (e.g., mainnet, devnet, testnet).
 }
 
+// Default implementation for `TokenInfo` to provide initial values.
 #[allow(clippy::derivable_impls)]
 impl Default for TokenInfo {
     fn default() -> Self {
@@ -32,19 +33,19 @@ impl Default for TokenInfo {
     }
 }
 
+/**
+ * Prompts the user for token-related input and validates their responses.
+ *
+ * # Returns
+ * - `Ok(TokenInfo)`: Contains the user's input for token configuration.
+ * - `Err(TokenGenErrors)`: If an error occurs during user input or validation.
+ */
 pub fn get_user_prompt() -> Result<TokenInfo> {
-    // Regex for allowing only alphabets, numbers, and whitespace
-    let valid_regex: Regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap();
+    // Regular expressions for validating user input
+    let valid_regex: Regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap(); // Allows only alphanumeric characters and spaces.
+    let symbol_regex: Regex = Regex::new(r"^[a-zA-Z0-9]+$").unwrap(); // Allows only alphanumeric characters.
 
-    // Regex for allowing only alphabets, numbers
-    let symbol_regex: Regex = Regex::new(r"^[a-zA-Z0-9]+$").unwrap();
-
-    /*
-        Prompt for decimals:
-        number type
-        greater than 0
-        only contains numbers
-    */
+    // Prompt for decimals: must be a positive number greater than 0.
     let decimals: u8 = loop {
         match inquire::CustomType::<u8>::new("Decimals: ")
             .with_help_message("e.g. 6")
@@ -64,12 +65,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         }
     };
 
-    /*
-        Prompt for symbol:
-        string type
-        less than or equal to 6 letters
-        only contains alphabets, numbers
-    */
+    // Prompt for the token symbol: must be alphanumeric and ≤ 5 characters.
     let symbol: String = Text::new("Symbol: ")
         .with_validator(required!("Symbol is required"))
         .with_validator(&|input| {
@@ -80,17 +76,13 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
                     Err("Symbol has to be less than 5 letters".into())
                 }
             } else {
-                Err("Symbol can only contain alphabets, numbers, and whitespace".into())
+                Err("Symbol can only contain alphabets and numbers".into())
             }
         })
         .prompt()
         .map_err(TokenGenErrors::PromptError)?;
 
-    /*
-        Prompt for name:
-        string type
-        only contains alphabets, numbers and whitespace
-    */
+    // Prompt for the token name: must be alphanumeric with optional spaces.
     let name: String = Text::new("Name: ")
         .with_validator(required!("Name is required"))
         .with_help_message("e.g. MyToken")
@@ -104,11 +96,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         .prompt()
         .map_err(TokenGenErrors::PromptError)?;
 
-    /*
-        Prompt for description - optional:
-        string type
-        only contains alphabets, numbers and whitespace
-    */
+    // Prompt for the token description: optional and must be alphanumeric with spaces.
     let description: String = Text::new("Description: ")
         .with_help_message("Optional")
         .with_validator(&|input| {
@@ -121,22 +109,15 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         .prompt()
         .unwrap_or_default();
 
-    /*
-        Prompt for token type:
-        Options Yes or No
-    */
+    // Prompt for frozen metadata: user selects "Yes" or "No".
     let frozen_metadata = Select::new("Frozen metadata?", &FROZEN_OPTIONS)
         .prompt()
         .map_err(TokenGenErrors::PromptError)?;
     let is_frozen: bool = frozen_metadata.value == "Yes";
 
-    /*
-        Prompt for environment:
-        Options mainnet, devnet, testnet
-        Default: devnet
-    */
+    // Prompt for blockchain environment: options are "mainnet", "devnet", and "testnet".
     let env_options = vec!["mainnet", "devnet", "testnet"];
-    let default_index = env_options.iter().position(|&r| r == "devnet").unwrap();
+    let default_index = env_options.iter().position(|&r| r == "devnet").unwrap(); // Default to "devnet".
     let env_option = Select::new("Select environment:", &env_options)
         .with_starting_cursor(default_index)
         .prompt()
@@ -144,6 +125,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
 
     let environment: String = env_option.value;
 
+    // Return the collected and validated token information.
     Ok(TokenInfo {
         decimals,
         symbol,

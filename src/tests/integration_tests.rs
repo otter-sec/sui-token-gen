@@ -14,21 +14,22 @@ use crate::{
 
 use super::command_tests::setup_test_client;
 
+// Test case for the full token creation flow, including RPC client interaction and file generation
 #[tokio::test]
 async fn test_full_token_creation_flow() -> Result<()> {
-    // Test data
-    let test_folder = "integration_test_token";
-    let token_name = "IntegrationToken";
-    let token_symbol = "INT";
-    let token_description = "Integration test token";
-    let decimals = 6;
-    let is_frozen = false;
-    let environment = "devnet".to_string();
+    // Test data: Token attributes for creation
+    let test_folder = "integration_test_token"; // Folder name for token contract files
+    let token_name = "IntegrationToken"; // Token name
+    let token_symbol = "INT"; // Token symbol
+    let token_description = "Integration test token"; // Token description
+    let decimals = 6; // Number of decimal places for the token
+    let is_frozen = false; // Whether the token is frozen or not
+    let environment = "devnet".to_string(); // Environment for token deployment
 
-    // Initialize client
+    // Initialize the RPC client using the local address for testing
     let client: TokenGenClient = setup_test_client("[::1]:5000").await?;
 
-    // Test successful creation
+    // Test the successful creation of the token contract using the provided data
     let (token_content, move_toml, _test_content) = client
         .create(
             context::current(),
@@ -40,26 +41,26 @@ async fn test_full_token_creation_flow() -> Result<()> {
             environment,
         )
         .await
-        .map_err(TokenGenErrors::RpcError)?
-        .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
+        .map_err(TokenGenErrors::RpcError)? // Map RPC error to a custom error type
+        .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?; // Map contract creation failure
 
-    // Create base structure
+    // Create the base folder to store generated files
     create_base_folder(test_folder)?;
 
-    // Test successful full creation
-    create_base_folder(test_folder)?;
+    // Generate the Move.toml file and token contract file for the token
     create_move_toml(test_folder, &move_toml)?;
     create_contract_file(token_name, test_folder, &token_content, SUB_FOLDER)?;
 
-    // Verify created files
-    let sources_path = format!("{}/{}", test_folder, SUB_FOLDER);
+    // Verify the existence of the necessary files after creation
+    let sources_path = format!("{}/{}", test_folder, SUB_FOLDER); // Path to sources folder
     let contract_path = format!(
-        "{}/{}.move",
+        "{}/{}.move", // Path to the generated Move contract file
         sources_path,
         sanitize_name(token_name).to_lowercase()
     );
-    let toml_path = format!("{}/Move.toml", test_folder);
+    let toml_path = format!("{}/Move.toml", test_folder); // Path to the generated Move.toml file
 
+    // Assertions to ensure that all necessary files have been created
     assert!(
         Path::new(&sources_path).exists(),
         "Sources folder not created"
@@ -70,30 +71,35 @@ async fn test_full_token_creation_flow() -> Result<()> {
     );
     assert!(Path::new(&toml_path).exists(), "Move.toml not created");
 
-    // Clean up
+    // Clean up: Remove the test folder and its contents after the test
     if Path::new(test_folder).exists() {
-        fs::remove_dir_all(test_folder)?;
+        fs::remove_dir_all(test_folder)?; // Delete the folder if it exists
     }
 
     Ok(())
 }
 
+// Test case to ensure error handling works properly during token creation
 #[tokio::test]
 async fn test_error_handling_integration() -> Result<()> {
+    // Initialize the RPC client
     let client: TokenGenClient = setup_test_client("[::1]:5000").await?;
 
-    // Test error handling in full workflow
+    // Test invalid token creation by providing incorrect parameters
     let result = client
         .create(
             context::current(),
-            255,            // Invalid decimals
-            "".to_string(), // Empty name
+            255,            // Invalid decimal places (too high)
+            "".to_string(), // Empty token name (invalid)
             "TEST".to_string(),
             "Description".to_string(),
             false,
-            "invalid_env".to_string(),
+            "invalid_env".to_string(), // Invalid environment
         )
         .await?;
-    assert!(result.is_err());
+
+    // Assert that the result is an error due to invalid parameters
+    assert!(result.is_err(), "Expected error during token creation");
+
     Ok(())
 }
