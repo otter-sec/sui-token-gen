@@ -80,3 +80,8 @@ verify_content("module sui_token { ... }")
 ```bash
 cargo test
 ```
+
+## Command for client code run
+```bash
+cargo run --bin client -- --server-addr "[::1]:5000" --command verify_url --url https://gitlab.com/osec/test-sui-token
+``` 
