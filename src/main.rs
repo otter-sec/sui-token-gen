@@ -31,12 +31,14 @@ mod variables;
 /// This tool provides functionality to create and verify Sui token contracts.
 /// It supports subcommands for token creation and verification, and interacts
 /// with an RPC server to execute these operations.
+///
+/// Use `--help` for a detailed explanation of commands and options.
 #[derive(Parser, Debug)]
 #[command(
     author = "Osec",
     version = "1.0.0",
     about = "Create and verify Sui Coin contracts",
-    long_about = "Sui Token Generator is a CLI tool that helps you create and verify tokens contracts."
+    long_about = "Sui Token Generator is a CLI tool that helps you create and verify token contracts."
 )]
 struct Cli {
     /// Subcommands for the CLI tool (Create or Verify).
@@ -48,10 +50,18 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Creates a new Sui token contract.
+    ///
+    /// This command will prompt the user for required parameters such as
+    /// decimals, name, symbol, and optional parameters like description
+    /// and freeze status.
     #[command(about = "Creates a new token contract.")]
     Create,
+
     /// Verifies an existing Sui token contract from a repository or local file.
-    #[command(about = "Verifies an existing contract from repo or local.")]
+    ///
+    /// This command accepts either a path to a local `.move` file or a URL
+    /// pointing to a GitHub/GitLab repository to validate the contract's authenticity.
+    #[command(about = "Verifies an existing contract from a repo or local file.")]
     Verify {
         /// Path to the local contract file to verify.
         #[arg(short, long)]
@@ -70,6 +80,8 @@ pub type Result<T> = std::result::Result<T, TokenGenErrors>;
 ///
 /// Parses command-line arguments, executes the requested subcommand,
 /// and handles any resulting errors.
+///
+/// Use `--help` to display a list of all available commands and options.
 #[tokio::main]
 async fn main() {
     // Parse CLI arguments and construct the CLI instance.
