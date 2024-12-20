@@ -8,7 +8,7 @@ use crate::{
         generation::{create_base_folder, create_contract_file, create_move_toml},
         helpers::sanitize_name,
     },
-    variables::SUB_FOLDER,
+    variables::{ADDRESS, SUB_FOLDER},
     Result,
 };
 
@@ -27,7 +27,7 @@ async fn test_full_token_creation_flow() -> Result<()> {
     let environment = "devnet".to_string(); // Environment for token deployment
 
     // Initialize the RPC client using the local address for testing
-    let client: TokenGenClient = setup_test_client("[::1]:5000").await?;
+    let client: TokenGenClient = setup_test_client(ADDRESS).await?;
 
     // Test the successful creation of the token contract using the provided data
     let (token_content, move_toml, _test_content) = client
@@ -83,8 +83,7 @@ async fn test_full_token_creation_flow() -> Result<()> {
 #[tokio::test]
 async fn test_error_handling_integration() -> Result<()> {
     // Initialize the RPC client
-    let client: TokenGenClient = setup_test_client("[::1]:5000").await?;
-
+    let client: TokenGenClient = setup_test_client(ADDRESS).await?;
     // Test invalid token creation by providing incorrect parameters
     let result = client
         .create(
@@ -97,7 +96,6 @@ async fn test_error_handling_integration() -> Result<()> {
             "invalid_env".to_string(), // Invalid environment
         )
         .await?;
-
     // Assert that the result is an error due to invalid parameters
     assert!(result.is_err(), "Expected error during token creation");
 

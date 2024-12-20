@@ -21,7 +21,7 @@ pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
 #[tokio::test]
 async fn rpc_client_connection_failure() -> Result<()> {
     // Set an invalid address (wrong port or address not available)
-    let invalid_address: &str = "127.0.0.1:5001";
+    let invalid_address: &str = "127.0.0.1:5002";
 
     // Attempt to set up the client with the invalid address
     let result = setup_test_client(invalid_address).await;

@@ -1,6 +1,6 @@
 // The RPC server address where the client can connect to.
-// The format is [IP address]:port, with "::1" indicating the local machine (IPv6) and port 5000.
-pub const ADDRESS: &str = "[::1]:5000";
+// The format is [IP address]:port
+pub const ADDRESS: &str = "0.0.0.0:5001";
 
 // The error message used when the user cancels an ongoing operation.
 // This message is displayed to indicate that the action was aborted by the user.
