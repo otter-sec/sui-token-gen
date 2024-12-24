@@ -89,7 +89,95 @@ foo@bar:~$ SUCCESS: Verified successfully from path: /Users/developer/Desktop/su
 ```
 ---
 
-## Tests
-```bash
-cargo test
-```
+## REST APIs
+
+### 1. Create token API:
+
+- **URL**: `/create`
+- **Method**: `POST`
+- **Usage**:
+  ```bash
+  curl -X POST -H "Content-Type: application/json" \
+  -d '{
+    "decimals": 1,
+    "name": "My Token",
+    "symbol": "MTK",
+    "description": "Test token",
+    "is_frozen": false,
+    "environment": "devnet"
+  }' http://5.161.90.244:5001/create
+  ```
+- **Request Body**:
+  ```json
+    {
+      "decimals": 8,
+      "name": "MyToken",
+      "symbol": "MTK",
+      "description": "A custom token.",
+      "is_frozen": false,
+      "environment": "devnet"
+    }
+  ```
+- **Response**:
+  ```json
+    {
+      "success": true,                  
+      "message": "Creation successful",
+      "data": {
+        "token": "contract...",               
+        "move_toml": "move toml...",       
+        "test_token": "contract test..."     
+      }
+    }
+  ```
+
+### 2. Verifying URL(repo) API:
+
+- **URL**: `/verify_url`
+- **Method**: `POST`
+- **Usage**:
+  ```bash
+  curl -X POST -H "Content-Type: application/json" \
+  -d '{"url": "https://github.com/meumar-osec/test-sui-token"}' http://5.161.90.244:5001/verify_url
+  ```
+- **Request Body**:
+  ```json
+    {
+      "url": "https://github.com/meumar-osec/test-sui-token",
+    }
+  ```
+- **Response**:
+  ```json
+    {
+      "success": true,                  
+      "message": "Verified successfully",
+      "error": None
+    }
+  ```
+
+### 3. Verifying content API:
+
+- **URL**: `/verify_content`
+- **Method**: `POST`
+- **Usage**:
+  ```bash
+    curl -X POST -H "Content-Type: application/json" \
+    -d '{
+        "content": "module Mytoken::Mytoken {\n    use sui::coin::{Self, TreasuryCap};\n    public struct MYTOKEN has drop {}\n\n    /// Initialize the token with treasury and metadata\n    fun init(witness: MYTOKEN, ctx: &mut TxContext) {\n        let (treasury, metadata) = coin::create_currency(\n            witness, 8, b\"MT\", b\"My token\", b\"Tetsing\", option::none(), ctx\n        );\n        \n        transfer::public_freeze_object(metadata);\n        \n        transfer::public_transfer(treasury, ctx.sender());\n    }\n\n    public fun mint(\n\t\ttreasury_cap: &mut TreasuryCap<MYTOKEN>,\n\t\tamount: u64,\n\t\trecipient: address,\n\t\tctx: &mut TxContext,\n    ) {\n        let coin = coin::mint(treasury_cap, amount, ctx);\n        transfer::public_transfer(coin, recipient)\n    }\n}"
+    }' http://5.161.90.244:5001/verify_content
+  ```
+- **Request Body**:
+  ```json
+    {
+      "content": "module Mytoken::Mytoken ...",
+    }
+  ```
+- **Response**:
+  ```json
+    {
+      "success": true,                  
+      "message": "Verified successfully",
+      "error": None
+    }
+  ```
+---
