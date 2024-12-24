@@ -1,6 +1,5 @@
 // The RPC server address where the client can connect to.
 // The format is [IP address]:port
-// pub const ADDRESS: &str = "192.168.29.19:5001";
 pub const ADDRESS: &str = "5.161.90.244:5001";
 
 // The error message used when the user cancels an ongoing operation.
