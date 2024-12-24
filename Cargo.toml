@@ -3,6 +3,10 @@ name = "sui-token-gen"
 version = "0.1.0"
 edition = "2021"
 description = "A Rust-based CLI tool for generating and verifying Sui token smart contracts effortlessly."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/otter-sec/sui-token-gen"
+homepage = "https://github.com/otter-sec/sui-token-gen"
+documentation = "https://docs.rs/sui-token-gen"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
