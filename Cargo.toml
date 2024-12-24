@@ -2,6 +2,7 @@
 name = "sui-token-gen-test"
 version = "0.1.0"
 edition = "2021"
+description = "A Rust-based CLI tool for generating and verifying Sui token smart contracts effortlessly."
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
