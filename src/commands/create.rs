@@ -1,4 +1,5 @@
 use std::io;
+use std::path::PathBuf;
 use tarpc::context;
 
 use crate::{
@@ -14,6 +15,7 @@ use crate::{
     variables::{SUB_FOLDER, TEST_FOLDER},
     Result,
 };
+use dirs::desktop_dir;
 
 /// Implements conversion from `TokenGenErrors` to `io::Error`.
 /// This allows `TokenGenErrors` to be treated as `io::Error` for easier interoperability with standard IO functions.
@@ -60,24 +62,35 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
         .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
 
     // Sanitize the token name and convert it to lowercase to generate a base folder name.
-    let base_folder: String = sanitize_name(&token_data.name).to_lowercase();
+    let project_folder: String = sanitize_name(&token_data.name).to_lowercase();
+
+    // Get the desktop path
+    let desktop_path: PathBuf = desktop_dir().expect("Could not find the desktop directory");
+
+    // Construct the full path
+    let base_folder_path = desktop_path.join(&project_folder);
+
+    // Convert to &str
+    let base_folder = base_folder_path
+        .to_str()
+        .expect("Failed to convert path to string");
 
     // Initialize atomic file operation to manage all file writes with rollback support.
-    let mut atomic_op = AtomicFileOperation::new(&base_folder);
+    let mut atomic_op = AtomicFileOperation::new(base_folder);
 
     // Create the base folder for the token contract files.
-    create_base_folder(&base_folder)?;
+    create_base_folder(base_folder)?;
 
     // Generate and write the Move.toml file to the base folder.
-    create_move_toml(&base_folder, &move_toml)?;
+    create_move_toml(base_folder, &move_toml)?;
 
     // Generate and write the main contract file to the appropriate subfolder.
-    create_contract_file(&token_data.name, &base_folder, &token_content, SUB_FOLDER)?;
+    create_contract_file(&token_data.name, base_folder, &token_content, SUB_FOLDER)?;
 
     // Generate and write the test contract file to the test folder.
     create_contract_file(
         &token_data.name,
-        &base_folder,
+        base_folder,
         &test_token_content,
         TEST_FOLDER,
     )?;
