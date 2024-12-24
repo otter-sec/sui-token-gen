@@ -27,6 +27,14 @@ use thiserror::Error;
  */
 #[derive(Debug, Error)]
 pub enum TokenGenErrors {
+    /// Error returned when desktop directory not found.
+    #[error("Failed to find desktop directory")]
+    DesktopDirectoryNotFound,
+
+    /// Error returned failed to convert path to string.
+    #[error("Failed to convert path to string")]
+    PathConversionError,
+
     /// Error returned when no `.move` file is found in the specified path.
     #[error("Invalid path: No .move file found")]
     InvalidPathNoMoveFiles,

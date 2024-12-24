@@ -1,5 +1,4 @@
 use std::io;
-use std::path::PathBuf;
 use tarpc::context;
 
 use crate::{
@@ -65,7 +64,7 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     let project_folder: String = sanitize_name(&token_data.name).to_lowercase();
 
     // Get the desktop path
-    let desktop_path: PathBuf = desktop_dir().expect("Could not find the desktop directory");
+    let desktop_path = desktop_dir().ok_or(TokenGenErrors::DesktopDirectoryNotFound)?;
 
     // Construct the full path
     let base_folder_path = desktop_path.join(&project_folder);
@@ -73,7 +72,7 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     // Convert to &str
     let base_folder = base_folder_path
         .to_str()
-        .expect("Failed to convert path to string");
+        .ok_or(TokenGenErrors::PathConversionError)?;
 
     // Initialize atomic file operation to manage all file writes with rollback support.
     let mut atomic_op = AtomicFileOperation::new(base_folder);
