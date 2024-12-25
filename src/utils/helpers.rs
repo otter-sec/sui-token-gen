@@ -48,3 +48,12 @@ pub fn is_valid_repository_url(url: &str) -> Result<()> {
     // Return success if the URL is valid.
     Ok(())
 }
+
+/// Validates the RPC URL format.
+pub fn validate_rpc_url(url: &str) -> Result<()> {
+    let re = Regex::new(r"^(http(s)?://)?([0-9]{1,3}\.){3}[0-9]{1,3}(:\d+)?$").unwrap();
+    if !re.is_match(url) {
+        return Err(TokenGenErrors::InvalidRpcUrl);
+    }
+    Ok(())
+}

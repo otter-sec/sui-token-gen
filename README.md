@@ -52,12 +52,15 @@ Token Details:
   Frozen: Yes
 foo@bar:~$ 
 ```
+The optional --rpc flag allows specifying a custom RPC URL for the token creation process. By default, the tool will use the default RPC server URL if the --rpc flag is not provided.
+
 ### 2. `verify`
 The `verify` command checks whether a Sui token smart contract was generated using this CLI tool.
 
 Flags:\
 `--url`: Validate a remote repository.\
-`--path`: Validate a local directory path.
+`--path`: Validate a local directory path.\
+`--rpc`: Specify a custom RPC URL for verification (optional).
 
 It supports:
 

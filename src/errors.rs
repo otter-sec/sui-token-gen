@@ -31,6 +31,10 @@ pub enum TokenGenErrors {
     #[error("Unable to connect to the RPC service.")]
     FailedToConnectRpc,
 
+    /// Error returned when given RPC url is invalid
+    #[error("Invalid RPC url")]
+    InvalidRpcUrl,
+
     /// Error returned when desktop directory not found.
     #[error("Failed to find desktop directory")]
     DesktopDirectoryNotFound,
