@@ -9,24 +9,24 @@ homepage = "https://github.com/otter-sec/sui-token-gen"
 documentation = "https://docs.rs/sui-token-gen"
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
+anyhow = "1.0.94"
+async-trait = "0.1.83"
+clap = { version = "4.5.21", features = ["derive"] }
+colored = "2.0"
+dirs = "5.0.1"
+git2 = "0.19.0"
 inquire = "=0.0.7"
-url = "2.5.4"
+openssl = { version = "0.10", features = ["vendored"] }
+regex = "1.11.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tera = "1.20"
-regex = "1.11.1"
-clap = { version = "4.5.21", features = ["derive"] }
-git2 = "0.19.0"
-anyhow = "1.0.94"
-thiserror = "2.0.4"
 tarpc = { version = "0.35", features = ["full"] }
-async-trait = "0.1.83"
-colored = "2.0"
-openssl = { version = "0.10", features = ["vendored"] }
-dirs = "5.0.1"
+tera = "1.20"
+thiserror = "2.0.4"
+tokio = { version = "1", features = ["full"] }
+url = "2.5.4"
 
 [dev-dependencies]
-tokio-test = "0.4"
 async-std = { version = "1.0", features = ["attributes", "tokio1"] }
 async-trait = "0.1.83"
+tokio-test = "0.4"
