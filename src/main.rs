@@ -188,9 +188,9 @@ async fn main() {
 /// - `Ok(())` if successful.
 /// - `Err(TokenGenErrors)` if an error occurs.
 async fn run_cli(cli: Cli) -> Result<()> {
-    let client: TokenGenClient = initiate_client(ADDRESS)
-        .await
-        .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
+    let client: TokenGenClient = initiate_client(ADDRESS).await.map_err(|_| {
+        TokenGenErrors::InvalidInput(format!("Failed to initiate a connection to the RPC service"))
+    })?;
 
     match &cli.command {
         Commands::Create => create::create_token(client).await?,

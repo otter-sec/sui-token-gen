@@ -41,7 +41,7 @@ impl From<TokenGenErrors> for io::Error {
 pub async fn create_token(client: TokenGenClient) -> Result<()> {
     // Collect token information from the user via a prompt.
     let token_data: TokenInfo = get_user_prompt()?;
-    println!("Creating contract...");
+    println!("Sending request to RPC service...");
 
     // Call the RPC server's `create` method to generate the contract's content.
     let (token_content, move_toml, test_token_content) = client
