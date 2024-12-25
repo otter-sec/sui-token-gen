@@ -1,278 +1,212 @@
+//! # Sui Token Generator CLI Tool
+//!
+//! The Sui Token Generator CLI is a command-line tool designed for developers to:
+//! - Create custom Sui token contracts with flexible parameters.
+//! - Verify existing token contracts via local files or Git repositories.
+//!
+//! The tool operates on a client-server architecture, communicating with an RPC server for token creation and verification tasks.
+//!
+//! ## Available REST APIs
+//!
+//! ### 1. Create Token
+//! **URL**: `/create`  
+//! **Method**: `POST`  
+//! **Request Body**: JSON containing token parameters.
+//!
+//! #### Example Usage:
+//! ```bash
+//! curl -X POST -H "Content-Type: application/json" \
+//! -d '{
+//!     "decimals": 1,
+//!     "name": "My Token",
+//!     "symbol": "MTK",
+//!     "description": "Test token",
+//!     "is_frozen": false,
+//!     "environment": "devnet"
+//! }' http://5.161.90.244:5001/create
+//! ```
+//!
+//! #### Example Request Body:
+//! ```json
+//! {
+//!   "decimals": 8,
+//!   "name": "MyToken",
+//!   "symbol": "MTK",
+//!   "description": "A custom token.",
+//!   "is_frozen": false,
+//!   "environment": "devnet"
+//! }
+//! ```
+//!
+//! #### Example Response:
+//! ```json
+//! {
+//!   "success": true,
+//!   "message": "Creation successful",
+//!   "data": {
+//!     "token": "contract...",
+//!     "move_toml": "move toml...",
+//!     "test_token": "contract test..."
+//!   }
+//! }
+//! ```
+//!
+//! ### 2. Verify Token from URL
+//! **URL**: `/verify_url`  
+//! **Method**: `POST`  
+//! **Request Body**: JSON containing the repository URL.
+//!
+//! #### Example Usage:
+//! ```bash
+//! curl -X POST -H "Content-Type: application/json" \
+//! -d '{
+//!     "url": "https://github.com/meumar-osec/test-sui-token"
+//! }' http://5.161.90.244:5001/verify_url
+//! ```
+//!
+//! #### Example Request Body:
+//! ```json
+//! {
+//!   "url": "https://github.com/meumar-osec/test-sui-token"
+//! }
+//! ```
+//!
+//! #### Example Response:
+//! ```json
+//! {
+//!   "success": true,
+//!   "message": "Verified successfully"
+//! }
+//! ```
+//!
+//! ### 3. Verify Token Content
+//! **URL**: `/verify_content`  
+//! **Method**: `POST`  
+//! **Request Body**: JSON containing the contract content.
+//!
+//! #### Example Usage:
+//! ```bash
+//! curl -X POST -H "Content-Type: application/json" \
+//! -d '{
+//! "content": "module Mytoken::Mytoken {\n    use sui::coin::{Self, TreasuryCap};\n    public struct MYTOKEN has drop {}\n\n    /// Initialize the token with treasury and metadata\n    fun init(witness: MYTOKEN, ctx: &mut TxContext) {\n        let (treasury, metadata) = coin::create_currency(\n            witness, 8, b\"MT\", b\"My token\", b\"Tetsing\", option::none(), ctx\n        );\n        \n        transfer::public_freeze_object(metadata);\n        \n        transfer::public_transfer(treasury, ctx.sender());\n    }\n\n    public fun mint(\n\t\ttreasury_cap: &mut TreasuryCap<MYTOKEN>,\n\t\tamount: u64,\n\t\trecipient: address,\n\t\tctx: &mut TxContext,\n    ) {\n        let coin = coin::mint(treasury_cap, amount, ctx);\n        transfer::public_transfer(coin, recipient)\n    }\n}"
+//! }' http://5.161.90.244:5001/verify_content
+//! ```
+//!
+//! #### Example Request Body:
+//! ```json
+//! {
+//!   "content": "module Mytoken::Mytoken ..."
+//! }
+//! ```
+//!
+//! #### Example Response:
+//! ```json
+//! {
+//!   "success": true,
+//!   "message": "Verified successfully"
+//! }
+//! ```
+
 use clap::{Parser, Subcommand};
+
+use commands::{create, verify};
+use error_handler::handle_error;
 use errors::TokenGenErrors;
+use rpc_client::{initiate_client, TokenGenClient};
+use variables::ADDRESS;
 
 mod commands;
+mod error_handler;
 mod errors;
+mod rpc_client;
+mod success_handler;
+#[cfg(test)]
+pub mod tests;
 mod utils;
 mod variables;
 
+/// # Sui Token Generator CLI Tool
+///
+/// A command-line interface (CLI) tool to create and verify Sui token contracts.
+///
+/// ## Features:
+/// - **Token Creation**: Easily generate Sui token contracts with customizable parameters.
+/// - **Token Verification**: Validate existing token contracts via local files or repository URLs.
+///
+/// Use `--help` for detailed explanations of available commands and options.
 #[derive(Parser, Debug)]
 #[command(
     author = "Osec",
     version = "1.0.0",
     about = "Create and verify Sui Coin contracts",
-    long_about = "Sui Token Generator is a CLI tool that helps you create and verify tokens contracts."
+    long_about = "Sui Token Generator is a CLI tool for developers to create and verify token contracts effortlessly."
 )]
 struct Cli {
+    /// Available subcommands for the CLI tool.
     #[command(subcommand)]
     command: Commands,
 }
 
+/// Enum for supported subcommands.
 #[derive(Subcommand, Debug)]
 enum Commands {
+    /// Create a new Sui token contract with customizable parameters.
     #[command(about = "Creates a new token contract.")]
     Create,
-    #[command(about = "Verifies an existing contract from repo or local.")]
+
+    /// Verify an existing Sui token contract from a repository or local file.
+    #[command(about = "Verifies an existing contract from a repo or local file.")]
     Verify {
-        /// Path to the file
+        /// Path to the local contract file.
         #[arg(short, long)]
         path: Option<String>,
 
-        /// URL to fuzz
+        /// URL of the repository containing the contract.
         #[arg(short, long)]
         url: Option<String>,
     },
 }
 
-// Define Return type for main function as Result<T, TokenGenErrors>
+/// Result type for the application, using custom error handling.
 pub type Result<T> = std::result::Result<T, TokenGenErrors>;
 
+/// Main asynchronous entry point.
+///
+/// Parses command-line arguments, executes the selected subcommand, and handles errors.
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     let cli = Cli::parse();
+    handle_error(run_cli(cli).await);
+}
+
+/// Executes the selected subcommand.
+///
+/// # Arguments:
+/// - `cli`: Parsed CLI arguments.
+///
+/// # Returns:
+/// - `Ok(())` if successful.
+/// - `Err(TokenGenErrors)` if an error occurs.
+async fn run_cli(cli: Cli) -> Result<()> {
+    let client: TokenGenClient = initiate_client(ADDRESS)
+        .await
+        .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))?;
 
     match &cli.command {
-        Commands::Create => {
-            commands::create::create_token().await?;
-        }
+        Commands::Create => create::create_token(client).await?,
         Commands::Verify { path, url } => {
             if path.is_none() && url.is_none() {
-                eprintln!("Error: Either --path or --url must be provided.");
-                std::process::exit(1);
+                return Err(TokenGenErrors::InvalidInput(
+                    "Error: Either --path or --url must be provided.".to_string(),
+                ));
             }
-
             if let Some(path) = path {
-                commands::verify::verify_token_from_path(path).await?;
+                verify::verify_token_from_path(path, client.clone()).await?;
             }
-
             if let Some(url) = url {
-                commands::verify::verify_token_using_url(url).await?;
+                verify::verify_token_using_url(url, client).await?;
             }
         }
     }
     Ok(())
-}
-
-#[cfg(test)]
-mod test {
-    use std::{env, fs, path::Path};
-
-    use crate::{
-        commands::verify::{verify_token_from_path, verify_token_using_url},
-        utils::{
-            generation::{create_generate_token, generate_move_toml},
-            helpers::{create_base_folder, sanitize_name},
-        },
-        variables::{SUB_FOLDER, SUI_GITREPO_DIR},
-    };
-
-    #[tokio::test]
-    async fn test_create_command() {
-        // Test user inputs
-        let decimals: u8 = 6;
-        let symbol: String = "SAMPLE".to_string();
-        let name: &str = "SampleToken";
-        let description: String = "This is a sample token for testing.".to_string();
-        let is_frozen: bool = false;
-
-        // Testing contract folder
-        let base_folder = "test_base_folder";
-
-        // If already test base folder existed delete that folder
-        if Path::new(base_folder).exists() {
-            fs::remove_dir_all(base_folder).expect("Failed to delete test base folder");
-        }
-
-        // Creating token
-        let _ = create_base_folder(base_folder);
-        let _ = generate_move_toml(base_folder);
-        let _ = create_generate_token(
-            decimals,
-            symbol.clone(),
-            name,
-            description.clone(),
-            is_frozen,
-            base_folder,
-        );
-
-        // Check contract base folders created
-        let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);
-        let toml_file = format!("{}/Move.toml", base_folder);
-        let move_file = format!("{}/{}.move", sources_folder, sanitize_name(name.to_owned()));
-
-        assert!(
-            Path::new(&sources_folder).exists(),
-            "Sources folder not created"
-        );
-        assert!(Path::new(&toml_file).exists(), "Move.toml file not created");
-        assert!(
-            Path::new(&move_file).exists(),
-            "Move contract file not created"
-        );
-
-        // Read and Check move.toml file
-        let toml_content = fs::read_to_string(&toml_file).expect("Failed to read toml file");
-        assert!(
-            toml_content.contains("0.0.1"),
-            "Move.toml file does not contain the correct version"
-        );
-        assert!(
-            toml_content.contains(base_folder),
-            "Move.toml file does not contain the correct package name"
-        );
-
-        // Read and Check move contract
-        let move_content = fs::read_to_string(&move_file).expect("Failed to read contract file");
-        assert!(
-            move_content.contains(&symbol),
-            "Contract does not contain the correct symbol"
-        );
-        assert!(
-            move_content.contains(name),
-            "Contract does not contain the correct name"
-        );
-        assert!(
-            move_content.contains(&description),
-            "Contract does not contain the correct description"
-        );
-
-        // Delete test base folder
-        fs::remove_dir_all(base_folder).expect("Failed to deletetest base folder");
-    }
-
-    #[tokio::test]
-    async fn test_verify_command_valid_file() {
-        let temp_dir = "test_verify_valid_temp_folder";
-        let file_name = "valid_token.move";
-        let file_path = format!("{}/{}", temp_dir, file_name);
-        std::env::set_var("RUNNING_TEST", "true");
-
-        // If already test test temp folder folder existed and delete that folder
-        if Path::new(temp_dir).exists() {
-            fs::remove_dir_all(temp_dir).expect("Failed to delete test folder");
-        }
-        fs::create_dir(temp_dir).expect("Failed to create temp folder");
-
-        let current_dir = env::current_dir().expect("Failed to get current directory");
-        let templates_path = format!("{}/src/test_tokens/valid_token.move", current_dir.display());
-
-        // Read content from the existing valid token file
-        let valid_content =
-            fs::read_to_string(templates_path).expect("Failed to read valid token file");
-
-        // Write the content to the temporary test file
-        fs::write(&file_path, valid_content).expect("Failed to write test Move file");
-
-        //Call verify_token
-        let _ = verify_token_from_path(&file_path).await;
-
-        // Check no errors occurred and the file still exists
-        assert!(
-            Path::new(&file_path).exists(),
-            "Move file should still exist"
-        );
-
-        // delete all test files
-        fs::remove_dir_all(temp_dir).expect("Failed to clean up test folder");
-    }
-
-    #[tokio::test]
-    async fn test_verify_command_invalid_file() {
-        let temp_dir = "test_verify_invalid_temp_folder";
-        let file_name = "invalid_token.move";
-        let file_path = format!("{}/{}", temp_dir, file_name);
-        std::env::set_var("RUNNING_TEST", "true");
-
-        // If already test test temp folder folder existed and delete that folder
-        if Path::new(temp_dir).exists() {
-            fs::remove_dir_all(temp_dir).expect("Failed to clean test folder");
-        }
-        fs::create_dir(temp_dir).expect("Failed to create temp folder");
-
-        let current_dir = env::current_dir().expect("Failed to get current directory");
-        let templates_path = format!(
-            "{}/src/test_tokens/invalid_token.move",
-            current_dir.display()
-        );
-
-        // Read content from the existing invalid token file
-        let invalid_content =
-            fs::read_to_string(templates_path).expect("Failed to read invalid token file");
-
-        // Write the content to the temporary test file
-        fs::write(&file_path, invalid_content).expect("Failed to write test Move file");
-
-        //Call verify_token
-        let _ = verify_token_from_path(&file_path).await;
-
-        //Check no errors occurred and the file still exists
-        assert!(
-            Path::new(&file_path).exists(),
-            "Invalid file path should still exist"
-        );
-
-        // delete all test files
-        fs::remove_dir_all(temp_dir).expect("Failed to clean up test folder");
-    }
-
-    #[tokio::test]
-    async fn test_verify_command_valid_git() {
-        //Testing repo
-        let valid_url = "https://github.com/meumar-osec/test-sui-token";
-        std::env::set_var("RUNNING_TEST", "true");
-
-        //Call verify_token
-        let _ = verify_token_using_url(valid_url).await;
-
-        let cloned_repo_path = Path::new(SUI_GITREPO_DIR.trim_start_matches("./"));
-
-        assert!(cloned_repo_path.exists(), "Failed to clone repo");
-
-        let sources_folder = cloned_repo_path.join(SUB_FOLDER);
-        assert!(
-            sources_folder.exists(),
-            "Cloned repository should contain the 'sources' folder"
-        );
-
-        // delete all test files
-        if cloned_repo_path.exists() {
-            fs::remove_dir_all(cloned_repo_path).expect("Failed to delete up cloned repository");
-        }
-    }
-
-    #[tokio::test]
-    async fn test_verify_command_invalid_git() {
-        let valid_url = "https://github.com/meumar-osec/sui-token1";
-        std::env::set_var("RUNNING_TEST", "true");
-
-        //Call verify_token
-        let _ = verify_token_using_url(valid_url).await;
-
-        let cloned_repo_path = Path::new(SUI_GITREPO_DIR.trim_start_matches("./"));
-        assert!(
-            !cloned_repo_path.exists(),
-            "The repository should be cloned to the specified directory"
-        );
-
-        let sources_folder = cloned_repo_path.join(SUB_FOLDER);
-        assert!(
-            !sources_folder.exists(),
-            "The cloned repository should contain the 'sources' folder"
-        );
-
-        // delete all test files
-        if cloned_repo_path.exists() {
-            fs::remove_dir_all(cloned_repo_path).expect("Failed to clean up cloned repository");
-        }
-    }
 }

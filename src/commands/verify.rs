@@ -1,93 +1,82 @@
-use git2::Repository;
-use std::{env, fs, path::Path};
-use url::Url;
+use tarpc::context;
 
 use crate::{
     errors::TokenGenErrors,
-    utils::{
-        helpers::{is_running_test, is_valid_github_url},
-        verify_helper::verify_contract,
-    },
-    variables::{SUB_FOLDER, SUI_GITREPO_DIR},
+    rpc_client::TokenGenClient,
+    success_handler::{handle_success, SuccessType},
+    utils::{helpers::is_valid_repository_url, verify_helper::verify_path},
     Result,
 };
 
-pub async fn verify_token_from_path(path: &str) -> Result<()> {
-    let path = Path::new(path);
+/**
+ * Verifies a token contract using a local file path.
+ *
+ * This function performs the following steps:
+ * 1. Validates the provided file path to ensure it contains a valid `.move` contract file.
+ * 2. Reads the contract content from the specified path.
+ * 3. Sends the contract content to the RPC client for verification.
+ * 4. Logs the success if verification is successful, or returns an appropriate error if verification fails.
+ *
+ * # Parameters
+ * - `path`: A string slice that represents the local file path to the token contract.
+ * - `client`: An instance of `TokenGenClient` used to interact with the verification RPC service.
+ *
+ * # Returns
+ * - `Ok(())` if the contract is successfully verified.
+ * - `Err(TokenGenErrors)` if any validation or verification step fails.
+ */
+pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Result<()> {
+    // Validate the file path and ensure it contains valid contract content.
+    let current_content = verify_path(path)?;
 
-    if !path.exists() {
-        return Err(TokenGenErrors::InvalidPath(
-            "The provided path for the contract or .move file is invalid.".to_string(),
-        ));
-    }
+    // Send the contract content to the RPC client for verification.
+    client
+        .verify_content(context::current(), current_content)
+        .await
+        .map_err(TokenGenErrors::RpcError)?
+        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
 
-    if path.is_dir() {
-        // Check for sources sub-folder in contract
-        let sources_folder = path.join(SUB_FOLDER);
-        if sources_folder.exists() && sources_folder.is_dir() {
-            // Call verify function
-            verify_contract(&sources_folder).await?;
-        } else {
-            // Call verify function
-            verify_contract(path).await?;
-        }
-    } else {
-        return Err(TokenGenErrors::InvalidPath(
-            "The file is not a .move file or directory".to_string(),
-        ));
-    }
+    // Log success message if verification is successful.
+    handle_success(SuccessType::TokenVerified {
+        path: Some(path.to_string()),
+        url: None,
+    });
+
     Ok(())
 }
 
-pub async fn verify_token_using_url(url: &str) -> Result<()> {
-    // Parse the URL to check if it is valid
-    Url::parse(url).map_err(|_| {
-        TokenGenErrors::InvalidUrl("The provided URL is not a valid URL.".to_string())
-    })?;
+/**
+ * Verifies a token contract using a URL pointing to a Git repository.
+ *
+ * This function performs the following steps:
+ * 1. Validates the provided URL to ensure it is a valid Git repository URL.
+ * 2. Sends the URL to the RPC client for verification.
+ * 3. Logs the success if verification is successful, or returns an appropriate error if verification fails.
+ *
+ * # Parameters
+ * - `url`: A string slice that represents the URL pointing to the token contract (e.g., GitHub or GitLab repository).
+ * - `client`: An instance of `TokenGenClient` used to interact with the verification RPC service.
+ *
+ * # Returns
+ * - `Ok(())` if the contract is successfully verified.
+ * - `Err(TokenGenErrors)` if any validation or verification step fails.
+ */
+pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result<()> {
+    // Validate the URL to ensure it is a valid Git repository URL.
+    is_valid_repository_url(url)?;
 
-    if !is_valid_github_url(url) {
-        return Err(TokenGenErrors::InvalidUrl(
-            "The provided URL is not a valid GitHub URL.".to_string(),
-        ));
-    }
+    // Send the URL to the RPC client for verification.
+    client
+        .verify_url(context::current(), url.to_string())
+        .await
+        .map_err(TokenGenErrors::RpcError)?
+        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
 
-    let clone_path = Path::new(SUI_GITREPO_DIR.trim_start_matches("./"));
-    match Repository::clone(url, clone_path) {
-        Ok(_) => {
-            let current_dir = env::current_dir().map_err(TokenGenErrors::FileIoError)?;
-            let templates_path: String = format!(
-                "{}/{}/{}",
-                current_dir.display(),
-                SUI_GITREPO_DIR.trim_start_matches("./"),
-                SUB_FOLDER
-            );
+    // Log success message if verification is successful.
+    handle_success(SuccessType::TokenVerified {
+        path: None,
+        url: Some(url.to_string()),
+    });
 
-            // Convert to a Path reference
-            let templates_path_ref: &Path = Path::new(&templates_path);
-
-            // Check if the folder exists
-            if templates_path_ref.exists() && templates_path_ref.is_dir() {
-                // Call verify function
-                verify_contract(templates_path_ref).await?;
-            } else {
-                return Err(TokenGenErrors::InvalidPath(
-                    "Cloned repo not found".to_string(),
-                ));
-            }
-            check_cloned_contract(Path::new(SUI_GITREPO_DIR.trim_start_matches("./")))?;
-        }
-        Err(e) => {
-            return Err(TokenGenErrors::GitError(e));
-        }
-    }
-    Ok(())
-}
-
-fn check_cloned_contract(path: &Path) -> Result<()> {
-    if path.exists() && path.is_dir() && !is_running_test() {
-        if let Err(e) = fs::remove_dir_all(path) {
-            return Err(TokenGenErrors::FileIoError(e));
-        }
-    }
     Ok(())
 }
