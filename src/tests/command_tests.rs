@@ -19,7 +19,7 @@ use crate::{
 pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
     initiate_client(address)
         .await
-        .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))
+        .map_err(|_| TokenGenErrors::InvalidInput(format!("Failed to initiate a connection to the RPC service")))
 }
 
 // Test function to initiate the RPC client for testing purposes

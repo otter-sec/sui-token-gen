@@ -11,9 +11,9 @@ use crate::{
 // This function initializes the client connection and handles any errors encountered during the connection process,
 // mapping them to a specific error type, TokenGenErrors::InvalidInput.
 pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
-    initiate_client(address)
-        .await
-        .map_err(|e| TokenGenErrors::InvalidInput(format!("Failed to initiate client: {}", e)))
+    initiate_client(address).await.map_err(|_| {
+        TokenGenErrors::InvalidInput(format!("Failed to initiate a connection to the RPC service"))
+    })
 }
 
 // Test case to simulate a failed client connection due to an invalid address.
