@@ -11,10 +11,10 @@ module tokengen::Mytoken {
     }
 
     public fun mint(
-		treasury_cap: &mut TreasuryCap<MYTOKEN>,
-		amount: u64,
-		recipient: address,
-		ctx: &mut TxContext,
+        treasury_cap: &mut TreasuryCap<MYTOKEN>,
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext,
     ) {
         let coin = coin::mint(treasury_cap, amount, ctx);
         transfer::public_transfer(coin, recipient)
