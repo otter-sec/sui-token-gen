@@ -95,13 +95,13 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     // Commit the atomic file operation. Rollback will occur automatically if any step fails.
     atomic_op.commit();
 
-    // Notify the user and display the contract path
-    println!(
-        "Token contract created successfully at: {}",
-        base_folder_path.display()
-    );
-
     // Handle the success case by notifying the user and logging the operation.
-    handle_success(SuccessType::TokenCreated(token_data));
+    handle_success(SuccessType::TokenCreated(
+        token_data,
+        format!(
+            "Contract has been generated at: {}",
+            base_folder_path.display()
+        ),
+    ));
     Ok(())
 }

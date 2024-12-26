@@ -5,7 +5,7 @@ use colored::*;
 #[derive(Debug)]
 pub enum SuccessType {
     /// Represents the success of a token creation process with token details.
-    TokenCreated(TokenInfo),
+    TokenCreated(TokenInfo, String),
 
     /// Represents the success of a token verification process, which could be from a path or URL.
     TokenVerified {
@@ -25,10 +25,11 @@ pub fn handle_success(success_type: SuccessType) {
     // Match on the success type to generate the appropriate success message.
     let message = match success_type {
         // Success from token creation
-        SuccessType::TokenCreated(token_info) => {
+        SuccessType::TokenCreated(token_info, message) => {
             // Format the success message with the token details.
             format!(
-                "Contract has been generated!\nToken Details:\n  Name: {}\n  Symbol: {}\n  Decimals: {}\n  Environment: {}\n  Description: {}\n  Frozen: {}",
+                "{}\nToken Details:\n  Name: {}\n  Symbol: {}\n  Decimals: {}\n  Environment: {}\n  Description: {}\n  Frozen: {}",
+                message,
                 token_info.name,
                 token_info.symbol,
                 token_info.decimals,
