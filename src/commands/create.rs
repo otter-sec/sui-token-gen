@@ -14,7 +14,6 @@ use crate::{
     variables::{SUB_FOLDER, TEST_FOLDER},
     Result,
 };
-// use dirs::desktop_dir;
 
 /// Implements conversion from `TokenGenErrors` to `io::Error`.
 /// This allows `TokenGenErrors` to be treated as `io::Error` for easier interoperability with standard IO functions.
