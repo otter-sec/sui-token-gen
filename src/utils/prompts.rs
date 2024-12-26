@@ -1,4 +1,4 @@
-use inquire::{required, Select, Text};
+use inquire::{required, Confirm, Select, Text};
 use regex::Regex;
 
 use crate::{
@@ -6,6 +6,8 @@ use crate::{
     variables::{CANCEL_ERROR_MESSAGE, FROZEN_OPTIONS},
     Result,
 };
+
+use super::helpers::sanitize_name;
 
 // Define struct to hold token information from user input.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -83,7 +85,7 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         .map_err(TokenGenErrors::PromptError)?;
 
     // Prompt for the token name: must be alphanumeric with optional spaces.
-    let name: String = Text::new("Name: ")
+    let mut name: String = Text::new("Name: ")
         .with_validator(required!("Name is required"))
         .with_help_message("e.g. MyToken")
         .with_validator(&|input| {
@@ -95,6 +97,34 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         })
         .prompt()
         .map_err(TokenGenErrors::PromptError)?;
+
+    // Check if a folder with the same name exists in the current directory.
+    let current_dir = std::env::current_dir().map_err(|_| TokenGenErrors::CurrentDirectoryError)?;
+    let mut base_folder_path = current_dir.join(sanitize_name(&name).to_lowercase());
+
+    while base_folder_path.exists() {
+        if Confirm::new("A folder with this name already exists. Do you want to overwrite it?")
+            .with_default(false)
+            .prompt()
+            .unwrap_or(false)
+        {
+            break; // User chose to overwrite, proceed with the existing folder name.
+        } else {
+            // Ask the user to provide a new folder name.
+            name = Text::new("Please provide a new token name:")
+                .with_validator(required!("Name is required"))
+                .with_validator(&|input| {
+                    if valid_regex.is_match(input) {
+                        Ok(())
+                    } else {
+                        Err("Name can only contain alphabets, numbers, and whitespace".into())
+                    }
+                })
+                .prompt()
+                .map_err(TokenGenErrors::PromptError)?;
+            base_folder_path = current_dir.join(sanitize_name(&name).to_lowercase());
+        }
+    }
 
     // Prompt for the token description: optional and must be alphanumeric with spaces.
     let description: String = Text::new("Description: ")
