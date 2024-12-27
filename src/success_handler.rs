@@ -39,14 +39,16 @@ pub fn handle_success(success_type: SuccessType) {
             )
         }
         // Success from token verification
-        SuccessType::TokenVerified { path, url } => match (path, url) {
-            // If path is provided but not URL
-            (Some(p), None) => format!("Verified successfully from path: {}", p),
-            // If URL is provided but not path
-            (None, Some(u)) => format!("Verified successfully from url: {}", u),
-            // If both path and URL are provided (unlikely case)
-            _ => "Verified successfully".to_string(),
-        },
+        SuccessType::TokenVerified { path, url } => {
+            let source = path.unwrap_or_else(|| url.unwrap_or_default());
+            format!(
+                "{}{}\n{}{}",
+                "Verified successfully from: ",
+                source,
+                "Note: ".yellow(),
+                "This code is tool-generated and unmodified. Verification confirms the code matches the tool's output, not the published module."
+            )
+        }
     };
 
     // Print the success message with the "SUCCESS: " prefix

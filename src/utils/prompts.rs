@@ -46,6 +46,8 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     // Regular expressions for validating user input
     let valid_regex: Regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap(); // Allows only alphanumeric characters and spaces.
     let symbol_regex: Regex = Regex::new(r"^[a-zA-Z0-9]+$").unwrap(); // Allows only alphanumeric characters.
+    let description_valid_regex: Regex =
+        Regex::new(r"^[a-zA-Z0-9\s.,'\!?;:(){}\[\]\-\_@#$%&*+=|~]+$").unwrap(); // Allows only alphanumeric, spaces and some special characters.
 
     // Prompt for the token name: must be alphanumeric with optional spaces.
     let mut name: String = Text::new("Name: ")
@@ -130,10 +132,10 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     let description: String = Text::new("Description: ")
         .with_help_message("Optional")
         .with_validator(&|input| {
-            if input.is_empty() || valid_regex.is_match(input) {
+            if input.is_empty() || description_valid_regex.is_match(input) {
                 Ok(())
             } else {
-                Err("Description can only contain alphabets, numbers, and whitespace".into())
+                Err("Description can only contain alphanumeric, whitespace and some special characters".into())
             }
         })
         .prompt()
