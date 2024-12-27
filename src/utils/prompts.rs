@@ -116,8 +116,10 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
             .with_error_message("Please type a valid number")
             .prompt()
         {
-            Ok(value) if value > 0 => break value,
-            Ok(_) => eprintln!("Decimals must be greater than 0. Please try again."),
+            Ok(value) if value > 0 && value < 100 => break value,
+            Ok(_) => {
+                eprintln!("Decimals must be greater than 0 and less than 100. Please try again.")
+            }
             Err(e) => {
                 if e.to_string() == CANCEL_ERROR_MESSAGE {
                     return Err(TokenGenErrors::PromptError(e));
