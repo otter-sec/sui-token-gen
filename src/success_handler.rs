@@ -28,14 +28,14 @@ pub fn handle_success(success_type: SuccessType) {
         SuccessType::TokenCreated(token_info, message) => {
             // Format the success message with the token details.
             format!(
-                "{}\nToken Details:\n  Name: {}\n  Symbol: {}\n  Decimals: {}\n  Environment: {}\n  Description: {}\n  Frozen: {}",
+                "{}\nToken Details:\n  Name: {}\n  Symbol: {}\n  Decimals: {}\n  Description: {}\n  Frozen: {}\n  Environment: {}",
                 message,
                 token_info.name,
                 token_info.symbol,
                 token_info.decimals,
-                token_info.environment,
                 if token_info.description.is_empty() { "None".to_string() } else { token_info.description },
-                if token_info.is_frozen { "Yes" } else { "No" }
+                if token_info.is_frozen { "Yes" } else { "No" },
+                token_info.environment
             )
         }
         // Success from token verification

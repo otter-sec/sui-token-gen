@@ -35,9 +35,9 @@ sui-token-gen create
 ### Output
 ```console
 foo@bar:~$ sui-token-gen create
-? Decimals:  8
-? Symbol:  SUI
 ? Name:  Sui token
+? Symbol:  SUI
+? Decimals:  8
 ? Description:  Fake sui token
 ? Frozen metadata? Yes
 ? Select environment: devnet
@@ -47,8 +47,8 @@ Token Details:
   Name: Sui token
   Symbol: SUI
   Decimals: 8
-  Environment: devnet
   Description: Fake sui token
+  Environment: devnet
   Frozen: Yes
 foo@bar:~$ 
 ```
