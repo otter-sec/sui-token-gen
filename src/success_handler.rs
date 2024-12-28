@@ -46,7 +46,7 @@ pub fn handle_success(success_type: SuccessType) {
                 "Verified successfully from: ",
                 source,
                 "Note: ".yellow(),
-                "This code is tool-generated and unmodified. Verification confirms the code matches the tool's output, not the published module."
+                "This code is tool-generated and unmodified. Verification confirms the code matches the tool's output, not necessarily the published module."
             )
         }
     };
