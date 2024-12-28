@@ -17,7 +17,8 @@ fn test_token_creation_success_message() {
     };
 
     // Create a success message for token creation using the TokenInfo object
-    let success_type = SuccessType::TokenCreated(token_info);
+    let success_type =
+        SuccessType::TokenCreated(token_info, "Contract has been generated!".to_string());
 
     // Call handle_success function to display the success message for token creation
     handle_success(success_type);
@@ -66,7 +67,8 @@ fn test_token_info_parameter_capture() {
     };
 
     // Create a success message for token creation using the TokenInfo object
-    let success_type = SuccessType::TokenCreated(token_info);
+    let success_type =
+        SuccessType::TokenCreated(token_info, "Contract has been generated!".to_string());
 
     // Call handle_success function to display the success message for token creation
     handle_success(success_type);

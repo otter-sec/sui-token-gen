@@ -5,7 +5,7 @@ use colored::*;
 #[derive(Debug)]
 pub enum SuccessType {
     /// Represents the success of a token creation process with token details.
-    TokenCreated(TokenInfo),
+    TokenCreated(TokenInfo, String),
 
     /// Represents the success of a token verification process, which could be from a path or URL.
     TokenVerified {
@@ -25,10 +25,11 @@ pub fn handle_success(success_type: SuccessType) {
     // Match on the success type to generate the appropriate success message.
     let message = match success_type {
         // Success from token creation
-        SuccessType::TokenCreated(token_info) => {
+        SuccessType::TokenCreated(token_info, message) => {
             // Format the success message with the token details.
             format!(
-                "Contract has been generated!\nToken Details:\n  Name: {}\n  Symbol: {}\n  Decimals: {}\n  Environment: {}\n  Description: {}\n  Frozen: {}",
+                "{}\nToken Details:\n  Name: {}\n  Symbol: {}\n  Decimals: {}\n  Environment: {}\n  Description: {}\n  Frozen: {}",
+                message,
                 token_info.name,
                 token_info.symbol,
                 token_info.decimals,
@@ -38,14 +39,16 @@ pub fn handle_success(success_type: SuccessType) {
             )
         }
         // Success from token verification
-        SuccessType::TokenVerified { path, url } => match (path, url) {
-            // If path is provided but not URL
-            (Some(p), None) => format!("Verified successfully from path: {}", p),
-            // If URL is provided but not path
-            (None, Some(u)) => format!("Verified successfully from url: {}", u),
-            // If both path and URL are provided (unlikely case)
-            _ => "Verified successfully".to_string(),
-        },
+        SuccessType::TokenVerified { path, url } => {
+            let source = path.unwrap_or_else(|| url.unwrap_or_default());
+            format!(
+                "{}{}\n{}{}",
+                "Verified successfully from: ",
+                source,
+                "Note: ".yellow(),
+                "This code is tool-generated and unmodified. Verification confirms the code matches the tool's output, not the published module."
+            )
+        }
     };
 
     // Print the success message with the "SUCCESS: " prefix

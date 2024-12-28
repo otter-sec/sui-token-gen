@@ -1,4 +1,4 @@
-use inquire::{required, Select, Text};
+use inquire::{required, Confirm, Select, Text};
 use regex::Regex;
 
 use crate::{
@@ -6,6 +6,8 @@ use crate::{
     variables::{CANCEL_ERROR_MESSAGE, FROZEN_OPTIONS},
     Result,
 };
+
+use super::helpers::sanitize_name;
 
 // Define struct to hold token information from user input.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -44,26 +46,50 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
     // Regular expressions for validating user input
     let valid_regex: Regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap(); // Allows only alphanumeric characters and spaces.
     let symbol_regex: Regex = Regex::new(r"^[a-zA-Z0-9]+$").unwrap(); // Allows only alphanumeric characters.
+    let description_valid_regex: Regex =
+        Regex::new(r"^[a-zA-Z0-9\s.,'\!?;:(){}\[\]\-\_@#$%&*+=|~]+$").unwrap(); // Allows only alphanumeric, spaces and some special characters.
 
-    // Prompt for decimals: must be a positive number greater than 0.
-    let decimals: u8 = loop {
-        match inquire::CustomType::<u8>::new("Decimals: ")
-            .with_help_message("e.g. 6")
-            .with_formatter(&|i: u8| format!("{i}"))
-            .with_error_message("Please type a valid number")
-            .prompt()
-        {
-            Ok(value) if value > 0 => break value,
-            Ok(_) => eprintln!("Decimals must be greater than 0. Please try again."),
-            Err(e) => {
-                if e.to_string() == CANCEL_ERROR_MESSAGE {
-                    return Err(TokenGenErrors::PromptError(e));
-                } else {
-                    eprintln!("Error: {e}. Please try again.");
-                }
+    // Prompt for the token name: must be alphanumeric with optional spaces.
+    let mut name: String = Text::new("Name: ")
+        .with_validator(required!("Name is required"))
+        .with_help_message("e.g. MyToken")
+        .with_validator(&|input| {
+            if valid_regex.is_match(input) {
+                Ok(())
+            } else {
+                Err("Name can only contain alphabets, numbers, and whitespace".into())
             }
+        })
+        .prompt()
+        .map_err(TokenGenErrors::PromptError)?;
+
+    // Check if a folder with the same name exists in the current directory.
+    let current_dir = std::env::current_dir().map_err(|_| TokenGenErrors::CurrentDirectoryError)?;
+    let mut base_folder_path = current_dir.join(sanitize_name(&name).to_lowercase());
+
+    while base_folder_path.exists() {
+        if Confirm::new("A folder with this name already exists. Do you want to overwrite it?")
+            .with_default(false)
+            .prompt()
+            .unwrap_or(false)
+        {
+            break; // User chose to overwrite, proceed with the existing folder name.
+        } else {
+            // Ask the user to provide a new folder name.
+            name = Text::new("Please provide a new token name:")
+                .with_validator(required!("Name is required"))
+                .with_validator(&|input| {
+                    if valid_regex.is_match(input) {
+                        Ok(())
+                    } else {
+                        Err("Name can only contain alphabets, numbers, and whitespace".into())
+                    }
+                })
+                .prompt()
+                .map_err(TokenGenErrors::PromptError)?;
+            base_folder_path = current_dir.join(sanitize_name(&name).to_lowercase());
         }
-    };
+    }
 
     // Prompt for the token symbol: must be alphanumeric and ≤ 5 characters.
     let symbol: String = Text::new("Symbol: ")
@@ -82,28 +108,36 @@ pub fn get_user_prompt() -> Result<TokenInfo> {
         .prompt()
         .map_err(TokenGenErrors::PromptError)?;
 
-    // Prompt for the token name: must be alphanumeric with optional spaces.
-    let name: String = Text::new("Name: ")
-        .with_validator(required!("Name is required"))
-        .with_help_message("e.g. MyToken")
-        .with_validator(&|input| {
-            if valid_regex.is_match(input) {
-                Ok(())
-            } else {
-                Err("Name can only contain alphabets, numbers, and whitespace".into())
+    // Prompt for decimals: must be a positive number greater than 0.
+    let decimals: u8 = loop {
+        match inquire::CustomType::<u8>::new("Decimals: ")
+            .with_help_message("e.g. 6")
+            .with_formatter(&|i: u8| format!("{i}"))
+            .with_error_message("Please type a valid number")
+            .prompt()
+        {
+            Ok(value) if value > 0 && value < 100 => break value,
+            Ok(_) => {
+                eprintln!("Decimals must be greater than 0 and less than 100. Please try again.")
             }
-        })
-        .prompt()
-        .map_err(TokenGenErrors::PromptError)?;
+            Err(e) => {
+                if e.to_string() == CANCEL_ERROR_MESSAGE {
+                    return Err(TokenGenErrors::PromptError(e));
+                } else {
+                    eprintln!("Error: {e}. Please try again.");
+                }
+            }
+        }
+    };
 
     // Prompt for the token description: optional and must be alphanumeric with spaces.
     let description: String = Text::new("Description: ")
         .with_help_message("Optional")
         .with_validator(&|input| {
-            if input.is_empty() || valid_regex.is_match(input) {
+            if input.is_empty() || description_valid_regex.is_match(input) {
                 Ok(())
             } else {
-                Err("Description can only contain alphabets, numbers, and whitespace".into())
+                Err("Description can only contain alphanumeric, whitespace and some special characters".into())
             }
         })
         .prompt()

@@ -42,7 +42,7 @@ foo@bar:~$ sui-token-gen create
 ? Frozen metadata? Yes
 ? Select environment: devnet
 Creating contract...
-SUCCESS: Contract has been generated!
+SUCCESS: Contract has been generated at: /foo/bar/suitoken
 Token Details:
   Name: Sui token
   Symbol: SUI

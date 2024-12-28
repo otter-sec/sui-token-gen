@@ -14,7 +14,6 @@ use crate::{
     variables::{SUB_FOLDER, TEST_FOLDER},
     Result,
 };
-use dirs::desktop_dir;
 
 /// Implements conversion from `TokenGenErrors` to `io::Error`.
 /// This allows `TokenGenErrors` to be treated as `io::Error` for easier interoperability with standard IO functions.
@@ -63,11 +62,9 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     // Sanitize the token name and convert it to lowercase to generate a base folder name.
     let project_folder: String = sanitize_name(&token_data.name).to_lowercase();
 
-    // Get the desktop path
-    let desktop_path = desktop_dir().ok_or(TokenGenErrors::DesktopDirectoryNotFound)?;
-
-    // Construct the full path
-    let base_folder_path = desktop_path.join(&project_folder);
+    // Get the current working directory
+    let current_dir = std::env::current_dir().map_err(|_| TokenGenErrors::CurrentDirectoryError)?;
+    let base_folder_path = current_dir.join(&project_folder);
 
     // Convert to &str
     let base_folder = base_folder_path
@@ -98,6 +95,12 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     atomic_op.commit();
 
     // Handle the success case by notifying the user and logging the operation.
-    handle_success(SuccessType::TokenCreated(token_data));
+    handle_success(SuccessType::TokenCreated(
+        token_data,
+        format!(
+            "Contract has been generated at: {}",
+            base_folder_path.display()
+        ),
+    ));
     Ok(())
 }

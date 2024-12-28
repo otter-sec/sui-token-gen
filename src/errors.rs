@@ -27,6 +27,10 @@ use thiserror::Error;
  */
 #[derive(Debug, Error)]
 pub enum TokenGenErrors {
+    /// Error returned when trying to create contract at the current directory.
+    #[error("Failed to fetch the current working directory. Please ensure you have the required permissions.")]
+    CurrentDirectoryError,
+
     /// Error returned when the RPC server is not running or refuses the connection
     #[error("Unable to connect to the RPC service.")]
     FailedToConnectRpc,
