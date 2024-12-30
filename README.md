@@ -48,8 +48,8 @@ Token Details:
   Symbol: SUI
   Decimals: 8
   Description: Fake sui token
-  Environment: devnet
   Frozen: Yes
+  Environment: devnet
 foo@bar:~$ 
 ```
 The optional --rpc flag allows specifying a custom RPC URL for the token creation process. By default, the tool will use the default RPC server URL if the --rpc flag is not provided.
