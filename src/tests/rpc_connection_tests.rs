@@ -2,19 +2,10 @@ use tarpc::context;
 
 use crate::{
     errors::TokenGenErrors,
-    utils::client::rpc_client::{initiate_client, TokenGenClient},
     constants::ADDRESS,
     Result,
 };
-
-// Helper function to set up a test client with consistent error handling
-// This function initializes the client connection and handles any errors encountered during the connection process,
-// mapping them to a specific error type, TokenGenErrors::InvalidInput.
-pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
-    initiate_client(address)
-        .await
-        .map_err(|_| TokenGenErrors::FailedToConnectRpc)
-}
+use super::common::test_utils::setup_test_client;
 
 // Test case to simulate a failed client connection due to an invalid address.
 // This tests the scenario where the address provided for the client setup is incorrect (e.g., wrong port or unavailable address).

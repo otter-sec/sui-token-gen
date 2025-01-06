@@ -12,7 +12,7 @@ use crate::{
     Result,
 };
 
-use super::command_tests::setup_test_client;
+use super::common::test_utils::setup_test_client;
 
 // Test case for the full token creation flow, including RPC client interaction and file generation
 #[tokio::test]
