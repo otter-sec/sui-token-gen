@@ -2,8 +2,8 @@ use tarpc::context;
 
 use crate::{
     errors::TokenGenErrors,
-    rpc_client::TokenGenClient,
-    success_handler::{handle_success, SuccessType},
+    utils::client::rpc_client::TokenGenClient,
+    handlers::{handle_success, SuccessType},
     utils::{helpers::is_valid_repository_url, verify_helper::verify_path},
     Result,
 };

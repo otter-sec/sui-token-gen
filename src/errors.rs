@@ -28,7 +28,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum TokenGenErrors {
     /// Error returned when trying to create contract at the current directory.
-    #[error("Failed to fetch the current working directory. Please ensure you have the required permissions.")]
+    #[error("Unable to access the current working directory. Please ensure you have the required permissions.")]
     CurrentDirectoryError,
 
     /// Error returned when the RPC server is not running or refuses the connection
@@ -40,19 +40,19 @@ pub enum TokenGenErrors {
     InvalidRpcUrl,
 
     /// Error returned when desktop directory not found.
-    #[error("Failed to find desktop directory")]
+    #[error("Unable to locate the desktop directory")]
     DesktopDirectoryNotFound,
 
     /// Error returned failed to convert path to string.
-    #[error("Failed to convert path to string")]
+    #[error("Unable to convert path to string")]
     PathConversionError,
 
     /// Error returned when no `.move` file is found in the specified path.
-    #[error("Invalid path: No .move file found")]
+    #[error("No .move files found in the specified path")]
     InvalidPathNoMoveFiles,
 
     /// Error returned when the provided path is not a valid directory.
-    #[error("Invalid path: Directory not found")]
+    #[error("Specified path is not a directory")]
     InvalidPathNotDirectory,
 
     /// Error returned when the provided URL is not a valid GitHub or GitLab URL.
@@ -100,65 +100,17 @@ pub enum TokenGenErrors {
     VerificationError(String),
 }
 
-// Implement `From` for `io::Error` to allow seamless conversion to `TokenGenErrors`.
+/// Implements conversion from `TokenGenErrors` to `io::Error`.
+/// This allows `TokenGenErrors` to be treated as `io::Error` for easier interoperability with standard IO functions.
+impl From<TokenGenErrors> for io::Error {
+    fn from(err: TokenGenErrors) -> io::Error {
+        io::Error::new(io::ErrorKind::Other, err.to_string())
+    }
+}
+
+/// Implement `From` for `io::Error` to allow seamless conversion to `TokenGenErrors`.
 impl From<io::Error> for TokenGenErrors {
     fn from(e: io::Error) -> Self {
         TokenGenErrors::FileIoError(e)
     }
-}
-
-use serde::{Deserialize, Serialize};
-
-/**
- * Enum representing errors that can occur in RPC responses during token generation.
- *
- * This error enum is serialized and deserialized using the `serde` crate, allowing it to
- * be transmitted or stored easily. Each variant provides a specific error message
- * for clearer error handling on the client side.
- */
-#[derive(Error, Debug, Deserialize, Serialize)]
-pub enum RpcResponseErrors {
-    /// Error returned when the provided contract has been modified.
-    #[error("Given contract is modified")]
-    ProgramModified,
-
-    /// Error returned for invalid token decimals.
-    #[error("Invalid decimals provided")]
-    InvalidDecimals,
-
-    /// Error returned for invalid token symbols.
-    #[error("Invalid symbol provided")]
-    InvalidSymbol,
-
-    /// Error returned for invalid token names.
-    #[error("Invalid name provided")]
-    InvalidName,
-
-    /// Error returned for invalid token descriptions.
-    #[error("Invalid description provided")]
-    InvalidDescription,
-
-    /// General error with a detailed message.
-    #[error("An error occurred: {0}")]
-    GeneralError(String),
-
-    /// Error returned for invalid paths, with a specific message.
-    #[error("Invalid path: {0}")]
-    InvalidPath(String),
-
-    /// Error returned for invalid URLs, with a specific message.
-    #[error("Invalid URL: {0}")]
-    InvalidUrl(String),
-
-    /// Error returned for Git-related operations, with details provided in the message.
-    #[error("Git operation failed: {0}")]
-    GitError(String),
-
-    /// Error returned for file input/output operations, with details provided in the message.
-    #[error("File I/O error: {0}")]
-    FileIoError(String),
-
-    /// Error returned for verification issues, with a specific message.
-    #[error("{0}")]
-    VerifyResultError(String),
 }

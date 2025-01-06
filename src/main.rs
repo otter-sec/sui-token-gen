@@ -8,21 +8,24 @@
 //!
 use clap::{Parser, Subcommand};
 use commands::{create, verify};
-use error_handler::handle_error;
 use errors::TokenGenErrors;
-use rpc_client::{initiate_client, TokenGenClient};
-use utils::helpers::validate_rpc_url;
-use variables::ADDRESS;
+use handlers::handle_error;
+use utils::{
+    client::rpc_client::{initiate_client, TokenGenClient},
+    helpers::validate_rpc_url,
+};
+pub use utils::constants;
 
 mod commands;
-mod error_handler;
 mod errors;
-mod rpc_client;
-mod success_handler;
+mod handlers;
 #[cfg(test)]
 pub mod tests;
 mod utils;
-mod variables;
+
+
+/// Result type for the application, using custom error handling.
+pub type Result<T> = std::result::Result<T, TokenGenErrors>;
 
 /// # Sui Token Generator CLI Tool
 ///
@@ -74,9 +77,6 @@ enum Commands {
     },
 }
 
-/// Result type for the application, using custom error handling.
-pub type Result<T> = std::result::Result<T, TokenGenErrors>;
-
 /// Main asynchronous entry point.
 ///
 /// Parses command-line arguments, executes the selected subcommand, and handles errors.
@@ -86,19 +86,24 @@ async fn main() {
     handle_error(run_cli(cli).await);
 }
 
-/// Executes the selected subcommand.
+/// Executes the selected CLI subcommand based on user input.
 ///
-/// # Arguments:
-/// - `cli`: Parsed CLI arguments.
+/// # Arguments
+/// * `cli` - The parsed CLI arguments containing the subcommand and its options
 ///
-/// # Returns:
-/// - `Ok(())` if successful.
-/// - `Err(TokenGenErrors)` if an error occurs.
+/// # Returns
+/// * `Ok(())` - Command executed successfully
+/// * `Err(TokenGenErrors)` - Command execution failed with specific error
+///
+/// # Details
+/// Handles two main commands:
+/// * `Create` - Generates a new Sui token contract
+/// * `Verify` - Validates existing token contracts from local path or URL
 async fn run_cli(cli: Cli) -> Result<()> {
     match &cli.command {
         Commands::Create { rpc } => {
             // Use the provided RPC URL or fall back to the default
-            let rpc_url = rpc.clone().unwrap_or_else(|| ADDRESS.to_string());
+            let rpc_url = rpc.clone().unwrap_or_else(|| constants::ADDRESS.to_string());
 
             // Validate the RPC URL
             validate_rpc_url(&rpc_url)?;
@@ -110,7 +115,7 @@ async fn run_cli(cli: Cli) -> Result<()> {
         }
         Commands::Verify { rpc, path, url } => {
             // Use the provided RPC URL or fall back to the default
-            let rpc_url = rpc.clone().unwrap_or_else(|| ADDRESS.to_string());
+            let rpc_url = rpc.clone().unwrap_or_else(|| constants::ADDRESS.to_string());
 
             // Validate the RPC URL
             validate_rpc_url(&rpc_url)?;
