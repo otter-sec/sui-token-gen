@@ -5,22 +5,14 @@ use crate::{
     commands::verify::verify_token_using_url,
     errors::TokenGenErrors,
     utils::{
-        client::rpc_client::{initiate_client, TokenGenClient},
+        client::rpc_client::TokenGenClient,
         generation::ContractGenerator,
         helpers::sanitize_name,
     },
     constants::{ADDRESS, SUB_FOLDER},
     Result,
+    tests::common::setup_test_client,
 };
-
-// Helper function to set up a test client with consistent error handling
-// This function initializes an RPC client by calling the initiate_client function and returns the client.
-// If an error occurs during client initialization, it maps the error to a TokenGenError.
-pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
-    initiate_client(address)
-        .await
-        .map_err(|_| TokenGenErrors::FailedToConnectRpc)
-}
 
 // Test function to initiate the RPC client for testing purposes
 // It simply calls the setup_test_client function with the predefined ADDRESS constant.
@@ -133,7 +125,7 @@ async fn create_command() -> Result<()> {
 async fn verify_command_valid_file() -> Result<()> {
     // Get the current directory path
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let templates_path = format!("{}/src/test_tokens/valid_token.move", current_dir.display());
+    let templates_path = format!("{}/src/tests/tokens/valid_token.move", current_dir.display());
 
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
@@ -156,7 +148,7 @@ async fn verify_command_invalid_file() -> Result<()> {
     // Get the current directory path
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let templates_path = format!(
-        "{}/src/test_tokens/invalid_token.move",
+        "{}/src/tests/tokens/invalid_token.move",
         current_dir.display()
     );
 
