@@ -3,12 +3,12 @@ use tarpc::context;
 
 use crate::{
     errors::TokenGenErrors,
-    rpc_client::TokenGenClient,
     utils::{
-        generation::{create_base_folder, create_contract_file, create_move_toml},
+        client::rpc_client::TokenGenClient,
+        generation::ContractGenerator,
         helpers::sanitize_name,
     },
-    variables::{ADDRESS, SUB_FOLDER},
+    constants::{ADDRESS, SUB_FOLDER},
     Result,
 };
 
@@ -44,12 +44,13 @@ async fn test_full_token_creation_flow() -> Result<()> {
         .map_err(TokenGenErrors::RpcError)? // Map RPC error to a custom error type
         .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?; // Map contract creation failure
 
+    let contract_generator = ContractGenerator::new(test_folder.to_string());
     // Create the base folder to store generated files
-    create_base_folder(test_folder)?;
+    contract_generator.create_base_folder()?;
 
     // Generate the Move.toml file and token contract file for the token
-    create_move_toml(test_folder, &move_toml)?;
-    create_contract_file(token_name, test_folder, &token_content, SUB_FOLDER)?;
+    contract_generator.create_move_toml(&move_toml)?;
+    contract_generator.create_contract_file(token_name, &token_content, SUB_FOLDER)?;
 
     // Verify the existence of the necessary files after creation
     let sources_path = format!("{}/{}", test_folder, SUB_FOLDER); // Path to sources folder

@@ -1,27 +1,18 @@
-use std::io;
 use tarpc::context;
 
 use crate::{
     errors::TokenGenErrors,
-    rpc_client::TokenGenClient,
-    success_handler::{handle_success, SuccessType},
+    utils::client::rpc_client::TokenGenClient,
+    handlers::{handle_success, SuccessType},
     utils::{
         atomic::AtomicFileOperation,
-        generation::{create_base_folder, create_contract_file, create_move_toml},
+        generation::ContractGenerator,
         helpers::sanitize_name,
         prompts::{get_user_prompt, TokenInfo},
     },
-    variables::{SUB_FOLDER, TEST_FOLDER},
+    constants::{SUB_FOLDER, TEST_FOLDER},
     Result,
 };
-
-/// Implements conversion from `TokenGenErrors` to `io::Error`.
-/// This allows `TokenGenErrors` to be treated as `io::Error` for easier interoperability with standard IO functions.
-impl From<TokenGenErrors> for io::Error {
-    fn from(err: TokenGenErrors) -> io::Error {
-        io::Error::new(io::ErrorKind::Other, err.to_string())
-    }
-}
 
 /// Creates a new Sui token contract by interacting with the RPC server and managing local file operations.
 ///
@@ -74,19 +65,23 @@ pub async fn create_token(client: TokenGenClient) -> Result<()> {
     // Initialize atomic file operation to manage all file writes with rollback support.
     let mut atomic_op = AtomicFileOperation::new(base_folder);
 
+    let contract_generator = ContractGenerator::new(base_folder.to_string());
     // Create the base folder for the token contract files.
-    create_base_folder(base_folder)?;
+    contract_generator.create_base_folder()?;
 
     // Generate and write the Move.toml file to the base folder.
-    create_move_toml(base_folder, &move_toml)?;
+    contract_generator.create_move_toml(&move_toml)?;
 
     // Generate and write the main contract file to the appropriate subfolder.
-    create_contract_file(&token_data.name, base_folder, &token_content, SUB_FOLDER)?;
+    contract_generator.create_contract_file(
+        &token_data.name,
+        &token_content,
+        SUB_FOLDER,
+    )?;
 
     // Generate and write the test contract file to the test folder.
-    create_contract_file(
+    contract_generator.create_contract_file(
         &token_data.name,
-        base_folder,
         &test_token_content,
         TEST_FOLDER,
     )?;

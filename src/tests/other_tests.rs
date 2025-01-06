@@ -3,8 +3,8 @@ use tarpc::context;
 use crate::{
     commands::verify::verify_token_using_url,
     errors::TokenGenErrors,
-    rpc_client::{initiate_client, TokenGenClient},
-    variables::ADDRESS,
+    utils::client::rpc_client::{initiate_client, TokenGenClient},
+    constants::ADDRESS,
     Result,
 };
 

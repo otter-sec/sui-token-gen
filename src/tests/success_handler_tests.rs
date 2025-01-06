@@ -1,5 +1,5 @@
 use crate::{
-    success_handler::{handle_success, SuccessType},
+    handlers::{handle_success, SuccessType},
     utils::prompts::TokenInfo,
 };
 

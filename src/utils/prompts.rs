@@ -3,7 +3,7 @@ use regex::Regex;
 
 use crate::{
     errors::TokenGenErrors,
-    variables::{CANCEL_ERROR_MESSAGE, FROZEN_OPTIONS},
+    constants::{CANCEL_ERROR_MESSAGE, FROZEN_OPTIONS},
     Result,
 };
 

@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::{io::Error, net::SocketAddr};
 use tarpc::{client, service, tokio_serde::formats::Json};
 
-use crate::errors::RpcResponseErrors;
+use super::responses::RpcResponseErrors;
 
 /// `TokenGen` trait defines the RPC interface for token generation operations.
 #[service]

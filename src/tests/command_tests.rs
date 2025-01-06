@@ -4,12 +4,12 @@ use tarpc::context;
 use crate::{
     commands::verify::verify_token_using_url,
     errors::TokenGenErrors,
-    rpc_client::{initiate_client, TokenGenClient},
     utils::{
-        generation::{create_base_folder, create_contract_file, create_move_toml},
+        client::rpc_client::{initiate_client, TokenGenClient},
+        generation::ContractGenerator,
         helpers::sanitize_name,
     },
-    variables::{ADDRESS, SUB_FOLDER},
+    constants::{ADDRESS, SUB_FOLDER},
     Result,
 };
 
@@ -65,14 +65,16 @@ async fn create_command() -> Result<()> {
         .map_err(|e| TokenGenErrors::FailedToCreateTokenContract(e.to_string()))?;
 
     // Create the base folder for the token contract
-    create_base_folder(&base_folder)?;
+    let contract_generator = ContractGenerator::new(base_folder.to_string());
+
+    // Create the base folder for the token contract
+    contract_generator.create_base_folder()?;
 
     // Generate the Move.toml file for the contract
-    create_move_toml(&base_folder, &move_toml).expect("Failed to create Move.toml");
+    contract_generator.create_move_toml(&move_toml)?;
 
     // Generate the actual contract file for the token
-    create_contract_file(name, &base_folder, &token_content, SUB_FOLDER)
-        .expect("Failed to create contract file");
+    contract_generator.create_contract_file(name, &token_content, SUB_FOLDER)?;
 
     // Validate folder and file creation
     let sources_folder = format!("{}/{}", base_folder, SUB_FOLDER);
