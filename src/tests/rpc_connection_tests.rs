@@ -28,7 +28,7 @@ async fn rpc_client_connection_failure() -> Result<()> {
 
     // Assert that the result is an error, and it matches the specific error type
     assert!(result.is_err()); // Ensure that the result is an error
-    assert!(matches!(result, Err(TokenGenErrors::InvalidInput(_)))); // Ensure that the error is of type InvalidInput
+    assert!(matches!(result, Err(TokenGenErrors::FailedToConnectRpc))); // Ensure that the error is of type InvalidInput
 
     Ok(())
 }

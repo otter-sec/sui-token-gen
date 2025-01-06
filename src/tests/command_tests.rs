@@ -133,7 +133,7 @@ async fn create_command() -> Result<()> {
 async fn verify_command_valid_file() -> Result<()> {
     // Get the current directory path
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let templates_path = format!("{}/src/test_tokens/valid_token.move", current_dir.display());
+    let templates_path = format!("{}/src/tests/tokens/valid_token.move", current_dir.display());
 
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
@@ -156,7 +156,7 @@ async fn verify_command_invalid_file() -> Result<()> {
     // Get the current directory path
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let templates_path = format!(
-        "{}/src/test_tokens/invalid_token.move",
+        "{}/src/tests/tokens/invalid_token.move",
         current_dir.display()
     );
 
