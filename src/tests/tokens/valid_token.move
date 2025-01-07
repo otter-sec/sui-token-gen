@@ -1,4 +1,4 @@
-module Mytoken::Mytoken {
+module Mytoken::mytoken {
     use sui::coin::{Self, TreasuryCap};
     public struct MYTOKEN has drop {}
 
