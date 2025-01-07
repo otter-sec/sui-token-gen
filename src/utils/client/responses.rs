@@ -51,6 +51,6 @@ pub enum RpcResponseErrors {
     FileIoError(String),
 
     /// Error returned when verification fails
-    #[error("Verification failed: {0}")]
+    #[error("{0}")]
     VerifyResultError(String),
 }
