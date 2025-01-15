@@ -1,6 +1,6 @@
 # Sui Token CLI Tool
 
-A **Rust-based CLI tool** for generating and verifying Sui token smart contracts effortlessly.
+A **Rust-based CLI tool** for generating and verifying Sui token smart contracts effortlessly. It uses the RPC service which is run by Osec on `5.161.90.244:5001`. If you want to use a custom RPC url you can pass using the --rpc flag. 
 
 ---
 
