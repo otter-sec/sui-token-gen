@@ -218,3 +218,30 @@ foo@bar:~$ SUCCESS: Verified successfully from path: /Users/developer/Desktop/su
   ```
 
 ---
+
+## Docker Configuration
+To run this code in a Docker container, follow these steps:
+
+### 1. Build and Access the Container
+Use the following command to create a Docker container, build the code, and gain access to an interactive shell inside the container:
+```bash
+docker-compose run sui-token-cli
+```
+
+### 2. Run CLI Commands
+Once inside the container, you can run the CLI tool commands. For example:
+```bash
+./api create
+```
+
+3. Exit the Container
+To exit the container, simply type:
+```bash
+exit
+```
+
+4. Stop and Remove the Container
+To stop and remove the running container, use:
+```bash
+docker-compose down
+```

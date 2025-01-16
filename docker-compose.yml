@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  sui-token-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sui-token-cli-container
+    stdin_open: true  # Keep the container's STDIN open
+    tty: true          # Allocate a pseudo-TTY for interactive access
+    command: bash      # Start the container with a bash shell
