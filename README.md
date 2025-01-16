@@ -234,13 +234,13 @@ Once inside the container, you can run the CLI tool commands. For example:
 ./sui-token-gen create
 ```
 
-3. Exit the Container
+### 3. Exit the Container
 To exit the container, simply type:
 ```bash
 exit
 ```
 
-4. Stop and Remove the Container
+### 4. Stop and Remove the Container
 To stop and remove the running container, use:
 ```bash
 docker-compose down
