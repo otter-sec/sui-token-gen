@@ -231,7 +231,7 @@ docker-compose run sui-token-cli
 ### 2. Run CLI Commands
 Once inside the container, you can run the CLI tool commands. For example:
 ```bash
-./api create
+./sui-token-gen create
 ```
 
 3. Exit the Container
