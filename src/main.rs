@@ -190,7 +190,6 @@ async fn run_cli(cli: Cli) -> Result<()> {
             // Verify by token address with a default environment of "testnet"
             if let Some(address) = address {
                 let env = environment.clone().unwrap_or_else(|| "testnet".to_string());
-                println!("Called one");
                 verify::verify_token_address(address, &env, client).await?;
             }
         }

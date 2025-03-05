@@ -103,7 +103,6 @@ pub async fn verify_token_address(
     environment: &str,
     client: TokenGenClient,
 ) -> Result<()> {
-    println!("Called");
     // Send the address and environment to the RPC client for verification.
     client
         .verify_address(
