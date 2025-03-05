@@ -2,16 +2,14 @@ use std::{env, fs, path::Path};
 use tarpc::context;
 
 use crate::{
-    commands::verify::verify_token_using_url,
-    errors::TokenGenErrors,
-    utils::{
-        client::rpc_client::TokenGenClient,
-        generation::ContractGenerator,
-        helpers::sanitize_name,
-    },
+    commands::verify::{verify_token_address, verify_token_using_url},
     constants::{ADDRESS, SUB_FOLDER},
-    Result,
+    errors::TokenGenErrors,
     tests::common::setup_test_client,
+    utils::{
+        client::rpc_client::TokenGenClient, generation::ContractGenerator, helpers::sanitize_name,
+    },
+    Result,
 };
 
 // Test function to initiate the RPC client for testing purposes
@@ -125,7 +123,10 @@ async fn create_command() -> Result<()> {
 async fn verify_command_valid_file() -> Result<()> {
     // Get the current directory path
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let templates_path = format!("{}/src/tests/tokens/valid_token.move", current_dir.display());
+    let templates_path = format!(
+        "{}/src/tests/tokens/valid_token.move",
+        current_dir.display()
+    );
 
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
@@ -209,5 +210,56 @@ async fn verify_command_valid_gitlab() -> Result<()> {
     // Call verify_token with the valid GitLab URL
     let response = verify_token_using_url(valid_url, client).await;
     assert!(response.is_ok(), "Failed to verify URL");
+    Ok(())
+}
+
+// Test case to verify correct handling of invalid token addresses
+#[tokio::test]
+async fn verify_token_address_invalid_cases() -> Result<()> {
+    let client = setup_test_client(ADDRESS).await?;
+
+    // Test with an empty address
+    let empty_address = "";
+    let result = verify_token_address(empty_address, "testnet", client.to_owned()).await;
+    assert!(result.is_err()); // Expecting an error due to empty address
+
+    // Test with an invalid address format
+    let invalid_address = "invalid_token_address";
+    let result = verify_token_address(invalid_address, "testnet", client.to_owned()).await;
+    assert!(result.is_err()); // Expecting an error due to incorrect address format
+
+    Ok(())
+}
+
+// Test case to verify valid token addresses
+#[tokio::test]
+async fn verify_token_address_successful_case() -> Result<()> {
+    let client = setup_test_client(ADDRESS).await?;
+
+    // Assume this is a valid token address (mocked in test setup)
+    let valid_address = "0xc2f47262639d93701c28453b88df9e6c5feb28925741fcab7b75ffc710805217";
+    let result = verify_token_address(valid_address, "testnet", client.to_owned()).await;
+
+    // Expecting the verification to pass for a valid token address
+    assert!(result.is_ok());
+
+    Ok(())
+}
+
+// Test case to verify handling of different environments
+#[tokio::test]
+async fn verify_token_address_with_different_environments() -> Result<()> {
+    let client = setup_test_client(ADDRESS).await?;
+
+    let valid_address = "0xc2f47262639d93701c28453b88df9e6c5feb28925741fcab7b75ffc710805217";
+
+    // Test with a valid environment
+    let result = verify_token_address(valid_address, "testnet", client.to_owned()).await;
+    assert!(result.is_ok());
+
+    // Test with an invalid environment (should default to "testnet" internally)
+    let result = verify_token_address(valid_address, "invalid_env", client.to_owned()).await;
+    assert!(result.is_err()); // It should fail because of "invalid_env"
+
     Ok(())
 }

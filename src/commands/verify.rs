@@ -2,8 +2,8 @@ use tarpc::context;
 
 use crate::{
     errors::TokenGenErrors,
-    utils::client::rpc_client::TokenGenClient,
     handlers::{handle_success, SuccessType},
+    utils::client::rpc_client::TokenGenClient,
     utils::{helpers::is_valid_repository_url, verify_helper::verify_path},
     Result,
 };
@@ -76,6 +76,52 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
     handle_success(SuccessType::TokenVerified {
         path: None,
         url: Some(url.to_string()),
+    });
+
+    Ok(())
+}
+
+/**
+ * Verifies a token contract using its blockchain address and environment.
+ *
+ * This function performs the following steps:
+ * 1. Validates the provided blockchain address format.
+ * 2. Sends the address and environment to the RPC client for verification.
+ * 3. Logs the success if verification is successful, or returns an appropriate error if verification fails.
+ *
+ * # Parameters
+ * - `address`: A string slice representing the token contract's blockchain address.
+ * - `environment`: A string slice representing the blockchain environment (`mainnet`, `devnet`, `testnet`).
+ * - `client`: An instance of `TokenGenClient` used to interact with the verification RPC service.
+ *
+ * # Returns
+ * - `Ok(())` if the token address is successfully verified.
+ * - `Err(TokenGenErrors)` if any validation or verification step fails.
+ */
+pub async fn verify_token_address(
+    address: &str,
+    environment: &str,
+    client: TokenGenClient,
+) -> Result<()> {
+    println!("Called");
+    // Send the address and environment to the RPC client for verification.
+    client
+        .verify_address(
+            context::current(),
+            address.to_string(),
+            environment.to_string(),
+        )
+        .await
+        .map_err(TokenGenErrors::RpcError)?
+        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
+    println!("Done");
+    // Log success message if verification is successful.
+    handle_success(SuccessType::TokenVerified {
+        path: None,
+        url: Some(format!(
+            "Address: {}, Environment: {}",
+            address, environment
+        )),
     });
 
     Ok(())

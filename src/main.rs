@@ -2,7 +2,7 @@
 //!
 //! The Sui Token Generator CLI is a command-line tool designed for developers to:
 //! - Create custom Sui token contracts with flexible parameters.
-//! - Verify existing token contracts via local files or Git repositories.
+//! - Verify existing token contracts via local files, Git repositories, or blockchain addresses.
 //!
 //! The tool operates on a client-server architecture, communicating with an RPC server for token creation and verification tasks.
 //!
@@ -10,11 +10,11 @@ use clap::{Parser, Subcommand};
 use commands::{create, verify};
 use errors::TokenGenErrors;
 use handlers::handle_error;
+pub use utils::constants;
 use utils::{
     client::rpc_client::{initiate_client, TokenGenClient},
     helpers::validate_rpc_url,
 };
-pub use utils::constants;
 
 mod commands;
 mod errors;
@@ -22,7 +22,6 @@ mod handlers;
 #[cfg(test)]
 pub mod tests;
 mod utils;
-
 
 /// Result type for the application, using custom error handling.
 pub type Result<T> = std::result::Result<T, TokenGenErrors>;
@@ -33,7 +32,7 @@ pub type Result<T> = std::result::Result<T, TokenGenErrors>;
 ///
 /// ## Features:
 /// - **Token Creation**: Easily generate Sui token contracts with customizable parameters.
-/// - **Token Verification**: Validate existing token contracts via local files or repository URLs.
+/// - **Token Verification**: Validate existing token contracts via local files, repository URLs, or blockchain addresses.
 ///
 /// Use `--help` for detailed explanations of available commands and options.
 #[derive(Parser, Debug)]
@@ -49,19 +48,46 @@ struct Cli {
     command: Commands,
 }
 
+#[derive(Debug, Clone, Parser)]
+pub struct CreateTokenParams {
+    /// Optional RPC URL for this command.
+    #[arg(short, long)]
+    rpc: Option<String>,
+
+    /// Token name.
+    #[arg(short, long)]
+    name: Option<String>,
+
+    /// Token symbol.
+    #[arg(short, long)]
+    symbol: Option<String>,
+
+    /// Token decimals.
+    #[arg(short, long)]
+    decimals: Option<u8>,
+
+    /// Token description.
+    #[arg(short, long)]
+    description: Option<String>,
+
+    /// Whether metadata is frozen.
+    #[arg(short, long)]
+    is_frozen: Option<bool>,
+
+    /// Token creation environment.
+    #[arg(short, long)]
+    environment: Option<String>,
+}
+
 /// Enum for supported subcommands.
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Create a new Sui token contract with customizable parameters.
     #[command(about = "Creates a new token contract.")]
-    Create {
-        /// Optional RPC URL for this command.
-        #[arg(short, long)]
-        rpc: Option<String>,
-    },
+    Create(CreateTokenParams),
 
-    /// Verify an existing Sui token contract from a repository or local file.
-    #[command(about = "Verifies an existing contract from a repo or local file.")]
+    /// Verify an existing Sui token contract from a repository, local file, or blockchain address.
+    #[command(about = "Verifies an existing contract from a repo, local file, or token address.")]
     Verify {
         /// Optional RPC URL for this command.
         #[arg(short, long)]
@@ -74,6 +100,14 @@ enum Commands {
         /// URL of the repository containing the contract.
         #[arg(short, long)]
         url: Option<String>,
+
+        /// Token contract address on the blockchain.
+        #[arg(short, long)]
+        address: Option<String>,
+
+        /// Blockchain environment (mainnet, devnet, testnet).
+        #[arg(short, long)]
+        environment: Option<String>,
     },
 }
 
@@ -93,29 +127,40 @@ async fn main() {
 ///
 /// # Returns
 /// * `Ok(())` - Command executed successfully
-/// * `Err(TokenGenErrors)` - Command execution failed with specific error
+/// * `Err(TokenGenErrors)` - Command execution failed with a specific error
 ///
 /// # Details
-/// Handles two main commands:
-/// * `Create` - Generates a new Sui token contract
-/// * `Verify` - Validates existing token contracts from local path or URL
+/// Handles three main verification methods:
+/// * `Verify` with `--path`: Validates a contract from a local file.
+/// * `Verify` with `--url`: Validates a contract from a repository.
+/// * `Verify` with `--address` and `--environment`: Verifies a token contract by its blockchain address.
 async fn run_cli(cli: Cli) -> Result<()> {
     match &cli.command {
-        Commands::Create { rpc } => {
-            // Use the provided RPC URL or fall back to the default
-            let rpc_url = rpc.clone().unwrap_or_else(|| constants::ADDRESS.to_string());
+        Commands::Create(params) => {
+            let rpc_url = params
+                .rpc
+                .clone()
+                .unwrap_or_else(|| constants::ADDRESS.to_string());
 
-            // Validate the RPC URL
             validate_rpc_url(&rpc_url)?;
 
             let client: TokenGenClient = initiate_client(&rpc_url).await.map_err(|_| {
                 TokenGenErrors::InvalidInput("Failed to connect to the RPC service".to_string())
             })?;
-            create::create_token(client).await?;
+
+            create::create_token(client, params).await?;
         }
-        Commands::Verify { rpc, path, url } => {
+        Commands::Verify {
+            rpc,
+            path,
+            url,
+            address,
+            environment,
+        } => {
             // Use the provided RPC URL or fall back to the default
-            let rpc_url = rpc.clone().unwrap_or_else(|| constants::ADDRESS.to_string());
+            let rpc_url = rpc
+                .clone()
+                .unwrap_or_else(|| constants::ADDRESS.to_string());
 
             // Validate the RPC URL
             validate_rpc_url(&rpc_url)?;
@@ -124,16 +169,29 @@ async fn run_cli(cli: Cli) -> Result<()> {
                 TokenGenErrors::InvalidInput("Failed to connect to the RPC service".to_string())
             })?;
 
-            if path.is_none() && url.is_none() {
+            // Ensure at least one verification parameter is provided
+            if path.is_none() && url.is_none() && address.is_none() {
                 return Err(TokenGenErrors::InvalidInput(
-                    "Error: Either --path or --url must be provided.".to_string(),
+                    "Error: Either --path, --url, or --address must be provided.".to_string(),
                 ));
             }
+
+            // Verify by local file path
             if let Some(path) = path {
                 verify::verify_token_from_path(path, client.clone()).await?;
             }
+
+            // Verify by repository URL
             if let Some(url) = url {
-                verify::verify_token_using_url(url, client).await?;
+                verify::verify_token_using_url(url, client.clone()).await?;
+            }
+
+            // Verify by token address and environment
+            // Verify by token address with a default environment of "testnet"
+            if let Some(address) = address {
+                let env = environment.clone().unwrap_or_else(|| "testnet".to_string());
+                println!("Called one");
+                verify::verify_token_address(address, &env, client).await?;
             }
         }
     }
