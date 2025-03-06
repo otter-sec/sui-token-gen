@@ -40,6 +40,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
     handle_success(SuccessType::TokenVerified {
         path: Some(path.to_string()),
         url: None,
+        address: None
     });
 
     Ok(())
@@ -76,6 +77,7 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
     handle_success(SuccessType::TokenVerified {
         path: None,
         url: Some(url.to_string()),
+        address: None
     });
 
     Ok(())
@@ -117,7 +119,8 @@ pub async fn verify_token_address(
     // Log success message if verification is successful.
     handle_success(SuccessType::TokenVerified {
         path: None,
-        url: Some(format!(
+        url: None,
+        address: Some(format!(
             "Address: {}, Environment: {}",
             address, environment
         )),
