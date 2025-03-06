@@ -142,7 +142,7 @@ async fn run_cli(cli: Cli) -> Result<()> {
                 .clone()
                 .unwrap_or_else(|| constants::ADDRESS.to_string());
 
-            validate_rpc_url(&rpc_url)?;
+            let rpc_url = validate_rpc_url(&rpc_url)?;
 
             let client: TokenGenClient = initiate_client(&rpc_url).await.map_err(|_| {
                 TokenGenErrors::FailedToConnectRpc

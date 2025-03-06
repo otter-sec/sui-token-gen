@@ -1,4 +1,5 @@
 use regex::Regex;
+use url::Url;
 
 use crate::{errors::TokenGenErrors, Result};
 
@@ -49,11 +50,18 @@ pub fn is_valid_repository_url(url: &str) -> Result<()> {
     Ok(())
 }
 
-/// Validates the RPC URL format.
-pub fn validate_rpc_url(url: &str) -> Result<()> {
-    let re = Regex::new(r"^(http(s)?://)?([0-9]{1,3}\.){3}[0-9]{1,3}(:\d+)?$").unwrap();
-    if !re.is_match(url) {
-        return Err(TokenGenErrors::InvalidRpcUrl);
+/// Validates and extracts the RPC URL format.
+pub fn validate_rpc_url(url: &str) -> Result<String> {
+    // Check if the input is already in the correct format (e.g., "127.0.0.1:5001")
+    let re = Regex::new(r"^([0-9]{1,3}\.){3}[0-9]{1,3}:\d+$").unwrap();
+    if re.is_match(url) {
+        return Ok(url.to_string());
     }
-    Ok(())
+
+    // Parse the URL and extract the host and port
+    let parsed_url = Url::parse(url).map_err(|_| TokenGenErrors::InvalidRpcUrl)?;
+    let host = parsed_url.host_str().ok_or(TokenGenErrors::InvalidRpcUrl)?;
+    let port = parsed_url.port().ok_or(TokenGenErrors::InvalidRpcUrl)?;
+
+    Ok(format!("{}:{}", host, port))
 }
