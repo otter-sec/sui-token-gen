@@ -2,13 +2,11 @@ use std::{fs, path::Path};
 use tarpc::context;
 
 use crate::{
+    constants::{ADDRESS, SUB_FOLDER},
     errors::TokenGenErrors,
     utils::{
-        client::rpc_client::TokenGenClient,
-        generation::ContractGenerator,
-        helpers::sanitize_name,
+        client::rpc_client::TokenGenClient, generation::ContractGenerator, helpers::sanitize_name,
     },
-    constants::{ADDRESS, SUB_FOLDER},
     Result,
 };
 

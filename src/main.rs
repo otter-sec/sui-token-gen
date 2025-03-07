@@ -144,9 +144,9 @@ async fn run_cli(cli: Cli) -> Result<()> {
 
             let rpc_url = validate_rpc_url(&rpc_url)?;
 
-            let client: TokenGenClient = initiate_client(&rpc_url).await.map_err(|_| {
-                TokenGenErrors::FailedToConnectRpc
-            })?;
+            let client: TokenGenClient = initiate_client(&rpc_url)
+                .await
+                .map_err(|_| TokenGenErrors::FailedToConnectRpc)?;
 
             create::create_token(client, params).await?;
         }
@@ -165,9 +165,9 @@ async fn run_cli(cli: Cli) -> Result<()> {
             // Validate the RPC URL
             validate_rpc_url(&rpc_url)?;
 
-            let client: TokenGenClient = initiate_client(&rpc_url).await.map_err(|_| {
-                TokenGenErrors::FailedToConnectRpc
-            })?;
+            let client: TokenGenClient = initiate_client(&rpc_url)
+                .await
+                .map_err(|_| TokenGenErrors::FailedToConnectRpc)?;
 
             // Ensure at least one verification parameter is provided
             if path.is_none() && url.is_none() && address.is_none() {

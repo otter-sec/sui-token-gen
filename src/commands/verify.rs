@@ -40,7 +40,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
     handle_success(SuccessType::TokenVerified {
         path: Some(path.to_string()),
         url: None,
-        address: None
+        address: None,
     });
 
     Ok(())
@@ -77,7 +77,7 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
     handle_success(SuccessType::TokenVerified {
         path: None,
         url: Some(url.to_string()),
-        address: None
+        address: None,
     });
 
     Ok(())

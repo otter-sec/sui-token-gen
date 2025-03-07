@@ -1,10 +1,7 @@
 use tarpc::context;
 
-use crate::{
-    constants::ADDRESS,
-    Result,
-};
 use super::common::test_utils::setup_test_client;
+use crate::{constants::ADDRESS, Result};
 
 // Test case to verify token creation works across different environments (devnet, testnet, mainnet)
 // It attempts to create a token in each environment and asserts that the token creation is successful for all environments.
@@ -35,4 +32,3 @@ async fn environment_specific_token_creation() -> Result<()> {
     }
     Ok(())
 }
-

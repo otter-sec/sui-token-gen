@@ -1,12 +1,7 @@
 use tarpc::context;
 
-use crate::{
-    commands::verify::verify_token_using_url,
-    constants::ADDRESS,
-    Result,
-};
 use super::common::test_utils::setup_test_client;
-
+use crate::{commands::verify::verify_token_using_url, constants::ADDRESS, Result};
 
 // Test case to verify error handling when verifying token using a URL
 // It checks the behavior when invalid or malformed URLs are passed to the verification function.

@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use crate::{errors::TokenGenErrors, constants::SUB_FOLDER, Result};
+use crate::{constants::SUB_FOLDER, errors::TokenGenErrors, Result};
 
 /**
  * Reads the content of a file at the given path.

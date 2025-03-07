@@ -1,11 +1,7 @@
 use tarpc::context;
 
-use crate::{
-    errors::TokenGenErrors,
-    constants::ADDRESS,
-    Result,
-};
 use super::common::test_utils::setup_test_client;
+use crate::{constants::ADDRESS, errors::TokenGenErrors, Result};
 
 // Test case to simulate a failed client connection due to an invalid address.
 // This tests the scenario where the address provided for the client setup is incorrect (e.g., wrong port or unavailable address).
