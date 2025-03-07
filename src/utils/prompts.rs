@@ -1,4 +1,5 @@
 use inquire::{required, Confirm, Select, Text};
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 use crate::{
@@ -9,6 +10,16 @@ use crate::{
 
 use super::helpers::sanitize_name;
 
+// Define regex as Lazy static variables
+static VALID_NAME_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[a-zA-Z0-9\s]+$").expect("Invalid pattern"));
+
+static SYMBOL_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[a-zA-Z0-9]+$").expect("Invalid pattern"));
+
+static DESCRIPTION_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[a-zA-Z0-9\s.,'\!?;:(){}\[\]\-\_@#$%&*+=|~]+$").expect("Invalid pattern")
+});
 // Define struct to hold token information from user input.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TokenInfo {
@@ -50,12 +61,6 @@ impl Default for TokenInfo {
  * - `Err(TokenGenErrors)`: Returns an error if input validation fails or an issue occurs during prompting.
  */
 pub fn get_user_prompt(params: &CreateTokenParams) -> Result<TokenInfo> {
-    // Define regular expressions to validate user input
-    let valid_regex: Regex = Regex::new(r"^[a-zA-Z0-9\s]+$").unwrap();
-    let symbol_regex: Regex = Regex::new(r"^[a-zA-Z0-9]+$").unwrap();
-    let description_valid_regex =
-        Regex::new(r"^[a-zA-Z0-9\s.,'\!?;:(){}\[\]\-\_@#$%&*+=|~]+$").unwrap();
-
     // Get the current working directory
     let current_dir = std::env::current_dir().map_err(|_| TokenGenErrors::CurrentDirectoryError)?;
 
@@ -66,7 +71,7 @@ pub fn get_user_prompt(params: &CreateTokenParams) -> Result<TokenInfo> {
         let mut name: String = Text::new("Name: ")
             .with_validator(required!("Name is required"))
             .with_validator(&|input| {
-                if valid_regex.is_match(input) {
+                if VALID_NAME_REGEX.is_match(input) {
                     Ok(())
                 } else {
                     Err("Name can only contain alphabets, numbers, and whitespace".into())
@@ -89,7 +94,7 @@ pub fn get_user_prompt(params: &CreateTokenParams) -> Result<TokenInfo> {
                 name = Text::new("Please provide a new token name:")
                     .with_validator(required!("Name is required"))
                     .with_validator(&|input| {
-                        if valid_regex.is_match(input) {
+                        if VALID_NAME_REGEX.is_match(input) {
                             Ok(())
                         } else {
                             Err("Name can only contain alphabets, numbers, and whitespace".into())
@@ -110,7 +115,7 @@ pub fn get_user_prompt(params: &CreateTokenParams) -> Result<TokenInfo> {
         Text::new("Symbol: ")
             .with_validator(required!("Symbol is required"))
             .with_validator(&|input| {
-                if symbol_regex.is_match(input) {
+                if SYMBOL_REGEX.is_match(input) {
                     if input.len() <= 5 {
                         Ok(())
                     } else {
@@ -157,7 +162,7 @@ pub fn get_user_prompt(params: &CreateTokenParams) -> Result<TokenInfo> {
         Text::new("Description: ")
             .with_help_message("Optional - Provide a brief token description")
             .with_validator(&|input| {
-                if input.is_empty() || description_valid_regex.is_match(input) {
+                if input.is_empty() || DESCRIPTION_REGEX.is_match(input) {
                     Ok(())
                 } else {
                     Err("Description can only contain alphanumeric characters, spaces, and select special characters".into())
