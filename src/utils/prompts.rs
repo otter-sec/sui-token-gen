@@ -20,6 +20,9 @@ static SYMBOL_REGEX: Lazy<Regex> =
 static DESCRIPTION_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"^[a-zA-Z0-9\s.,'\!?;:(){}\[\]\-\_@#$%&*+=|~]+$").expect("Invalid pattern")
 });
+
+const DEFAULT_INDEX: usize = 1;
+
 // Define struct to hold token information from user input.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TokenInfo {
@@ -187,9 +190,8 @@ pub fn get_user_prompt(params: &CreateTokenParams) -> Result<TokenInfo> {
         environment.clone()
     } else {
         let env_options = vec!["mainnet", "devnet", "testnet"];
-        let default_index = env_options.iter().position(|&r| r == "devnet").unwrap();
         let env_option = Select::new("Select environment:", &env_options)
-            .with_starting_cursor(default_index)
+            .with_starting_cursor(DEFAULT_INDEX)
             .prompt()
             .map_err(TokenGenErrors::PromptError)?;
         env_option.value.to_string()
