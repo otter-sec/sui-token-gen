@@ -3,7 +3,7 @@ use tarpc::context;
 
 use crate::{
     commands::verify::{verify_token_address, verify_token_using_url},
-    constants::{ADDRESS, SUB_FOLDER},
+    constants::{ADDRESS, DEFAULT_ENVIRONMENT, SUB_FOLDER},
     errors::TokenGenErrors,
     tests::common::setup_test_client,
     utils::{
@@ -26,7 +26,7 @@ async fn create_command() -> Result<()> {
     let name: &str = "SampleToken";
     let description: String = "This is a sample token for testing.".to_string();
     let is_frozen: bool = false;
-    let environment: String = "devnet".to_string();
+    let environment: String = DEFAULT_ENVIRONMENT.to_string();
 
     // Sanitizing the token name for folder creation
     let base_folder = sanitize_name(name);

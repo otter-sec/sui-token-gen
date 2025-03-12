@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 use tarpc::context;
 
 use crate::{
-    constants::{ADDRESS, SUB_FOLDER},
+    constants::{ADDRESS, DEFAULT_ENVIRONMENT, SUB_FOLDER},
     errors::TokenGenErrors,
     utils::{
         client::rpc_client::TokenGenClient, generation::ContractGenerator, helpers::sanitize_name,
@@ -22,7 +22,7 @@ async fn test_full_token_creation_flow() -> Result<()> {
     let token_description = "Integration test token"; // Token description
     let decimals = 6; // Number of decimal places for the token
     let is_frozen = false; // Whether the token is frozen or not
-    let environment = "devnet".to_string(); // Environment for token deployment
+    let environment = DEFAULT_ENVIRONMENT.to_string(); // Environment for token deployment
 
     // Initialize the RPC client using the local address for testing
     let client: TokenGenClient = setup_test_client(ADDRESS).await?;

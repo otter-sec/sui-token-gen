@@ -8,7 +8,7 @@ use crate::{
     CreateTokenParams, Result,
 };
 
-use super::helpers::sanitize_name;
+use super::{constants::DEFAULT_ENVIRONMENT, helpers::sanitize_name};
 
 // Define regex as Lazy static variables
 static VALID_NAME_REGEX: Lazy<Regex> =
@@ -44,7 +44,7 @@ impl Default for TokenInfo {
             name: String::new(),
             description: String::new(),
             is_frozen: false,
-            environment: "devnet".to_string(),
+            environment: DEFAULT_ENVIRONMENT.to_string(),
         }
     }
 }

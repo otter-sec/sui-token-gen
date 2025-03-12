@@ -1,4 +1,5 @@
 use crate::{
+    constants::DEFAULT_ENVIRONMENT,
     handlers::{handle_success, SuccessType},
     utils::prompts::TokenInfo,
 };
@@ -35,7 +36,7 @@ fn test_token_verification_success_message_path() {
         path: Some("./test_token".to_string()), // Token verification path
         url: None,                              // URL is not provided
         address: None,                          // Address is not provided
-        environment: None,                          // Environment is not provided
+        environment: None,                      // Environment is not provided
     };
 
     // Call handle_success function to display the success message for token verification with path
@@ -66,8 +67,8 @@ fn test_token_info_parameter_capture() {
         symbol: "STORE".to_string(),       // Token symbol (e.g., 'STORE')
         name: "Storage Token".to_string(), // Token name
         description: "Testing parameter capture for database storage".to_string(), // Token description
-        is_frozen: true,                   // Indicates that the token is frozen
-        environment: "devnet".to_string(), // The environment for the token (e.g., devnet)
+        is_frozen: true, // Indicates that the token is frozen
+        environment: DEFAULT_ENVIRONMENT.to_string(), // The environment for the token (e.g., devnet)
     };
 
     // Create a success message for token creation using the TokenInfo object

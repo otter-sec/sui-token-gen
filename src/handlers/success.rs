@@ -1,4 +1,4 @@
-use crate::utils::prompts::TokenInfo;
+use crate::{constants::DEFAULT_ENVIRONMENT, utils::prompts::TokenInfo};
 use colored::*;
 
 /// Enum to define different types of success events that can occur during token generation or verification.
@@ -52,7 +52,7 @@ pub fn handle_success(success_type: SuccessType) {
             environment,
         } => {
             if let Some(addr) = address {
-                let env = environment.unwrap_or("devnet".to_string());
+                let env = environment.unwrap_or(DEFAULT_ENVIRONMENT.to_string());
                 format!(
                     "Verified: {} coin on {} was generated using the SUI Token Gen CLI.",
                     addr, env
