@@ -115,7 +115,6 @@ pub async fn verify_token_address(
         .await
         .map_err(TokenGenErrors::RpcError)?
         .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
-    println!("Done");
     // Log success message if verification is successful.
     handle_success(SuccessType::TokenVerified {
         path: None,
