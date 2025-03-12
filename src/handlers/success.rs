@@ -17,6 +17,9 @@ pub enum SuccessType {
 
         /// Optional address where the token was verified.
         address: Option<String>,
+
+        /// Optional environment where the token was deployed.
+        environment: Option<String>,
     },
 }
 
@@ -42,9 +45,18 @@ pub fn handle_success(success_type: SuccessType) {
             )
         }
         // Success from token verification
-        SuccessType::TokenVerified { path, url, address } => {
+        SuccessType::TokenVerified {
+            path,
+            url,
+            address,
+            environment,
+        } => {
             if let Some(addr) = address {
-                format!("Successfully verified `{}`!", addr)
+                let env = environment.unwrap_or("devnet".to_string());
+                format!(
+                    "Verified: {} coin on {} was generated using the SUI Token Gen CLI.",
+                    addr, env
+                )
             } else {
                 // Determine the source: prioritize path > url
                 let source = path.or(url).unwrap_or_default();

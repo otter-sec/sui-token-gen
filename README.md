@@ -71,6 +71,7 @@ Flags:\
 `--path`: Validate a local directory path.\
 `--address`: Validate a deployed coin contract address.\
 `--rpc`: Specify a custom RPC URL for verification (optional).
+`--environment`: Specify a blockchain environment name (default: devnet) (optional).
 
 It supports:
 
@@ -120,7 +121,7 @@ sui-token-gen verify --address 0x1234abcd5678ef90
 
 ```console
 foo@bar:~$ sui-token-gen verify --address 0x1234abcd5678ef90
-foo@bar:~$ SUCCESS: Verified successfully from: Address: 0xc2f47262639d93701c28453b88df9e6c5feb28925741fcab7b75ffc710805217, Environment: testnet
+foo@bar:~$ SUCCESS: Verified: 0x1234abcd5678ef90 coin on devnet was generated using the SUI Token Gen CLI.
 ```
 
 ---
