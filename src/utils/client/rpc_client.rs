@@ -41,11 +41,11 @@ pub trait TokenGen {
     /// - `url`: The URL to be verified.
     ///
     /// # Returns
-    /// - `Ok(())` if the URL is valid.
+    /// - `Ok(File name)` returns verified file name if the URL is valid.
     ///
     /// # Errors
     /// - Returns `RpcResponseErrors` if the URL is invalid or verification fails.
-    async fn verify_url(url: String) -> Result<(), RpcResponseErrors>;
+    async fn verify_url(url: String) -> Result<String, RpcResponseErrors>;
 
     /// `verify_content` is an asynchronous method that verifies the provided content.
     ///

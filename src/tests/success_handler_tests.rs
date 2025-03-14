@@ -37,6 +37,7 @@ fn test_token_verification_success_message_path() {
         url: None,                              // URL is not provided
         address: None,                          // Address is not provided
         environment: None,                      // Environment is not provided
+        file_name: None,                        // Message is not provided
     };
 
     // Call handle_success function to display the success message for token verification with path
@@ -52,6 +53,7 @@ fn test_token_verification_success_message_url() {
         url: Some("https://example.com/token".to_string()), // Token verification URL
         address: None,                                      // Address is not provided
         environment: None,                                  // Environment is not provided
+        file_name: None,                                    // Message is not provided
     };
 
     // Call handle_success function to display the success message for token verification with URL

@@ -20,6 +20,11 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
     fs::read_to_string(file_path)
 }
 
+pub struct VerifyPathStruct {
+    pub content: String,
+    pub file_name: String,
+}
+
 /**
  * Verifies a directory path and validates its structure for a Move project.
  *
@@ -35,14 +40,14 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
  * - `path`: A string slice representing the directory path to verify.
  *
  * # Returns
- * - `Ok(String)`: The content of the `.move` file if all conditions are satisfied.
+ * - `Ok(VerifyPathStruct)`: The content of the `.move` file & .move file in sources folder if all conditions are satisfied.
  * - `Err(TokenGenErrors)`: If the path or file structure is invalid.
  *
  * # Errors
  * - `TokenGenErrors::InvalidPathNotDirectory`: If the path or `sources` folder is missing or not a directory.
  * - `TokenGenErrors::InvalidPathNoMoveFiles`: If no valid `.move` file is found in the `sources` folder.
  */
-pub fn verify_path(path: &str) -> Result<String> {
+pub fn verify_path(path: &str) -> Result<VerifyPathStruct> {
     let path = Path::new(path);
 
     // Construct the path to the `sources` folder.
@@ -58,6 +63,9 @@ pub fn verify_path(path: &str) -> Result<String> {
 
     // Look for the first `.move` file in the `sources` folder.
     let mut current_content = String::new();
+
+    // Initialize a string to store the name of the first .move file
+    let mut verifying_file_name = String::new();
     for entry in entries {
         let entry = entry?;
         let path = entry.path();
@@ -66,6 +74,9 @@ pub fn verify_path(path: &str) -> Result<String> {
         if path.is_file() && path.extension().is_some_and(|e| e == "move") {
             // Read the content of the `.move` file.
             current_content = read_file(&path)?;
+            if let Some(file_name) = path.file_name().and_then(|f| f.to_str()) {
+                verifying_file_name = file_name.to_string();
+            }
             break; // Stop searching after the first valid `.move` file is found.
         }
     }
@@ -76,7 +87,10 @@ pub fn verify_path(path: &str) -> Result<String> {
     }
 
     // Return the content of the `.move` file.
-    Ok(current_content)
+    Ok(VerifyPathStruct {
+        content: current_content,
+        file_name: verifying_file_name,
+    })
 }
 
 /**
