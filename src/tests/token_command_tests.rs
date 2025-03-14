@@ -128,6 +128,8 @@ async fn verify_command_valid_file() -> Result<()> {
         current_dir.display()
     );
 
+    let toml_path = format!("{}/src/tests/tokens/valid_toml.move", current_dir.display());
+
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
 
@@ -135,9 +137,11 @@ async fn verify_command_valid_file() -> Result<()> {
     let valid_content =
         fs::read_to_string(templates_path).expect("Failed to read valid token file");
 
+    let valid_toml_content = fs::read_to_string(toml_path).expect("Failed to read valid toml file");
+
     // Verify the content using the RPC client
     let response = client
-        .verify_content(context::current(), valid_content)
+        .verify_content(context::current(), valid_content, valid_toml_content)
         .await;
     assert!(response.is_ok(), "Verification failed");
     Ok(())
@@ -153,16 +157,23 @@ async fn verify_command_invalid_file() -> Result<()> {
         current_dir.display()
     );
 
+    let toml_path = format!(
+        "{}/src/tests/tokens/invalid_toml.move",
+        current_dir.display()
+    );
+
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
 
     // Read content from the existing invalid token file
     let invalid_content =
         fs::read_to_string(templates_path).expect("Failed to read invalid token file");
+    let invalid_toml_content =
+        fs::read_to_string(toml_path).expect("Failed to read invalid toml file");
 
     // Verify the content using the RPC client
     let response = client
-        .verify_content(context::current(), invalid_content)
+        .verify_content(context::current(), invalid_content, invalid_toml_content)
         .await
         .map_err(TokenGenErrors::RpcError)?;
     assert!(response.is_err(), "Verification failed");

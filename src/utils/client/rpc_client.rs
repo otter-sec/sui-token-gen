@@ -57,7 +57,7 @@ pub trait TokenGen {
     ///
     /// # Errors
     /// - Returns `RpcResponseErrors` if the content is invalid or verification fails.
-    async fn verify_content(content: String) -> Result<(), RpcResponseErrors>;
+    async fn verify_content(content: String, toml: String) -> Result<(), RpcResponseErrors>;
 
     /// `verify_address` is an asynchronous method that validates a given blockchain address in a specific environment.
     ///

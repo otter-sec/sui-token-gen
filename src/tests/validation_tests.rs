@@ -35,14 +35,18 @@ async fn test_path_validation_errors() -> Result<()> {
     // Test non-existent path
     let non_existent_path = "/path/does/not/exist";
     let result = client
-        .verify_content(context::current(), non_existent_path.to_string())
+        .verify_content(
+            context::current(),
+            non_existent_path.to_string(),
+            "".to_string(),
+        )
         .await?;
     assert!(result.is_err());
 
     // Test a path that is not a directory
     let not_dir_path = "/etc/hosts";
     let result = client
-        .verify_content(context::current(), not_dir_path.to_string())
+        .verify_content(context::current(), not_dir_path.to_string(), "".to_string())
         .await?;
     assert!(result.is_err());
 

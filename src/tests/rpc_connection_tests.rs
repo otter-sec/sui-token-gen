@@ -28,7 +28,7 @@ async fn setup_test_client_error_handling() -> Result<()> {
 
     // Test error handling during content verification with invalid input
     let result = client
-        .verify_content(context::current(), "invalid content".to_string()) // Simulate invalid content
+        .verify_content(context::current(), "invalid content".to_string(), "invalid toml".to_string()) // Simulate invalid content
         .await
         .map_err(TokenGenErrors::RpcError)?; // Map the RPC error to TokenGenErrors
 
@@ -46,7 +46,7 @@ async fn test_error_propagation() -> Result<()> {
 
     // Test RPC error propagation during content verification with invalid input
     let result = client
-        .verify_content(context::current(), "invalid content".to_string()) // Simulate invalid content
+        .verify_content(context::current(), "invalid content".to_string(), "invalid toml".to_string()) // Simulate invalid content
         .await?;
     assert!(result.is_err()); // Ensure that the error occurs as expected
 

@@ -31,7 +31,7 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
 
     // Send the contract content to the RPC client for verification.
     client
-        .verify_content(context::current(), verify_data.content)
+        .verify_content(context::current(), verify_data.content, verify_data.toml)
         .await
         .map_err(TokenGenErrors::RpcError)?
         .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;

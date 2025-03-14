@@ -23,6 +23,7 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
 pub struct VerifyPathStruct {
     pub content: String,
     pub file_name: String,
+    pub toml: String
 }
 
 /**
@@ -40,7 +41,7 @@ pub struct VerifyPathStruct {
  * - `path`: A string slice representing the directory path to verify.
  *
  * # Returns
- * - `Ok(VerifyPathStruct)`: The content of the `.move` file & .move file in sources folder if all conditions are satisfied.
+ * - `Ok(VerifyPathStruct)`: The content of the .toml file, `.move` file name & .move file in sources folder if all conditions are satisfied.
  * - `Err(TokenGenErrors)`: If the path or file structure is invalid.
  *
  * # Errors
@@ -53,10 +54,14 @@ pub fn verify_path(path: &str) -> Result<VerifyPathStruct> {
     // Construct the path to the `sources` folder.
     let sources_folder = path.join(SUB_FOLDER);
 
+    let toml_path = path.join("Move.toml");
+
     // Validate that the provided path and `sources` folder exist and are directories.
-    if !path.exists() || !path.is_dir() || !sources_folder.exists() || !sources_folder.is_dir() {
+    if !path.exists() || !path.is_dir() || !sources_folder.exists() || !sources_folder.is_dir() || !toml_path.exists() {
         return Err(TokenGenErrors::InvalidPathNotDirectory);
     }
+
+    let toml_content = read_file(&toml_path)?;
 
     // Read entries from the `sources` folder.
     let entries = read_dir(&sources_folder)?;
@@ -82,7 +87,7 @@ pub fn verify_path(path: &str) -> Result<VerifyPathStruct> {
     }
 
     // Return an error if no `.move` file was found or the file is empty.
-    if current_content.is_empty() {
+    if current_content.is_empty() || toml_content.is_empty(){
         return Err(TokenGenErrors::InvalidPathNoMoveFiles);
     }
 
@@ -90,6 +95,7 @@ pub fn verify_path(path: &str) -> Result<VerifyPathStruct> {
     Ok(VerifyPathStruct {
         content: current_content,
         file_name: verifying_file_name,
+        toml: toml_content
     })
 }
 
