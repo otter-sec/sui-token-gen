@@ -32,14 +32,16 @@ pub fn handle_success(success_type: SuccessType) {
 
     let message = match success_type {
         SuccessType::TokenCreated(token_info, message) => format!(
-            "{}\nToken Details:\n  Name: {}\n  Symbol: {}\n  Decimals: {}\n  Description: {}\n  Frozen: {}\n  Environment: {}",
+            "{}\nToken Details:\n  Name: {}\n  Symbol: {}\n  Decimals: {}\n  Description: {}\n  Frozen: {}\n  Environment: {}\n{}{}",
             message,
             token_info.name,
             token_info.symbol,
             token_info.decimals,
             token_info.description.if_empty("None"),
             token_info.is_frozen.to_yes_no(),
-            token_info.environment
+            token_info.environment,
+            "Note: ".yellow(),
+            "These files are automatically generated and are not intended for manual editing.",
         ),
 
         SuccessType::TokenVerified {

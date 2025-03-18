@@ -43,6 +43,7 @@ For additional documentation, visit the [sui-token-gen page on docs.rs](https://
        Description: Fake sui token
        Frozen: Yes
        Environment: devnet
+     NOTE: These files are automatically generated and are not intended for manual editing.
      ```
 
    - **Tip**: Add `--rpc <URL>` to override the default RPC endpoint.
