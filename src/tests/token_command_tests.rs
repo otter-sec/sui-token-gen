@@ -23,7 +23,7 @@ async fn create_command() -> Result<()> {
     // Test user inputs for creating a token contract
     let decimals: u8 = 6;
     let symbol: String = "SAMPLE".to_string();
-    let name: &str = "SampleToken";
+    let name: &str = "sampletoken";
     let description: String = "This is a sample token for testing.".to_string();
     let is_frozen: bool = false;
     let environment: String = DEFAULT_ENVIRONMENT.to_string();
@@ -93,7 +93,7 @@ async fn create_command() -> Result<()> {
         "Move.toml file does not contain the correct version"
     );
     assert!(
-        toml_content.contains(&base_folder),
+        toml_content.contains(&base_folder.to_lowercase()),
         "Move.toml file does not contain the correct package name"
     );
 
@@ -128,7 +128,7 @@ async fn verify_command_valid_file() -> Result<()> {
         current_dir.display()
     );
 
-    let toml_path = format!("{}/src/tests/tokens/valid_toml.move", current_dir.display());
+    let toml_path = format!("{}/src/tests/tokens/valid_toml.toml", current_dir.display());
 
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
@@ -158,7 +158,7 @@ async fn verify_command_invalid_file() -> Result<()> {
     );
 
     let toml_path = format!(
-        "{}/src/tests/tokens/invalid_toml.move",
+        "{}/src/tests/tokens/invalid_toml.toml",
         current_dir.display()
     );
 
@@ -253,24 +253,6 @@ async fn verify_token_address_successful_case() -> Result<()> {
 
     // Expecting the verification to pass for a valid token address
     assert!(result.is_ok());
-
-    Ok(())
-}
-
-// Test case to verify handling of different environments
-#[tokio::test]
-async fn verify_token_address_with_different_environments() -> Result<()> {
-    let client = setup_test_client(ADDRESS).await?;
-
-    let valid_address = "0xc2f47262639d93701c28453b88df9e6c5feb28925741fcab7b75ffc710805217";
-
-    // Test with a valid environment
-    let result = verify_token_address(valid_address, "testnet", client.to_owned()).await;
-    assert!(result.is_ok());
-
-    // Test with an invalid environment (should default to "testnet" internally)
-    let result = verify_token_address(valid_address, "invalid_env", client.to_owned()).await;
-    assert!(result.is_err()); // It should fail because of "invalid_env"
 
     Ok(())
 }

@@ -23,7 +23,7 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
 pub struct VerifyPathStruct {
     pub content: String,
     pub file_name: String,
-    pub toml: String
+    pub toml: String,
 }
 
 /**
@@ -57,7 +57,12 @@ pub fn verify_path(path: &str) -> Result<VerifyPathStruct> {
     let toml_path = path.join("Move.toml");
 
     // Validate that the provided path and `sources` folder exist and are directories.
-    if !path.exists() || !path.is_dir() || !sources_folder.exists() || !sources_folder.is_dir() || !toml_path.exists() {
+    if !path.exists()
+        || !path.is_dir()
+        || !sources_folder.exists()
+        || !sources_folder.is_dir()
+        || !toml_path.exists()
+    {
         return Err(TokenGenErrors::InvalidPathNotDirectory);
     }
 
@@ -87,7 +92,7 @@ pub fn verify_path(path: &str) -> Result<VerifyPathStruct> {
     }
 
     // Return an error if no `.move` file was found or the file is empty.
-    if current_content.is_empty() || toml_content.is_empty(){
+    if current_content.is_empty() || toml_content.is_empty() {
         return Err(TokenGenErrors::InvalidPathNoMoveFiles);
     }
 
@@ -95,7 +100,7 @@ pub fn verify_path(path: &str) -> Result<VerifyPathStruct> {
     Ok(VerifyPathStruct {
         content: current_content,
         file_name: verifying_file_name,
-        toml: toml_content
+        toml: toml_content,
     })
 }
 
