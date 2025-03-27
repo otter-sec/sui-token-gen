@@ -1,5 +1,5 @@
 [package]
-name = "yuhu"
+name = "mytoken"
 edition = "2024.beta"
 version = "0.0.1"
 
@@ -9,4 +9,4 @@ subdir = "crates/sui-framework/packages/sui-framework"
 rev = "framework/devnet"
 
 [addresses]
-yuhu = "0x0"
+Mytoken = "0x0"

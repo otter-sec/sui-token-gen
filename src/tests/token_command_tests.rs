@@ -7,7 +7,9 @@ use crate::{
     errors::TokenGenErrors,
     tests::common::setup_test_client,
     utils::{
-        client::rpc_client::TokenGenClient, generation::ContractGenerator, helpers::sanitize_name,
+        client::{responses::RpcResponseErrors, rpc_client::TokenGenClient},
+        generation::ContractGenerator,
+        helpers::sanitize_name,
     },
     Result,
 };
@@ -143,7 +145,13 @@ async fn verify_command_valid_file() -> Result<()> {
     let response = client
         .verify_content(context::current(), valid_content, valid_toml_content)
         .await;
-    assert!(response.is_ok(), "Verification failed");
+    // Assert that response is Ok and contains the expected error
+    match response {
+        Ok(Ok(())) => {
+            println!("Verification successful");
+        }
+        _ => panic!("Expected Content match, but got {:?}", response),
+    }
     Ok(())
 }
 
@@ -174,9 +182,14 @@ async fn verify_command_invalid_file() -> Result<()> {
     // Verify the content using the RPC client
     let response = client
         .verify_content(context::current(), invalid_content, invalid_toml_content)
-        .await
-        .map_err(TokenGenErrors::RpcError)?;
-    assert!(response.is_err(), "Verification failed");
+        .await;
+    // Assert that response is Ok and contains the expected error
+    match response {
+        Ok(Err(RpcResponseErrors::VerifyResultError(msg))) => {
+            assert_eq!(msg, "Content mismatch detected", "Unexpected error message");
+        }
+        _ => panic!("Expected Content mismatch error, but got {:?}", response),
+    }
     Ok(())
 }
 
@@ -248,8 +261,8 @@ async fn verify_token_address_successful_case() -> Result<()> {
     let client = setup_test_client(ADDRESS).await?;
 
     // Assume this is a valid token address (mocked in test setup)
-    let valid_address = "0xc2f47262639d93701c28453b88df9e6c5feb28925741fcab7b75ffc710805217";
-    let result = verify_token_address(valid_address, "testnet", client.to_owned()).await;
+    let valid_address = "0xab5857489458e678a8f5ae3aceb667392126e1ab67a15efada4f24012a7a2e23";
+    let result = verify_token_address(valid_address, "devnet", client.to_owned()).await;
 
     // Expecting the verification to pass for a valid token address
     assert!(result.is_ok());
