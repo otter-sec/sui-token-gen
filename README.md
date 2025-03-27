@@ -53,7 +53,8 @@ For additional documentation, visit the [sui-token-gen page on docs.rs](https://
    - Provide exactly one of the following flags:
      - `--url` : Remote Git repository URL (e.g., GitHub, GitLab)
      - `--path`: Local directory path
-     - `--address`: Deployed contract address(optional --environment (`devnet`, `testnet`, `mainnet`))
+     - `--address`: Deployed contract address
+     - `--environment`: Environment (optional) [`devnet`, `testnet`, `mainnet`]
    - **Example**:
 
      ```bash
