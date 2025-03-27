@@ -1,6 +1,6 @@
 [package]
 name = "sui-token-gen"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2021"
 description = "A Rust-based CLI tool for generating and verifying Sui token smart contracts effortlessly."
 license = "MIT"
