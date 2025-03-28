@@ -261,7 +261,7 @@ async fn verify_token_address_successful_case() -> Result<()> {
     let client = setup_test_client(ADDRESS).await?;
 
     // Assume this is a valid token address (mocked in test setup)
-    let valid_address = "0xab5857489458e678a8f5ae3aceb667392126e1ab67a15efada4f24012a7a2e23";
+    let valid_address = "0xd808a18c3b508f6d80f7bd21fbc0faa20d5f69fab237cf073df29cfff199a440";
     let result = verify_token_address(valid_address, "devnet", client.to_owned()).await;
 
     // Expecting the verification to pass for a valid token address

@@ -12,8 +12,7 @@ use errors::TokenGenErrors;
 use handlers::handle_error;
 pub use utils::constants;
 use utils::{
-    client::rpc_client::{initiate_client, TokenGenClient},
-    helpers::validate_rpc_url,
+    client::rpc_client::{initiate_client, TokenGenClient}, constants::DEFAULT_ENVIRONMENT, helpers::validate_rpc_url
 };
 
 mod commands;
@@ -163,7 +162,7 @@ async fn run_cli(cli: Cli) -> Result<()> {
                 .unwrap_or_else(|| constants::ADDRESS.to_string());
 
             // Validate the RPC URL
-            validate_rpc_url(&rpc_url)?;
+            let rpc_url = validate_rpc_url(&rpc_url)?;
 
             let client: TokenGenClient = initiate_client(&rpc_url)
                 .await
@@ -187,9 +186,9 @@ async fn run_cli(cli: Cli) -> Result<()> {
             }
 
             // Verify by token address and environment
-            // Verify by token address with a default environment of "testnet"
+            // Verify by token address with a default environment of DEFAULT_ENVIRONMENT
             if let Some(address) = address {
-                let env = environment.clone().unwrap_or_else(|| "testnet".to_string());
+                let env = environment.clone().unwrap_or_else(|| DEFAULT_ENVIRONMENT.to_string());
                 verify::verify_token_address(address, &env, client).await?;
             }
         }
