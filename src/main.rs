@@ -62,7 +62,7 @@ pub struct CreateTokenParams {
     symbol: Option<String>,
 
     /// Token decimals.
-    #[arg(short, long)]
+    #[arg(long)]
     decimals: Option<u8>,
 
     /// Token description.
