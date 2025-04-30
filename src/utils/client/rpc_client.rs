@@ -9,7 +9,7 @@ use super::responses::RpcResponseErrors;
 pub trait TokenGen {
     /// `create` is an asynchronous method that creates a token with the specified parameters.
     ///
-    /// Arguments:
+    /// # Arguments
     /// - `decimals`: The number of decimal places for the token.
     /// - `name`: The name of the token.
     /// - `symbol`: The symbol for the token.
@@ -17,11 +17,14 @@ pub trait TokenGen {
     /// - `is_frozen`: Whether the token is frozen or not.
     /// - `environment`: The environment in which the token is deployed (e.g., `mainnet`, `devnet`, `testnet`).
     ///
-    /// Returns:
-    /// - A tuple containing the created token's contract address, transaction ID, and metadata.
+    /// # Returns
+    /// - A tuple containing:
+    ///   - The created token's contract address.
+    ///   - The transaction ID.
+    ///   - The metadata associated with the token.
     ///
-    /// Errors:
-    /// - `RpcResponseErrors`: Handles various error scenarios specific to token creation.
+    /// # Errors
+    /// - Returns `RpcResponseErrors` in case of RPC failures or invalid input parameters.
     #[allow(clippy::too_many_arguments)]
     async fn create(
         decimals: u8,
@@ -34,21 +37,40 @@ pub trait TokenGen {
 
     /// `verify_url` is an asynchronous method that verifies the validity of a provided URL.
     ///
-    /// Arguments:
+    /// # Arguments
     /// - `url`: The URL to be verified.
     ///
-    /// Errors:
-    /// - `RpcResponseErrors`: Returns an error if the URL is invalid or verification fails.
-    async fn verify_url(url: String) -> Result<(), RpcResponseErrors>;
+    /// # Returns
+    /// - `Ok(File name)` returns verified file name if the URL is valid.
+    ///
+    /// # Errors
+    /// - Returns `RpcResponseErrors` if the URL is invalid or verification fails.
+    async fn verify_url(url: String) -> Result<String, RpcResponseErrors>;
 
     /// `verify_content` is an asynchronous method that verifies the provided content.
     ///
-    /// Arguments:
+    /// # Arguments
     /// - `content`: The content to be verified.
     ///
-    /// Errors:
-    /// - `RpcResponseErrors`: Returns an error if the content is invalid or verification fails.
-    async fn verify_content(content: String) -> Result<(), RpcResponseErrors>;
+    /// # Returns
+    /// - `Ok(())` if the content is valid.
+    ///
+    /// # Errors
+    /// - Returns `RpcResponseErrors` if the content is invalid or verification fails.
+    async fn verify_content(content: String, toml: String) -> Result<(), RpcResponseErrors>;
+
+    /// `verify_address` is an asynchronous method that validates a given blockchain address in a specific environment.
+    ///
+    /// # Arguments
+    /// - `address`: The blockchain address to be verified.
+    /// - `environment`: The environment where the address should be verified (e.g., `mainnet`, `devnet`, `testnet`).
+    ///
+    /// # Returns
+    /// - `Ok(())` if the address is valid in the specified environment.
+    ///
+    /// # Errors
+    /// - Returns `RpcResponseErrors` if the address is invalid or verification fails.
+    async fn verify_address(address: String, environment: String) -> Result<(), RpcResponseErrors>;
 }
 
 /// Initializes the RPC client by connecting to the provided server address.

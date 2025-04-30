@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use crate::{errors::TokenGenErrors, constants::SUB_FOLDER, Result};
+use crate::{constants::SUB_FOLDER, errors::TokenGenErrors, Result};
 
 /**
  * Reads the content of a file at the given path.
@@ -18,6 +18,12 @@ use crate::{errors::TokenGenErrors, constants::SUB_FOLDER, Result};
  */
 pub fn read_file(file_path: &Path) -> io::Result<String> {
     fs::read_to_string(file_path)
+}
+
+pub struct VerifyPathStruct {
+    pub content: String,
+    pub file_name: String,
+    pub toml: String,
 }
 
 /**
@@ -35,29 +41,41 @@ pub fn read_file(file_path: &Path) -> io::Result<String> {
  * - `path`: A string slice representing the directory path to verify.
  *
  * # Returns
- * - `Ok(String)`: The content of the `.move` file if all conditions are satisfied.
+ * - `Ok(VerifyPathStruct)`: The content of the .toml file, `.move` file name & .move file in sources folder if all conditions are satisfied.
  * - `Err(TokenGenErrors)`: If the path or file structure is invalid.
  *
  * # Errors
  * - `TokenGenErrors::InvalidPathNotDirectory`: If the path or `sources` folder is missing or not a directory.
  * - `TokenGenErrors::InvalidPathNoMoveFiles`: If no valid `.move` file is found in the `sources` folder.
  */
-pub fn verify_path(path: &str) -> Result<String> {
+pub fn verify_path(path: &str) -> Result<VerifyPathStruct> {
     let path = Path::new(path);
 
     // Construct the path to the `sources` folder.
     let sources_folder = path.join(SUB_FOLDER);
 
+    let toml_path = path.join("Move.toml");
+
     // Validate that the provided path and `sources` folder exist and are directories.
-    if !path.exists() || !path.is_dir() || !sources_folder.exists() || !sources_folder.is_dir() {
+    if !path.exists()
+        || !path.is_dir()
+        || !sources_folder.exists()
+        || !sources_folder.is_dir()
+        || !toml_path.exists()
+    {
         return Err(TokenGenErrors::InvalidPathNotDirectory);
     }
+
+    let toml_content = read_file(&toml_path)?;
 
     // Read entries from the `sources` folder.
     let entries = read_dir(&sources_folder)?;
 
     // Look for the first `.move` file in the `sources` folder.
     let mut current_content = String::new();
+
+    // Initialize a string to store the name of the first .move file
+    let mut verifying_file_name = String::new();
     for entry in entries {
         let entry = entry?;
         let path = entry.path();
@@ -66,17 +84,24 @@ pub fn verify_path(path: &str) -> Result<String> {
         if path.is_file() && path.extension().is_some_and(|e| e == "move") {
             // Read the content of the `.move` file.
             current_content = read_file(&path)?;
+            if let Some(file_name) = path.file_name().and_then(|f| f.to_str()) {
+                verifying_file_name = file_name.to_string();
+            }
             break; // Stop searching after the first valid `.move` file is found.
         }
     }
 
     // Return an error if no `.move` file was found or the file is empty.
-    if current_content.is_empty() {
+    if current_content.is_empty() || toml_content.is_empty() {
         return Err(TokenGenErrors::InvalidPathNoMoveFiles);
     }
 
     // Return the content of the `.move` file.
-    Ok(current_content)
+    Ok(VerifyPathStruct {
+        content: current_content,
+        file_name: verifying_file_name,
+        toml: toml_content,
+    })
 }
 
 /**

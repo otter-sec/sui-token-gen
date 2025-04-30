@@ -11,4 +11,4 @@ pub async fn setup_test_client(address: &str) -> Result<TokenGenClient> {
     initiate_client(address)
         .await
         .map_err(|_| TokenGenErrors::FailedToConnectRpc)
-} 
+}

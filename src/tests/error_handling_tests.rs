@@ -1,12 +1,11 @@
 use tarpc::context;
 
+use super::common::test_utils::setup_test_client;
 use crate::{
     commands::verify::verify_token_using_url,
-    constants::ADDRESS,
+    constants::{ADDRESS, DEFAULT_ENVIRONMENT},
     Result,
 };
-use super::common::test_utils::setup_test_client;
-
 
 // Test case to verify error handling when verifying token using a URL
 // It checks the behavior when invalid or malformed URLs are passed to the verification function.
@@ -42,7 +41,7 @@ async fn error_propagation_flow() -> Result<()> {
             "TEST".to_string(),
             "Description".to_string(),
             false,
-            "devnet".to_string(),
+            DEFAULT_ENVIRONMENT.to_string(),
         )
         .await?;
     assert!(result.is_err()); // Assert that an error occurs due to invalid decimals
@@ -56,7 +55,7 @@ async fn error_propagation_flow() -> Result<()> {
             "TEST".to_string(),
             "Description".to_string(),
             false,
-            "devnet".to_string(),
+            DEFAULT_ENVIRONMENT.to_string(),
         )
         .await?;
     assert!(result.is_err()); // Assert that an error occurs due to empty name

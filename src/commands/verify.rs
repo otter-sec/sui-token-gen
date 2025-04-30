@@ -2,8 +2,8 @@ use tarpc::context;
 
 use crate::{
     errors::TokenGenErrors,
-    utils::client::rpc_client::TokenGenClient,
     handlers::{handle_success, SuccessType},
+    utils::client::rpc_client::TokenGenClient,
     utils::{helpers::is_valid_repository_url, verify_helper::verify_path},
     Result,
 };
@@ -27,11 +27,11 @@ use crate::{
  */
 pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Result<()> {
     // Validate the file path and ensure it contains valid contract content.
-    let current_content = verify_path(path)?;
+    let verify_data = verify_path(path)?;
 
     // Send the contract content to the RPC client for verification.
     client
-        .verify_content(context::current(), current_content)
+        .verify_content(context::current(), verify_data.content, verify_data.toml)
         .await
         .map_err(TokenGenErrors::RpcError)?
         .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
@@ -40,6 +40,9 @@ pub async fn verify_token_from_path(path: &str, client: TokenGenClient) -> Resul
     handle_success(SuccessType::TokenVerified {
         path: Some(path.to_string()),
         url: None,
+        address: None,
+        environment: None,
+        file_name: Some(verify_data.file_name),
     });
 
     Ok(())
@@ -66,7 +69,7 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
     is_valid_repository_url(url)?;
 
     // Send the URL to the RPC client for verification.
-    client
+    let verification_result = client
         .verify_url(context::current(), url.to_string())
         .await
         .map_err(TokenGenErrors::RpcError)?
@@ -76,6 +79,53 @@ pub async fn verify_token_using_url(url: &str, client: TokenGenClient) -> Result
     handle_success(SuccessType::TokenVerified {
         path: None,
         url: Some(url.to_string()),
+        address: None,
+        environment: None,
+        file_name: Some(verification_result),
+    });
+
+    Ok(())
+}
+
+/**
+ * Verifies a token contract using its blockchain address and environment.
+ *
+ * This function performs the following steps:
+ * 1. Validates the provided blockchain address format.
+ * 2. Sends the address and environment to the RPC client for verification.
+ * 3. Logs the success if verification is successful, or returns an appropriate error if verification fails.
+ *
+ * # Parameters
+ * - `address`: A string slice representing the token contract's blockchain address.
+ * - `environment`: A string slice representing the blockchain environment (`mainnet`, `devnet`, `testnet`).
+ * - `client`: An instance of `TokenGenClient` used to interact with the verification RPC service.
+ *
+ * # Returns
+ * - `Ok(())` if the token address is successfully verified.
+ * - `Err(TokenGenErrors)` if any validation or verification step fails.
+ */
+pub async fn verify_token_address(
+    address: &str,
+    environment: &str,
+    client: TokenGenClient,
+) -> Result<()> {
+    // Send the address and environment to the RPC client for verification.
+    client
+        .verify_address(
+            context::current(),
+            address.to_string(),
+            environment.to_string(),
+        )
+        .await
+        .map_err(TokenGenErrors::RpcError)?
+        .map_err(|e| TokenGenErrors::VerificationError(e.to_string()))?;
+    // Log success message if verification is successful.
+    handle_success(SuccessType::TokenVerified {
+        path: None,
+        url: None,
+        address: Some(address.to_string()),
+        environment: Some(environment.to_string()),
+        file_name: None,
     });
 
     Ok(())

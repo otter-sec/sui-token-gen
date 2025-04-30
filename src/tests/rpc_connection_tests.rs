@@ -1,11 +1,7 @@
 use tarpc::context;
 
-use crate::{
-    errors::TokenGenErrors,
-    constants::ADDRESS,
-    Result,
-};
 use super::common::test_utils::setup_test_client;
+use crate::{constants::ADDRESS, errors::TokenGenErrors, Result};
 
 // Test case to simulate a failed client connection due to an invalid address.
 // This tests the scenario where the address provided for the client setup is incorrect (e.g., wrong port or unavailable address).
@@ -32,7 +28,11 @@ async fn setup_test_client_error_handling() -> Result<()> {
 
     // Test error handling during content verification with invalid input
     let result = client
-        .verify_content(context::current(), "invalid content".to_string()) // Simulate invalid content
+        .verify_content(
+            context::current(),
+            "invalid content".to_string(),
+            "invalid toml".to_string(),
+        ) // Simulate invalid content
         .await
         .map_err(TokenGenErrors::RpcError)?; // Map the RPC error to TokenGenErrors
 
@@ -50,7 +50,11 @@ async fn test_error_propagation() -> Result<()> {
 
     // Test RPC error propagation during content verification with invalid input
     let result = client
-        .verify_content(context::current(), "invalid content".to_string()) // Simulate invalid content
+        .verify_content(
+            context::current(),
+            "invalid content".to_string(),
+            "invalid toml".to_string(),
+        ) // Simulate invalid content
         .await?;
     assert!(result.is_err()); // Ensure that the error occurs as expected
 

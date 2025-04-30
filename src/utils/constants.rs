@@ -17,3 +17,6 @@ pub const SUB_FOLDER: &str = "sources";
 // The name of the folder used for test files.
 // This folder is likely used for unit or integration tests.
 pub const TEST_FOLDER: &str = "tests";
+
+// Constant for default environment
+pub const DEFAULT_ENVIRONMENT: &str = "devnet";

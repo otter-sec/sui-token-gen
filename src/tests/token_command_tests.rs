@@ -2,16 +2,16 @@ use std::{env, fs, path::Path};
 use tarpc::context;
 
 use crate::{
-    commands::verify::verify_token_using_url,
+    commands::verify::{verify_token_address, verify_token_using_url},
+    constants::{ADDRESS, DEFAULT_ENVIRONMENT, SUB_FOLDER},
     errors::TokenGenErrors,
+    tests::common::setup_test_client,
     utils::{
-        client::rpc_client::TokenGenClient,
+        client::{responses::RpcResponseErrors, rpc_client::TokenGenClient},
         generation::ContractGenerator,
         helpers::sanitize_name,
     },
-    constants::{ADDRESS, SUB_FOLDER},
     Result,
-    tests::common::setup_test_client,
 };
 
 // Test function to initiate the RPC client for testing purposes
@@ -25,10 +25,10 @@ async fn create_command() -> Result<()> {
     // Test user inputs for creating a token contract
     let decimals: u8 = 6;
     let symbol: String = "SAMPLE".to_string();
-    let name: &str = "SampleToken";
+    let name: &str = "sampletoken";
     let description: String = "This is a sample token for testing.".to_string();
     let is_frozen: bool = false;
-    let environment: String = "devnet".to_string();
+    let environment: String = DEFAULT_ENVIRONMENT.to_string();
 
     // Sanitizing the token name for folder creation
     let base_folder = sanitize_name(name);
@@ -95,7 +95,7 @@ async fn create_command() -> Result<()> {
         "Move.toml file does not contain the correct version"
     );
     assert!(
-        toml_content.contains(&base_folder),
+        toml_content.contains(&base_folder.to_lowercase()),
         "Move.toml file does not contain the correct package name"
     );
 
@@ -125,7 +125,12 @@ async fn create_command() -> Result<()> {
 async fn verify_command_valid_file() -> Result<()> {
     // Get the current directory path
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let templates_path = format!("{}/src/tests/tokens/valid_token.move", current_dir.display());
+    let templates_path = format!(
+        "{}/src/tests/tokens/valid_token.move",
+        current_dir.display()
+    );
+
+    let toml_path = format!("{}/src/tests/tokens/valid_toml.toml", current_dir.display());
 
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
@@ -134,11 +139,19 @@ async fn verify_command_valid_file() -> Result<()> {
     let valid_content =
         fs::read_to_string(templates_path).expect("Failed to read valid token file");
 
+    let valid_toml_content = fs::read_to_string(toml_path).expect("Failed to read valid toml file");
+
     // Verify the content using the RPC client
     let response = client
-        .verify_content(context::current(), valid_content)
+        .verify_content(context::current(), valid_content, valid_toml_content)
         .await;
-    assert!(response.is_ok(), "Verification failed");
+    // Assert that response is Ok and contains the expected error
+    match response {
+        Ok(Ok(())) => {
+            println!("Verification successful");
+        }
+        _ => panic!("Expected Content match, but got {:?}", response),
+    }
     Ok(())
 }
 
@@ -152,19 +165,31 @@ async fn verify_command_invalid_file() -> Result<()> {
         current_dir.display()
     );
 
+    let toml_path = format!(
+        "{}/src/tests/tokens/invalid_toml.toml",
+        current_dir.display()
+    );
+
     // Initialize the RPC client
     let client: TokenGenClient = test_initiate_client().await?;
 
     // Read content from the existing invalid token file
     let invalid_content =
         fs::read_to_string(templates_path).expect("Failed to read invalid token file");
+    let invalid_toml_content =
+        fs::read_to_string(toml_path).expect("Failed to read invalid toml file");
 
     // Verify the content using the RPC client
     let response = client
-        .verify_content(context::current(), invalid_content)
-        .await
-        .map_err(TokenGenErrors::RpcError)?;
-    assert!(response.is_err(), "Verification failed");
+        .verify_content(context::current(), invalid_content, invalid_toml_content)
+        .await;
+    // Assert that response is Ok and contains the expected error
+    match response {
+        Ok(Err(RpcResponseErrors::VerifyResultError(msg))) => {
+            assert_eq!(msg, "Content mismatch detected", "Unexpected error message");
+        }
+        _ => panic!("Expected Content mismatch error, but got {:?}", response),
+    }
     Ok(())
 }
 
@@ -209,5 +234,38 @@ async fn verify_command_valid_gitlab() -> Result<()> {
     // Call verify_token with the valid GitLab URL
     let response = verify_token_using_url(valid_url, client).await;
     assert!(response.is_ok(), "Failed to verify URL");
+    Ok(())
+}
+
+// Test case to verify correct handling of invalid token addresses
+#[tokio::test]
+async fn verify_token_address_invalid_cases() -> Result<()> {
+    let client = setup_test_client(ADDRESS).await?;
+
+    // Test with an empty address
+    let empty_address = "";
+    let result = verify_token_address(empty_address, "testnet", client.to_owned()).await;
+    assert!(result.is_err()); // Expecting an error due to empty address
+
+    // Test with an invalid address format
+    let invalid_address = "invalid_token_address";
+    let result = verify_token_address(invalid_address, "testnet", client.to_owned()).await;
+    assert!(result.is_err()); // Expecting an error due to incorrect address format
+
+    Ok(())
+}
+
+// Test case to verify valid token addresses
+#[tokio::test]
+async fn verify_token_address_successful_case() -> Result<()> {
+    let client = setup_test_client(ADDRESS).await?;
+
+    // Assume this is a valid token address (mocked in test setup)
+    let valid_address = "0xd808a18c3b508f6d80f7bd21fbc0faa20d5f69fab237cf073df29cfff199a440";
+    let result = verify_token_address(valid_address, "devnet", client.to_owned()).await;
+
+    // Expecting the verification to pass for a valid token address
+    assert!(result.is_ok());
+
     Ok(())
 }

@@ -1,6 +1,6 @@
 use crate::{
-    utils::helpers::sanitize_name,
     constants::{SUB_FOLDER, TEST_FOLDER},
+    utils::helpers::sanitize_name,
     Result,
 };
 use std::fs;
@@ -86,7 +86,7 @@ impl ContractGenerator {
      * - `Ok(())` if the file is created successfully.
      * - `Err` if there is an issue with file creation.
      */
-    pub fn  create_move_toml(&self, toml_content: &str) -> Result<()> {
+    pub fn create_move_toml(&self, toml_content: &str) -> Result<()> {
         // Construct the file path for `Move.toml`.
         let file_path: String = format!("{}/Move.toml", self.base_folder);
 

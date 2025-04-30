@@ -104,7 +104,7 @@ pub enum TokenGenErrors {
 /// This allows `TokenGenErrors` to be treated as `io::Error` for easier interoperability with standard IO functions.
 impl From<TokenGenErrors> for io::Error {
     fn from(err: TokenGenErrors) -> io::Error {
-        io::Error::new(io::ErrorKind::Other, err.to_string())
+        io::Error::other(err.to_string())
     }
 }
 
